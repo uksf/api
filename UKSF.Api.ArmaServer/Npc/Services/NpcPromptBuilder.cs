@@ -78,7 +78,16 @@ public static partial class NpcPromptBuilder
         var parts = new List<string>();
         if (req.History is { Count: > 0 })
         {
-            var past = string.Join("\n", req.History.Select(h => h.Role == "npc" ? $"You said: [mood:{h.Mood}] {h.Text}" : $"[{h.Speaker}] {h.Text}"));
+            var past = string.Join(
+                "\n",
+                req.History.Select(h => h.Role switch
+                    {
+                        "npc"       => $"You said: [mood:{h.Mood}] {h.Text}",
+                        "overheard" => $"Overheard nearby — {h.Speaker}: {h.Text}",
+                        _           => $"[{h.Speaker}] {h.Text}"
+                    }
+                )
+            );
             parts.Add($"Earlier exchange (oldest first):\n{past}");
         }
 

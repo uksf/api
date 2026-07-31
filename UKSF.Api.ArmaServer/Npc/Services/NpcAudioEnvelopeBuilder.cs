@@ -26,6 +26,10 @@ public static class NpcAudioEnvelopeBuilder
     /// finish naturally once its queue drains.
     public static string BuildAudioEnd(string npcId, string turnId) => $"[\"npc_audio_end\",{Quote(npcId)},{Quote(turnId)}]";
 
+    /// The turn is dead — dropped as addressed to someone else, or declined by the brain.
+    /// The client stops the filler loop instead of padding a silence that will never fill.
+    public static string BuildTurnCancel(string npcId) => $"[\"npc_turn_cancel\",{Quote(npcId)}]";
+
     private static List<string> BuildChunked(string type, string[] leadingFields, string audioBase64, long durationMs, int chunkSize)
     {
         var chunks = Chunk(audioBase64, chunkSize);

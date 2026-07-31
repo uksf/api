@@ -155,18 +155,19 @@ public partial class NpcBrokerService(
 
         if (parsedTurns.Count == 0) return;
 
-        // Deconflict before any brain call: if the utterance clearly names another NPC in
-        // this space, this one stays silent. A player talking to two NPCs side by side
-        // must get one reply, not two.
-        var joinedText = string.Join(" ", parsedTurns.Select(t => t.Text));
+        // Deconflict before any brain call. The LATEST utterance carries the address
+        // intent: a room batches everything said in the debounce window, so classifying
+        // the joined text lets an older line to someone else drown a fresh line to this
+        // NPC. A player talking to two NPCs side by side must get one reply, not two.
         var allNames = sessionsContext.Get(x => x.SessionId == sessionId)
                                       .Select(s => s.Persona?.Name ?? string.Empty)
                                       .Where(n => !string.IsNullOrEmpty(n))
                                       .ToList();
-        var addressed = NpcNameMatcher.Classify(joinedText, session.Persona?.Name ?? string.Empty, allNames);
+        var addressed = NpcNameMatcher.Classify(parsedTurns[^1].Text, session.Persona?.Name ?? string.Empty, allNames);
         if (addressed == NpcNameMatcher.Match.Other)
         {
             logger.LogInfo($"npc_turn: utterance names another NPC, '{npcId}' stays silent");
+            await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId));
             return;
         }
 
@@ -189,6 +190,7 @@ public partial class NpcBrokerService(
         if (result is null)
         {
             logger.LogWarning($"npc_turn: brain returned null for npcId '{npcId}' — NPC stays silent this turn");
+            await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId));
             return;
         }
 
@@ -197,6 +199,7 @@ public partial class NpcBrokerService(
         if (string.Equals(result.Text?.Trim(), "[none]", StringComparison.OrdinalIgnoreCase))
         {
             logger.LogInfo($"npc_turn: brain declined turn for '{npcId}' — not addressed");
+            await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId));
             return;
         }
 
@@ -236,6 +239,31 @@ public partial class NpcBrokerService(
 
         var update = Builders<DomainNpcSession>.Update.PushEach(x => x.History, newEntries, slice: -HistoryLimit);
         await sessionsContext.Update(x => x.NpcId == npcId && x.SessionId == sessionId, update);
+
+        // Nearby NPCs heard this exchange too. Without it, asking one NPC a question and
+        // the other a follow-up leaves the second blind to everything just said next to
+        // him. Written as overheard so the prompt can mark it as ambient, not addressed.
+        var overheard = parsedTurns.Select(turn => new NpcHistoryEntry
+                                       {
+                                           Role = "overheard",
+                                           Speaker = turn.SpeakerId,
+                                           Text = turn.Text,
+                                           T = turn.T
+                                       }
+                                   )
+                                   .ToList();
+        overheard.Add(
+            new NpcHistoryEntry
+            {
+                Role = "overheard",
+                Speaker = session.Persona?.Name ?? npcId,
+                Text = result.Text,
+                Mood = result.Mood,
+                T = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+            }
+        );
+        var overheardUpdate = Builders<DomainNpcSession>.Update.PushEach(x => x.History, overheard, slice: -HistoryLimit);
+        await sessionsContext.Update(x => x.NpcId != npcId && x.SessionId == sessionId, overheardUpdate);
     }
 
     public async Task HandleMissionEndedAsync(string sessionId)

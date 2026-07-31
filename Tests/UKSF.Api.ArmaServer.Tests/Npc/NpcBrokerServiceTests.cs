@@ -299,7 +299,7 @@ public partial class NpcBrokerServiceTests
         _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio_end") && s.Contains("turn7"))), Times.Once);
         _sessionsContext.Verify(
             x => x.Update(It.IsAny<Expression<Func<DomainNpcSession, bool>>>(), It.IsAny<UpdateDefinition<DomainNpcSession>>()),
-            Times.Once
+            Times.Exactly(2) // own history + overheard write to the other sessions
         );
     }
 
@@ -333,7 +333,7 @@ public partial class NpcBrokerServiceTests
         _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio") && s.Contains("QUJD"))), Times.AtLeastOnce);
         _sessionsContext.Verify(
             x => x.Update(It.IsAny<Expression<Func<DomainNpcSession, bool>>>(), It.IsAny<UpdateDefinition<DomainNpcSession>>()),
-            Times.Once
+            Times.Exactly(2) // own history + overheard write to the other sessions
         );
     }
 
@@ -401,7 +401,8 @@ public partial class NpcBrokerServiceTests
 
         await _sut.HandleTurnAsync(5006, MakeTurnData());
 
-        _commandSender.Verify(x => x.SendCommandAsync(It.IsAny<int>(), It.IsAny<string>()), Times.Never);
+        // Only the turn-cancel goes out — the filler loop must stop, not pad a dead turn.
+        _commandSender.Verify(x => x.SendCommandAsync(It.IsAny<int>(), It.Is<string>(c => c.Contains("npc_turn_cancel"))), Times.Once);
         _sessionsContext.Verify(
             x => x.Update(It.IsAny<Expression<Func<DomainNpcSession, bool>>>(), It.IsAny<UpdateDefinition<DomainNpcSession>>()),
             Times.Never
@@ -525,7 +526,7 @@ public partial class NpcBrokerServiceTests
         _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio_end"))), Times.Once);
         _sessionsContext.Verify(
             x => x.Update(It.IsAny<Expression<Func<DomainNpcSession, bool>>>(), It.IsAny<UpdateDefinition<DomainNpcSession>>()),
-            Times.Once
+            Times.Exactly(2) // own history + overheard write to the other sessions
         );
     }
 }
