@@ -255,12 +255,23 @@ public class GameServerProcessManagerTests
     {
         var servers = new List<DomainGameServer>
         {
-            new() { Id = "s1", ProcessId = 1234, HeadlessClientProcessIds = [], Status = new GameServerStatus { Running = true } },
-            new() { Id = "s2", ProcessId = 5678, HeadlessClientProcessIds = [], Status = new GameServerStatus { Running = true } }
+            new()
+            {
+                Id = "s1",
+                ProcessId = 1234,
+                HeadlessClientProcessIds = [],
+                Status = new GameServerStatus { Running = true }
+            },
+            new()
+            {
+                Id = "s2",
+                ProcessId = 5678,
+                HeadlessClientProcessIds = [],
+                Status = new GameServerStatus { Running = true }
+            }
         };
         _mockContext.Setup(x => x.Get()).Returns(servers);
-        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses())
-                    .Returns([new ProcessCommandLineInfo(1234, ""), new ProcessCommandLineInfo(5678, "")]);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([new ProcessCommandLineInfo(1234, ""), new ProcessCommandLineInfo(5678, "")]);
         // Same-PID handles to the live test process: HasExited never flips, and Kill is
         // fully intercepted via the mocked seam, so the real process is never touched.
         var process1 = Process.GetCurrentProcess();
@@ -286,8 +297,7 @@ public class GameServerProcessManagerTests
     [Fact]
     public void KillOrphanedArmaProcesses_WhenOneProcessThrowsOnKill_StillKillsTheOthers()
     {
-        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses())
-                    .Returns([new ProcessCommandLineInfo(1234, ""), new ProcessCommandLineInfo(5678, "")]);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([new ProcessCommandLineInfo(1234, ""), new ProcessCommandLineInfo(5678, "")]);
         var process1 = Process.GetCurrentProcess();
         var process2 = Process.GetCurrentProcess();
         _mockProcessUtilities.Setup(x => x.FindProcessById(1234)).Returns(process1);
@@ -305,7 +315,9 @@ public class GameServerProcessManagerTests
     {
         var server = new DomainGameServer
         {
-            Id = "s1", Name = "Test", ApiPort = 2303,
+            Id = "s1",
+            Name = "Test",
+            ApiPort = 2303,
             Status = new GameServerStatus { Running = true }
         };
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
@@ -324,7 +336,9 @@ public class GameServerProcessManagerTests
     {
         var server = new DomainGameServer
         {
-            Id = "s1", Name = "Test", ApiPort = 2303,
+            Id = "s1",
+            Name = "Test",
+            ApiPort = 2303,
             Status = new GameServerStatus { Running = true }
         };
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
@@ -443,8 +457,11 @@ public class GameServerProcessManagerTests
     {
         var server = new DomainGameServer
         {
-            Id = "s1", Name = "Test", ApiPort = 2303,
-            ProcessId = 1234, HeadlessClientProcessIds = [5001],
+            Id = "s1",
+            Name = "Test",
+            ApiPort = 2303,
+            ProcessId = 1234,
+            HeadlessClientProcessIds = [5001],
             Status = new GameServerStatus { Running = true, CurrentMissionSessionId = "sess-1" }
         };
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
@@ -453,8 +470,8 @@ public class GameServerProcessManagerTests
         await _sut.HandleStopEndingAsync(2303);
 
         server.Status.StopPhase.Should().Be(StopPhase.Ending);
-        server.Status.StopPhaseEnteredAt.Should().NotBeNull();   // armed
-        server.Status.StopRequestedAt.Should().NotBeNull();      // set for in-game path
+        server.Status.StopPhaseEnteredAt.Should().NotBeNull(); // armed
+        server.Status.StopRequestedAt.Should().NotBeNull(); // set for in-game path
         // Must NOT clear process/session state:
         server.ProcessId.Should().Be(1234);
         server.HeadlessClientProcessIds.Should().Contain(5001);
@@ -470,7 +487,8 @@ public class GameServerProcessManagerTests
         var requested = DateTime.UtcNow.AddSeconds(-3);
         var server = new DomainGameServer
         {
-            Id = "s1", ApiPort = 2303,
+            Id = "s1",
+            ApiPort = 2303,
             Status = new GameServerStatus { StopPhase = StopPhase.Ending, StopRequestedAt = requested }
         };
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
@@ -488,8 +506,14 @@ public class GameServerProcessManagerTests
         var enteredAt = DateTime.UtcNow.AddSeconds(-30);
         var server = new DomainGameServer
         {
-            Id = "s1", ApiPort = 2303,
-            Status = new GameServerStatus { StopPhase = StopPhase.Saving, StopPhaseEnteredAt = enteredAt, StopRequestedAt = enteredAt }
+            Id = "s1",
+            ApiPort = 2303,
+            Status = new GameServerStatus
+            {
+                StopPhase = StopPhase.Saving,
+                StopPhaseEnteredAt = enteredAt,
+                StopRequestedAt = enteredAt
+            }
         };
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
@@ -507,9 +531,16 @@ public class GameServerProcessManagerTests
     {
         var server = new DomainGameServer
         {
-            Id = "s1", ApiPort = 2303, ProcessId = 1234,
+            Id = "s1",
+            ApiPort = 2303,
+            ProcessId = 1234,
             HeadlessClientProcessIds = [5001],
-            Status = new GameServerStatus { StopPhase = StopPhase.Ending, StopRequestedAt = DateTime.UtcNow.AddSeconds(-4), CurrentMissionSessionId = "sess-1" }
+            Status = new GameServerStatus
+            {
+                StopPhase = StopPhase.Ending,
+                StopRequestedAt = DateTime.UtcNow.AddSeconds(-4),
+                CurrentMissionSessionId = "sess-1"
+            }
         };
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
@@ -529,9 +560,16 @@ public class GameServerProcessManagerTests
     {
         var server = new DomainGameServer
         {
-            Id = "s1", ApiPort = 2303, ProcessId = 1234,
+            Id = "s1",
+            ApiPort = 2303,
+            ProcessId = 1234,
             HeadlessClientProcessIds = [5001],
-            Status = new GameServerStatus { StopPhase = StopPhase.Saving, StopRequestedAt = DateTime.UtcNow.AddSeconds(-8), CurrentMissionSessionId = "sess-1" }
+            Status = new GameServerStatus
+            {
+                StopPhase = StopPhase.Saving,
+                StopRequestedAt = DateTime.UtcNow.AddSeconds(-8),
+                CurrentMissionSessionId = "sess-1"
+            }
         };
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
@@ -615,7 +653,8 @@ public class GameServerProcessManagerTests
     {
         var server = new DomainGameServer
         {
-            Id = "s-stopping-guard", ApiPort = 2399,
+            Id = "s-stopping-guard",
+            ApiPort = 2399,
             Status = new GameServerStatus { StopPhase = StopPhase.Ending, StopPhaseEnteredAt = DateTime.UtcNow }
         };
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
@@ -630,13 +669,13 @@ public class GameServerProcessManagerTests
     }
 
     [Theory]
-    [InlineData(StopPhase.None,     0,   0, false)] // not stopping
-    [InlineData(StopPhase.Ending,  14,  -1, false)] // armed, within 15s
-    [InlineData(StopPhase.Ending,  16,  -1, true)]  // armed, past 15s
-    [InlineData(StopPhase.Saving, 119,  -1, false)] // armed, within 120s
-    [InlineData(StopPhase.Saving, 121,  -1, true)]  // armed, past 120s
-    [InlineData(StopPhase.Stopping, 9,  -1, false)] // armed, within 10s
-    [InlineData(StopPhase.Stopping,11,  -1, true)]  // armed, past 10s
+    [InlineData(StopPhase.None, 0, 0, false)] // not stopping
+    [InlineData(StopPhase.Ending, 14, -1, false)] // armed, within 15s
+    [InlineData(StopPhase.Ending, 16, -1, true)] // armed, past 15s
+    [InlineData(StopPhase.Saving, 119, -1, false)] // armed, within 120s
+    [InlineData(StopPhase.Saving, 121, -1, true)] // armed, past 120s
+    [InlineData(StopPhase.Stopping, 59, -1, false)] // armed, within 60s
+    [InlineData(StopPhase.Stopping, 61, -1, true)] // armed, past 60s
     public void StopWatchdogExceeded_ArmedUsesPerStageCeiling(StopPhase phase, int secondsInPhase, int unusedRequested, bool expected)
     {
         var now = DateTime.UtcNow;
@@ -652,14 +691,14 @@ public class GameServerProcessManagerTests
 
     [Theory]
     [InlineData(179, false)] // unarmed backstop, within 180s
-    [InlineData(181, true)]  // unarmed backstop, past 180s
+    [InlineData(181, true)] // unarmed backstop, past 180s
     public void StopWatchdogExceeded_UnarmedUsesBackstop(int secondsSinceRequested, bool expected)
     {
         var now = DateTime.UtcNow;
         var status = new GameServerStatus
         {
-            StopPhase = StopPhase.Ending,      // API-set provisional phase
-            StopPhaseEnteredAt = null,          // NOT armed (old modpack: no game event)
+            StopPhase = StopPhase.Ending, // API-set provisional phase
+            StopPhaseEnteredAt = null, // NOT armed (old modpack: no game event)
             StopRequestedAt = now.AddSeconds(-secondsSinceRequested)
         };
 
@@ -676,7 +715,7 @@ public class GameServerProcessManagerTests
         {
             StopPhase = StopPhase.Saving,
             StopPhaseEnteredAt = now.AddSeconds(-100), // within 120s Saving ceiling
-            StopRequestedAt = now.AddSeconds(-300)      // way past 180s backstop
+            StopRequestedAt = now.AddSeconds(-300) // way past 180s backstop
         };
 
         GameServerProcessManager.StopWatchdogExceeded(status, now).Should().BeFalse();
@@ -766,12 +805,20 @@ public class GameServerProcessManagerTests
     {
         var serverA = new DomainGameServer
         {
-            Id = "a", Name = "A", ApiPort = 2303, Port = 2302, ProcessId = 1234,
+            Id = "a",
+            Name = "A",
+            ApiPort = 2303,
+            Port = 2302,
+            ProcessId = 1234,
             Status = new GameServerStatus { CurrentMissionSessionId = "sess-a" }
         };
         var serverB = new DomainGameServer
         {
-            Id = "b", Name = "B", ApiPort = 2313, Port = 2312, ProcessId = 5678,
+            Id = "b",
+            Name = "B",
+            ApiPort = 2313,
+            Port = 2312,
+            ProcessId = 5678,
             Status = new GameServerStatus { CurrentMissionSessionId = "sess-b" }
         };
         _mockContext.Setup(x => x.Get()).Returns(new List<DomainGameServer> { serverA, serverB });
@@ -795,12 +842,16 @@ public class GameServerProcessManagerTests
     {
         var serverA = new DomainGameServer
         {
-            Id = "a", Name = "A", ProcessId = 1,
+            Id = "a",
+            Name = "A",
+            ProcessId = 1,
             Status = new GameServerStatus { CurrentMissionSessionId = "sess-a" }
         };
         var serverB = new DomainGameServer
         {
-            Id = "b", Name = "B", ProcessId = 2,
+            Id = "b",
+            Name = "B",
+            ProcessId = 2,
             Status = new GameServerStatus { CurrentMissionSessionId = "sess-b" }
         };
         _mockContext.Setup(x => x.Get()).Returns(new List<DomainGameServer> { serverA, serverB });
@@ -848,8 +899,12 @@ public class GameServerProcessManagerTests
     {
         var server = new DomainGameServer
         {
-            Id = "s1", Name = "Test", Port = 2302, ApiPort = 2303,
-            HeadlessClientProcessIds = [], Status = new GameServerStatus()
+            Id = "s1",
+            Name = "Test",
+            Port = 2302,
+            ApiPort = 2303,
+            HeadlessClientProcessIds = [],
+            Status = new GameServerStatus()
         };
         _mockContext.Setup(x => x.Get()).Returns(new List<DomainGameServer> { server });
         _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
@@ -1059,7 +1114,9 @@ public class GameServerProcessManagerTests
     {
         var serverB = new DomainGameServer
         {
-            Id = "b", Name = "B", ProcessId = 9999,
+            Id = "b",
+            Name = "B",
+            ProcessId = 9999,
             HeadlessClientProcessIds = [],
             Status = new GameServerStatus { Running = true }
         };

@@ -55,7 +55,7 @@ public class GameServerProcessManager(
     private static readonly TimeSpan OrphanKillCeiling = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan EndingCeiling = TimeSpan.FromSeconds(15); // 10s SQF drain cap + 5s buffer so shutdown_saving lands before force-kill
     private static readonly TimeSpan SavingCeiling = TimeSpan.FromSeconds(120); // == SQF object-save cap
-    private static readonly TimeSpan StoppingCeiling = TimeSpan.FromSeconds(10); // 5s SQF pre-#shutdown delay + process teardown
+    private static readonly TimeSpan StoppingCeiling = TimeSpan.FromSeconds(60); // 5s SQF pre-#shutdown + engine config teardown (often 10-30s+ with CBA/ACE)
     private static readonly TimeSpan StopBackstopCeiling = TimeSpan.FromSeconds(180); // old modpack (30s drain): full ~155s shutdown + margin
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _serverLocks = new();
     private readonly Lock _monitorLock = new();
