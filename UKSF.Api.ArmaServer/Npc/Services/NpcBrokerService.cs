@@ -264,7 +264,7 @@ public partial class NpcBrokerService(
         var overheard = parsedTurns.Select(turn => new NpcHistoryEntry
                                        {
                                            Role = "overheard",
-                                           Speaker = turn.SpeakerId,
+                                           Speaker = string.IsNullOrEmpty(turn.SpeakerName) ? turn.SpeakerId : turn.SpeakerName,
                                            Text = turn.Text,
                                            T = turn.T
                                        }
