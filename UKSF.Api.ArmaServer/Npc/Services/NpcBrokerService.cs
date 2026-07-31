@@ -172,19 +172,17 @@ public partial class NpcBrokerService(
             logger.LogInfo($"npc roster: '{oldDisplay}' is now '{newName}'");
         }
 
-        // Deconflict before any brain call. The LATEST utterance carries the address
-        // intent: a room batches everything said in the debounce window, so classifying
-        // the joined text lets an older line to someone else drown a fresh line to this
-        // NPC. A player talking to two NPCs side by side must get one reply, not two.
-        var allNames = sessionsContext.Get(x => x.SessionId == sessionId)
-                                      .Select(s => s.Persona?.Name ?? string.Empty)
-                                      .Where(n => !string.IsNullOrEmpty(n))
-                                      .ToList();
-        var addressed = NpcNameMatcher.Classify(parsedTurns[^1].Text, session.Persona?.Name ?? string.Empty, allNames);
-        if (addressed == NpcNameMatcher.Match.Other)
+        // The LATEST utterance carries the address intent: a room batches everything said
+        // in the debounce window, so an older line to someone else must not drown a fresh
+        // line to this NPC.
+        // Absent means a modpack older than the earshot broadcast, which only ever sent to
+        // the NPC being looked at — treat that as addressed rather than silencing it.
+        var gazeRaw = ToSafeString(data.GetValueOrDefault("gazeAddressed"));
+        var gazeAddressed = gazeRaw.Length == 0 || gazeRaw.ToLowerInvariant() is "true" or "1";
+        var decision = DecideAddress(session, sessionId, parsedTurns[^1].Text, gazeAddressed);
+        if (decision == AddressDecision.StaySilent)
         {
-            logger.LogInfo($"npc_turn: utterance names another NPC, '{npcId}' stays silent");
-            await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId));
+            await CancelTurnAsync(apiPort, npcId, gazeAddressed ? "names another NPC" : "not addressed");
             return;
         }
 
@@ -201,7 +199,7 @@ public partial class NpcBrokerService(
             History = NpcHistoryBudget.Trim(session.History),
             NewTurns = parsedTurns,
             TextOnly = !scripted, // dynamic turns stream; the brain returns text + mood only
-            MayNotBeAddressed = addressed == NpcNameMatcher.Match.Borderline
+            MayNotBeAddressed = decision == AddressDecision.AskTheBrain
         };
 
         var result = await brainClient.RespondAsync(request);

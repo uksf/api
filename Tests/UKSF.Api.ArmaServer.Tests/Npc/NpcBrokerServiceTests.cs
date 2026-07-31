@@ -410,6 +410,21 @@ public partial class NpcBrokerServiceTests
     }
 
     [Fact]
+    public async Task HandleTurnAsync_UnnamedAndNotLookedAt_StaysSilent_AndCancelsTheFillerLoop()
+    {
+        _sessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcSession, bool>>())).Returns(MakeDynamicSession());
+        var data = MakeTurnData();
+        data["gazeAddressed"] = "false";
+
+        await _sut.HandleTurnAsync(5006, data);
+
+        // Every talkable NPC in earshot gets the utterance; an unnamed one belongs to
+        // whoever was being looked at, and the rest must stop their fillers.
+        _brainClient.Verify(x => x.RespondAsync(It.IsAny<RespondRequest>()), Times.Never);
+        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("npc_turn_cancel"))), Times.Once);
+    }
+
+    [Fact]
     public async Task HandleTurnAsync_AllNewTurnsWhitespaceText_DropsAll_AndDoesNotCallBrain()
     {
         _sessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcSession, bool>>())).Returns(MakeDynamicSession());
