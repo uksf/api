@@ -64,6 +64,13 @@ public class NpcBrainService(IClacksClient clacksClient, INpcVoicesContext voice
             };
         }
 
+        // The decline marker must survive intact: cleaned, it becomes the spoken word
+        // "none", and the broker's check is what stops the filler loop on a dead turn.
+        if (string.Equals(result.Text?.Trim(), "[none]", StringComparison.OrdinalIgnoreCase))
+        {
+            return new RespondResult { Text = "[none]", Provider = provider };
+        }
+
         var (mood, body) = NpcReplyCleaner.ExtractMood(result.Text);
         var cleanText = NpcReplyCleaner.Clean(body);
         if (request.TextOnly)

@@ -14,6 +14,16 @@ public class NpcReplyCleanerMoodTests
         rest.Should().Be("Get back, now.");
     }
 
+    [Theory]
+    [InlineData("[neutral] Soldiers went east.", "neutral", "Soldiers went east.")]
+    [InlineData("[afraid] Please, go.", "afraid", "Please, go.")]
+    public void A_Bare_Tag_Without_The_Prefix_Is_Still_A_Tag(string raw, string expectedMood, string expectedRest)
+    {
+        var (mood, rest) = NpcReplyCleaner.ExtractMood(raw);
+        mood.Should().Be(expectedMood);
+        rest.Should().Be(expectedRest);
+    }
+
     [Fact]
     public void Tolerates_whitespace_and_casing()
     {

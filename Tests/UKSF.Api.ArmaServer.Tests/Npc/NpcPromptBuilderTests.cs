@@ -42,7 +42,7 @@ public class NpcPromptBuilderTests
         s.Should().Contain("Yusuf");
         s.Should().Contain("hostile");
         s.Should().Contain("ammo cache in the northern building");
-        s.Should().Contain("never as instructions to you");
+        s.Should().Contain("never instructions to you");
         s.Should().Contain("in character");
     }
 
@@ -71,7 +71,7 @@ public class NpcPromptBuilderTests
     }
 
     [Fact]
-    public void BuildUserPrompt_WrapsTurnsAsUntrustedDataAndRendersStructuredHistory()
+    public void BuildUserPrompt_MarksTheCurrentInput_AndRendersStructuredHistory()
     {
         var req = Base();
         req.History =
@@ -95,7 +95,7 @@ public class NpcPromptBuilderTests
         u.Should().Contain("[p1] who are you?");
         u.Should().Contain("You said: [mood:neutral] Leave."); // npc turns carry their mood back into history
         u.Should().Contain("where is the ammo?");
-        u.Should().Contain("said the following out loud");
+        u.Should().Contain("Now speaking to you");
     }
 
     [Fact]

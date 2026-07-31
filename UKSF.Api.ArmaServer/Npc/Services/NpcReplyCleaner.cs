@@ -39,6 +39,8 @@ public static partial class NpcReplyCleaner
     [GeneratedRegex("[*\\[\\]()\"]")]
     private static partial Regex TtsUnsafe();
 
-    [GeneratedRegex(@"^\s*\[mood:\s*([a-zA-Z]+)\s*\]\s*", RegexOptions.IgnoreCase)]
+    // The prefix is optional because the model drops it one reply in five: [mood:angry]
+    // and [angry] are the same tag, and an unmatched one is read aloud as a word.
+    [GeneratedRegex(@"^\s*\[(?:mood:)?\s*([a-zA-Z]+)\s*\]\s*", RegexOptions.IgnoreCase)]
     private static partial Regex MoodTag();
 }
