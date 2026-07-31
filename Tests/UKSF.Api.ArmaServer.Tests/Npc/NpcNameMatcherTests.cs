@@ -50,6 +50,17 @@ public class NpcNameMatcherTests
         NpcNameMatcher.Classify("Marl, open up", "Merl", ["Merl", "Marl"]).Should().Be(NpcNameMatcher.Match.Borderline);
     }
 
+    [Theory]
+    [InlineData("Parval is your family safe?")] // the exact STT slip that failed in testing
+    [InlineData("Parvel, over here")]
+    public void A_Two_Edit_Accent_Slip_Still_Resolves_To_The_Only_Plausible_Name(string text)
+    {
+        NpcNameMatcher.Classify(text, "Pavel", TwoGuardsPavel).Should().Be(NpcNameMatcher.Match.This);
+        NpcNameMatcher.Classify(text, "Tomas", TwoGuardsPavel).Should().Be(NpcNameMatcher.Match.Other);
+    }
+
+    private static readonly string[] TwoGuardsPavel = ["Tomas", "Pavel"];
+
     [Fact]
     public void An_Unrelated_Word_Does_Not_Trip_The_Matcher()
     {

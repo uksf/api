@@ -51,6 +51,12 @@ public static class NpcNameMatcher
         if (ownScore >= 2 && otherBest < 2) return Match.This;
         if (otherBest >= 2 && ownScore < 2) return Match.Other;
 
+        // A loose hit that only one side shows still resolves. STT through an accent can
+        // cost two edits on a short name ("Parval" for Pavel), and treating that as unnamed
+        // silently hands the turn to whoever is being looked at instead.
+        if (ownScore >= 1 && otherBest == 0) return Match.This;
+        if (otherBest >= 1 && ownScore == 0) return Match.Other;
+
         // Anything else with any signal at all is close enough to be worth a second opinion.
         return Match.Borderline;
     }
@@ -75,8 +81,9 @@ public static class NpcNameMatcher
             {
                 best = Math.Max(best, distance <= 1 && name.Length >= 4 ? 2 : 1);
             }
-            else if (SoundsAlike(token, name))
+            else if (distance <= allowed + 1 || SoundsAlike(token, name))
             {
+                // Two edits out, or near enough once vowels and confusables are stripped.
                 best = Math.Max(best, 1);
             }
         }
@@ -84,13 +91,15 @@ public static class NpcNameMatcher
         return best;
     }
 
-    /// Coarse phonetic equality for the accent-driven cases edit distance misses: collapse
-    /// vowels and confusable consonants, then require equal skeletons of at least 3 chars.
+    /// Coarse phonetic match for the accent-driven cases edit distance misses: collapse
+    /// vowels and confusable consonants, then allow a small edit distance on the skeletons.
     private static bool SoundsAlike(string a, string b)
     {
         var sa = Skeleton(a);
         var sb = Skeleton(b);
-        return sa.Length >= 3 && sa == sb;
+        if (sa.Length < 3 || sb.Length < 3) return false;
+
+        return Levenshtein(sa, sb) <= Math.Max(1, sb.Length / 4);
     }
 
     private static string Skeleton(string s)

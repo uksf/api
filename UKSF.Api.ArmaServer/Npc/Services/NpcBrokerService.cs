@@ -139,6 +139,7 @@ public partial class NpcBrokerService(
         {
             var turnDict = ToDict(rawTurn);
             var speakerId = ToSafeString(turnDict.GetValueOrDefault("speakerId"));
+            var speakerName = ToSafeString(turnDict.GetValueOrDefault("speakerName"));
             var text = NpcTextSanitiser.Sanitise(ToSafeString(turnDict.GetValueOrDefault("text")));
             if (string.IsNullOrEmpty(text)) continue;
 
@@ -147,6 +148,7 @@ public partial class NpcBrokerService(
                 new NpcTurnDto
                 {
                     SpeakerId = speakerId,
+                    SpeakerName = speakerName,
                     Text = text,
                     T = t
                 }
@@ -219,7 +221,7 @@ public partial class NpcBrokerService(
                 new NpcHistoryEntry
                 {
                     Role = "player",
-                    Speaker = turn.SpeakerId,
+                    Speaker = string.IsNullOrEmpty(turn.SpeakerName) ? turn.SpeakerId : turn.SpeakerName,
                     Text = turn.Text,
                     T = turn.T
                 }

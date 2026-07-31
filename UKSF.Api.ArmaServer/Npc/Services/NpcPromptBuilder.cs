@@ -88,10 +88,15 @@ public static partial class NpcPromptBuilder
                     }
                 )
             );
-            parts.Add($"Earlier exchange (oldest first):\n{past}");
+            parts.Add(
+                "Earlier exchange (oldest first). Three kinds of line: [name] is someone talking to YOU; " +
+                "\"You said\" is your own past words; \"Overheard nearby\" is an exchange between other people " +
+                "that you only heard — not your words, never claim them as your own, but you do know what was said.\n" +
+                past
+            );
         }
 
-        var turns = string.Join("\n", req.NewTurns.Select(t => $"[{t.SpeakerId}] {t.Text}"));
+        var turns = string.Join("\n", req.NewTurns.Select(t => $"[{(string.IsNullOrEmpty(t.SpeakerName) ? t.SpeakerId : t.SpeakerName)}] {t.Text}"));
         parts.Add($"People near you said the following out loud (most recent last):\n{turns}");
         return string.Join("\n\n", parts);
     }

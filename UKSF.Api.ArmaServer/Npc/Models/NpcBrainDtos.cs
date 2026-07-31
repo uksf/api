@@ -14,6 +14,11 @@ public static class NpcBrainJson
 public class NpcTurnDto
 {
     public string SpeakerId { get; set; } = string.Empty;
+
+    /// The player's spoken name. The UID identifies nobody to the brain; the name is what
+    /// lets a follow-up like "do you know?" attach to the right thread.
+    public string SpeakerName { get; set; } = string.Empty;
+
     public string Text { get; set; } = string.Empty;
     public long T { get; set; }
 }
