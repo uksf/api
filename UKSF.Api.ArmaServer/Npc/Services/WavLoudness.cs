@@ -61,6 +61,21 @@ public static class WavLoudness
         return output;
     }
 
+    /// Length of the audio in milliseconds, or 0 when the payload cannot be read.
+    public static long DurationMs(byte[] wav)
+    {
+        var start = DataOffset(wav);
+        if (start < 28) return 0;
+
+        var sampleRate = BitConverter.ToInt32(wav, 24);
+        var channels = BitConverter.ToInt16(wav, 22);
+        var bitsPerSample = BitConverter.ToInt16(wav, 34);
+        if (sampleRate <= 0 || channels <= 0 || bitsPerSample <= 0) return 0;
+
+        var bytesPerSecond = (double)sampleRate * channels * (bitsPerSample / 8);
+        return (long)((wav.Length - start) / bytesPerSecond * 1000);
+    }
+
     /// Byte offset of the `data` chunk payload, or -1 when this is not a WAV we can read.
     private static int DataOffset(byte[] wav)
     {

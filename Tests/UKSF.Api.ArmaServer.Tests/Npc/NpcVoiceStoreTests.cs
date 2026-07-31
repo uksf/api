@@ -31,15 +31,22 @@ public class NpcVoiceStoreTests : IDisposable
     public async Task Save_then_read_round_trips_and_returns_relative_path()
     {
         var bytes = new byte[] { 1, 2, 3, 4 };
-        var relativePath = await _sut.SaveAsync("smuggler", bytes);
-        relativePath.Should().Be("smuggler.wav");
+        var relativePath = await _sut.SaveBaseAsync("smuggler", bytes);
+        relativePath.Should().Be("smuggler/ref.wav");
         (await _sut.ReadAsync(relativePath)).Should().Equal(bytes);
+    }
+
+    [Fact]
+    public async Task Variants_and_fillers_land_in_the_voice_folder()
+    {
+        (await _sut.SaveVariantAsync("smuggler", "angry", new byte[] { 1 })).Should().Be("smuggler/angry.wav");
+        (await _sut.SaveFillerAsync("smuggler", "Umm", new byte[] { 2 })).Should().Be("smuggler/fillers/Umm.wav");
     }
 
     [Fact]
     public async Task Delete_removes_the_master_file()
     {
-        var relativePath = await _sut.SaveAsync("smuggler", new byte[] { 9 });
+        var relativePath = await _sut.SaveBaseAsync("smuggler", new byte[] { 9 });
         _sut.Delete(relativePath);
         (await _sut.ReadAsync(relativePath)).Should().BeNull();
     }

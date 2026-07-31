@@ -26,12 +26,33 @@ public partial class NpcBrokerServiceTests
     private readonly Mock<INpcAudioStore> _audioStore = new();
     private readonly Mock<IVariablesService> _variablesService = new();
     private readonly Mock<INpcVoicesContext> _voicesContext = new();
+    private readonly Mock<INpcVoiceStore> _voiceStore = new();
     private readonly Mock<IUksfLogger> _logger = new();
     private readonly NpcBrokerService _sut;
 
-    // Mirrors the broker's filler set; asserting against it keeps the tests honest when
-    // the set grows without pinning them to a count.
+    // Mirrors the filler set; asserting against it keeps the tests honest when the set
+    // grows without pinning them to a count.
     private static readonly IReadOnlyList<string> FillerIds = ["s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "l0", "l1", "l2", "l3", "l4"];
+
+    private static byte[] MakeWav()
+    {
+        var body = new byte[96];
+        var wav = new List<byte>();
+        wav.AddRange("RIFF"u8.ToArray());
+        wav.AddRange(BitConverter.GetBytes(36 + body.Length));
+        wav.AddRange("WAVEfmt "u8.ToArray());
+        wav.AddRange(BitConverter.GetBytes(16));
+        wav.AddRange(BitConverter.GetBytes((short)1));
+        wav.AddRange(BitConverter.GetBytes((short)1));
+        wav.AddRange(BitConverter.GetBytes(24000));
+        wav.AddRange(BitConverter.GetBytes(48000));
+        wav.AddRange(BitConverter.GetBytes((short)2));
+        wav.AddRange(BitConverter.GetBytes((short)16));
+        wav.AddRange("data"u8.ToArray());
+        wav.AddRange(BitConverter.GetBytes(body.Length));
+        wav.AddRange(body);
+        return wav.ToArray();
+    }
 
     public NpcBrokerServiceTests()
     {
@@ -67,6 +88,7 @@ public partial class NpcBrokerServiceTests
                     );
 
         _clacks.Setup(x => x.WarmAsync(It.IsAny<IReadOnlyCollection<string>>(), It.IsAny<int>())).ReturnsAsync(true);
+        _voiceStore.Setup(x => x.ReadAsync(It.IsAny<string>())).ReturnsAsync(MakeWav());
 
         _sut = new NpcBrokerService(
             _sessionsContext.Object,
@@ -75,6 +97,7 @@ public partial class NpcBrokerServiceTests
             _clacks.Object,
             _commandSender.Object,
             _audioStore.Object,
+            _voiceStore.Object,
             _voicesContext.Object,
             _variablesService.Object,
             _logger.Object

@@ -77,6 +77,33 @@ public class NpcMoodGenWorker(INpcVoiceJobsContext jobs, INpcVoicesContext voice
                 task.Error = null;
                 await jobs.Replace(job);
             }
+
+            await RenderMissingFillersAsync(baseDoc);
+        }
+    }
+
+    /// Fillers are voice assets rendered by the same emotion engine, so they belong in this
+    /// offline pass, never at mission time: the clone engine voices a bare interjection as
+    /// near-silence, and the heavy engine must not spin up while a game holds the GPU.
+    private async Task RenderMissingFillersAsync(DomainNpcVoice baseDoc)
+    {
+        var baseBytes = await store.ReadAsync(baseDoc.FilePath);
+        var baseRms = baseBytes is null ? 0 : WavLoudness.Rms(baseBytes);
+        foreach (var (fillerId, text) in NpcFillers.Table)
+        {
+            var path = NpcFillers.RelativePath(baseDoc.VoiceId, fillerId);
+            if (store.Exists(path)) continue;
+
+            var result = await clacks.EmoteAsync(baseDoc.VoiceId, text, NpcFillers.EmoText, NpcFillers.EmoAlpha);
+            if (result is null || result.Status != EmoteStatus.Ok)
+            {
+                logger.LogWarning($"filler '{fillerId}' for voice '{baseDoc.VoiceId}' not rendered ({result?.Status.ToString() ?? "null"}) — retry next drain");
+                return;
+            }
+
+            var wavBytes = baseRms > 0 ? WavLoudness.MatchRms(result.WavBytes, baseRms) : result.WavBytes;
+            await store.SaveFillerAsync(baseDoc.VoiceId, NpcFillers.Slug(text), wavBytes);
+            logger.LogInfo($"rendered filler '{text}' for voice '{baseDoc.VoiceId}'");
         }
     }
 
@@ -95,7 +122,7 @@ public class NpcMoodGenWorker(INpcVoiceJobsContext jobs, INpcVoicesContext voice
         var baseBytes = await store.ReadAsync(baseDoc.FilePath);
         var wavBytes = baseBytes is null ? result.WavBytes : WavLoudness.MatchRms(result.WavBytes, WavLoudness.Rms(baseBytes));
 
-        var filePath = await store.SaveAsync(voiceId, wavBytes);
+        var filePath = await store.SaveVariantAsync(baseDoc.VoiceId, mood, wavBytes);
         var sha = Convert.ToHexString(SHA256.HashData(wavBytes)).ToLowerInvariant();
         await voices.Add(
             new DomainNpcVoice

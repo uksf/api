@@ -18,7 +18,9 @@ namespace UKSF.Api.ArmaServer.Npc.Services;
 /// is on disk and in the clacks voice store. The dev database is shared and is reset from
 /// time to time, and when it went the NPCs fell silent with their audio still sitting on
 /// disk, needing a manual re-upload. Anything present on disk but missing from the
-/// registry is registered again here, so a database reset costs nothing.
+/// registry is registered again here, and a registry entry whose file moved to the
+/// per-voice folder layout is repointed, so a database reset or a layout change costs
+/// nothing.
 public class NpcVoiceReconciler(INpcVoicesContext voicesContext, INpcVoiceStore store, IVariablesService variablesService, IUksfLogger logger) : IHostedService
 {
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -29,15 +31,47 @@ public class NpcVoiceReconciler(INpcVoicesContext voicesContext, INpcVoiceStore 
             if (string.IsNullOrEmpty(root) || !Directory.Exists(root)) return;
 
             var restored = 0;
-            foreach (var file in Directory.GetFiles(root, "*.wav"))
+            var repointed = 0;
+            foreach (var voiceDir in Directory.GetDirectories(root))
             {
                 if (cancellationToken.IsCancellationRequested) return;
 
-                var voiceId = Path.GetFileNameWithoutExtension(file);
-                if (voicesContext.GetSingle(x => x.VoiceId == voiceId) is not null) continue;
+                var voiceId = Path.GetFileName(voiceDir);
+                if (!File.Exists(Path.Combine(voiceDir, "ref.wav"))) continue;
 
-                var bytes = await store.ReadAsync(Path.GetFileName(file));
-                if (bytes is null) continue;
+                restored += await EnsureVoice(voiceId, null, NpcVoiceStore.BasePath(voiceId));
+
+                foreach (var file in Directory.GetFiles(voiceDir, "*.wav"))
+                {
+                    var mood = Path.GetFileNameWithoutExtension(file);
+                    if (mood == "ref" || !MoodScripts.Generated.Contains(mood)) continue;
+
+                    restored += await EnsureVoice($"{voiceId}_{mood}", voiceId, NpcVoiceStore.VariantPath(voiceId, mood));
+                }
+            }
+
+            if (restored > 0 || repointed > 0)
+            {
+                logger.LogInfo($"NPC voice registry: restored {restored} voice(s), repointed {repointed} stale path(s) from disk");
+            }
+
+            return;
+
+            async Task<int> EnsureVoice(string voiceId, string moodOf, string relativePath)
+            {
+                var doc = voicesContext.GetSingle(x => x.VoiceId == voiceId);
+                if (doc is not null)
+                {
+                    if (doc.FilePath == relativePath || store.Exists(doc.FilePath)) return 0;
+
+                    doc.FilePath = relativePath;
+                    await voicesContext.Replace(doc);
+                    repointed++;
+                    return 0;
+                }
+
+                var bytes = await store.ReadAsync(relativePath);
+                if (bytes is null) return 0;
 
                 await voicesContext.Add(
                     new DomainNpcVoice
@@ -45,34 +79,19 @@ public class NpcVoiceReconciler(INpcVoicesContext voicesContext, INpcVoiceStore 
                         VoiceId = voiceId,
                         DisplayName = voiceId,
                         OwnerId = string.Empty, // owner is not recoverable from disk; an admin can still manage it
-                        MoodOf = MoodOf(voiceId),
-                        FilePath = Path.GetFileName(file),
+                        MoodOf = moodOf,
+                        FilePath = relativePath,
                         Sha256 = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant(),
-                        DurationMs = 0
+                        DurationMs = WavLoudness.DurationMs(bytes)
                     }
                 );
-                restored++;
-            }
-
-            if (restored > 0)
-            {
-                logger.LogInfo($"NPC voice registry: restored {restored} voice(s) from disk");
+                return 1;
             }
         }
         catch (Exception exception)
         {
             logger.LogError("Failed to reconcile NPC voices from disk", exception);
         }
-    }
-
-    /// A mood variant is named {base}_{mood}, and its base must already be on disk —
-    /// otherwise the underscore belongs to the voice's own name.
-    private string MoodOf(string voiceId)
-    {
-        var mood = MoodScripts.Generated.FirstOrDefault(m => m != MoodScripts.Neutral && voiceId.EndsWith($"_{m}", StringComparison.Ordinal));
-        if (mood is null && voiceId.EndsWith($"_{MoodScripts.Neutral}", StringComparison.Ordinal)) mood = MoodScripts.Neutral;
-
-        return mood is null ? null : voiceId[..^(mood.Length + 1)];
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;

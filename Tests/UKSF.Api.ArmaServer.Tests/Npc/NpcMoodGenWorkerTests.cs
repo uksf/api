@@ -26,7 +26,8 @@ public class NpcMoodGenWorkerTests
                            : null
               );
         var store = new Mock<INpcVoiceStore>();
-        store.Setup(x => x.SaveAsync(It.IsAny<string>(), It.IsAny<byte[]>())).ReturnsAsync((string id, byte[] _) => $"{id}.wav");
+        store.Setup(x => x.SaveVariantAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<byte[]>()))
+             .ReturnsAsync((string id, string mood, byte[] _) => NpcVoiceStore.VariantPath(id, mood));
         var clacks = new Mock<IClacksClient>();
         var worker = new NpcMoodGenWorker(jobs.Object, voices.Object, store.Object, clacks.Object, new Mock<IUksfLogger>().Object);
         return (worker, jobs, voices, store, clacks);
@@ -51,7 +52,7 @@ public class NpcMoodGenWorkerTests
         await worker.DrainOnceAsync();
 
         job.Moods.Should().OnlyContain(m => m.Status == NpcMoodStatus.Ready);
-        store.Verify(x => x.SaveAsync("smuggler_angry", It.IsAny<byte[]>()), Times.Once);
+        store.Verify(x => x.SaveVariantAsync("smuggler", "angry", It.IsAny<byte[]>()), Times.Once);
         voices.Verify(x => x.Add(It.Is<DomainNpcVoice>(v => v.VoiceId == "smuggler_angry" && v.MoodOf == "smuggler")), Times.Once);
         clacks.Verify(x => x.PutVoiceAsync("smuggler_angry", It.IsAny<byte[]>()), Times.Once);
         jobs.Verify(x => x.Replace(It.IsAny<DomainNpcVoiceJob>()), Times.AtLeastOnce);
@@ -68,7 +69,7 @@ public class NpcMoodGenWorkerTests
         await worker.DrainOnceAsync();
 
         job.Moods.Should().OnlyContain(m => m.Status == NpcMoodStatus.Pending);
-        store.Verify(x => x.SaveAsync(It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
+        store.Verify(x => x.SaveVariantAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
     }
 
     [Fact]

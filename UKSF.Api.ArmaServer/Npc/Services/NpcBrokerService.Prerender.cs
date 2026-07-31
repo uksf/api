@@ -12,6 +12,8 @@ public partial class NpcBrokerService
 {
     private async Task PrerenderClipsAsync(int apiPort, string npcId, string sessionId, string voiceId, string mode, NpcScripted scripted)
     {
+        await PushFillersAsync(apiPort, npcId, voiceId);
+
         var items = new List<PrerenderItem>();
         if (mode == "scripted")
         {
@@ -23,14 +25,11 @@ public partial class NpcBrokerService
             items.Add(new PrerenderItem { Id = DeflectionId, Text = scripted.Deflection });
         }
 
-        foreach (var (fillerId, fillerText) in Fillers)
-        {
-            items.Add(new PrerenderItem { Id = fillerId, Text = fillerText });
-        }
+        if (items.Count == 0) return; // dynamic mode prerenders nothing
 
         // Prerendered clips are neutral delivery, so they use the neutral variant exactly as a
-        // dynamic neutral turn does. Cutting them from the raw seed would leave the filler and
-        // the scripted lines as the only audio a player hears in a different voice.
+        // dynamic neutral turn does. Cutting them from the raw seed would leave the scripted
+        // lines as the only audio a player hears in a different voice.
         var neutralVariant = $"{voiceId}_{MoodScripts.Neutral}";
         var prerenderVoiceId = voicesContext.GetSingle(x => x.VoiceId == neutralVariant) is not null ? neutralVariant : voiceId;
 
@@ -75,17 +74,23 @@ public partial class NpcBrokerService
                 await clipsContext.Add(clip);
             }
         }
+    }
 
-        foreach (var (fillerId, _) in Fillers)
+    /// Push the pre-rendered filler clips for this voice. Fillers are voice assets rendered
+    /// offline by the mood worker; registration only reads and forwards what is on disk.
+    private async Task PushFillersAsync(int apiPort, string npcId, string voiceId)
+    {
+        foreach (var (fillerId, _) in NpcFillers.Table)
         {
-            var fillerClip = result.Items.Find(i => i.Id == fillerId);
-            if (fillerClip is null)
+            var bytes = await voiceStore.ReadAsync(NpcFillers.RelativePath(voiceId, fillerId));
+            if (bytes is null)
             {
-                logger.LogWarning($"NPC prerender missing filler '{fillerId}' for voiceId '{prerenderVoiceId}'");
+                logger.LogWarning($"filler '{fillerId}' missing for voice '{voiceId}' — run generate-moods to render it");
                 continue;
             }
 
-            foreach (var cmd in NpcAudioEnvelopeBuilder.BuildFiller(npcId, voiceId, fillerId, fillerClip.AudioBase64, fillerClip.DurationMs))
+            var base64 = Convert.ToBase64String(bytes);
+            foreach (var cmd in NpcAudioEnvelopeBuilder.BuildFiller(npcId, voiceId, fillerId, base64, WavLoudness.DurationMs(bytes)))
             {
                 await commandSender.SendCommandAsync(apiPort, cmd);
             }

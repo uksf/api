@@ -107,7 +107,7 @@ public partial class ClacksClient(IHttpClientFactory httpClientFactory, IVariabl
                     model = ClacksCandidates.NpcChatModel,
                     effort = ClacksCandidates.NpcChatEffort,
                     fallbacks = ClacksCandidates.NpcChatFallbacks,
-                    service_tier = "fast", // priority processing: flat on the codex path, but the intended lever for turn latency
+                    // No service_tier: "fast" hangs the codex path (70s+ stall vs 1s without).
                     messages = new[] { new { role = "system", content = system }, new { role = "user", content = user } },
                     json,
                     max_tokens = maxTokens,
