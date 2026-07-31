@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -8,6 +9,7 @@ using UKSF.Api.ArmaServer.Controllers;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core;
+using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Services;
 using Xunit;
 
@@ -78,6 +80,73 @@ public class GameServersControllerTests
             Name = "Test",
             Status = new GameServerStatus { Running = true },
             ProcessId = 1234
+        };
+        _mockGameServersService.Setup(x => x.GetServer("s1")).Returns(gameServer);
+
+        await _sut.KillServer("s1");
+
+        _mockProcessManager.Verify(x => x.KillServerAsync(gameServer), Times.Once);
+    }
+
+    [Fact]
+    public async Task StopServer_WhenAlreadyStopping_ThrowsAndDoesNotStopAgain()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "s1",
+            Name = "Test",
+            Status = new GameServerStatus
+            {
+                Running = true,
+                StopPhase = StopPhase.Saving,
+                StopPhaseEnteredAt = DateTime.UtcNow
+            }
+        };
+        _mockGameServersService.Setup(x => x.GetServer("s1")).Returns(gameServer);
+
+        var act = () => _sut.StopServer("s1");
+
+        await act.Should().ThrowAsync<BadRequestException>();
+        _mockProcessManager.Verify(x => x.StopServerAsync(It.IsAny<DomainGameServer>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task KillServer_WhileStoppingNormally_ThrowsAndDoesNotKill()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "s1",
+            Name = "Test",
+            ProcessId = 1234,
+            Status = new GameServerStatus
+            {
+                StopPhase = StopPhase.Stopping,
+                StopPhaseEnteredAt = DateTime.UtcNow,
+                KillAllowedAt = DateTime.UtcNow.AddSeconds(20)
+            }
+        };
+        _mockGameServersService.Setup(x => x.GetServer("s1")).Returns(gameServer);
+
+        var act = () => _sut.KillServer("s1");
+
+        await act.Should().ThrowAsync<BadRequestException>();
+        _mockProcessManager.Verify(x => x.KillServerAsync(It.IsAny<DomainGameServer>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task KillServer_WhenStopExceedsNormalTime_Kills()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "s1",
+            Name = "Test",
+            ProcessId = 1234,
+            Status = new GameServerStatus
+            {
+                StopPhase = StopPhase.Stopping,
+                StopPhaseEnteredAt = DateTime.UtcNow.AddSeconds(-30),
+                KillAllowedAt = DateTime.UtcNow.AddSeconds(-10)
+            }
         };
         _mockGameServersService.Setup(x => x.GetServer("s1")).Returns(gameServer);
 

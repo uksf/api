@@ -102,6 +102,11 @@ public class GameServersController(
             throw new BadRequestException("Server is not running. This shouldn't happen so please contact an admin");
         }
 
+        if (gameServer.Status.StopPhase != StopPhase.None)
+        {
+            throw new BadRequestException("Server is already stopping. A second stop would interrupt the shutdown in progress");
+        }
+
         logger.LogAudit($"Game server stopped '{gameServer.Name}'");
         await processManager.StopServerAsync(gameServer);
     }
@@ -114,6 +119,11 @@ public class GameServersController(
         if (!gameServer.Status.Launching && !gameServer.Status.Running && gameServer.Status.StopPhase == StopPhase.None)
         {
             throw new BadRequestException("Server is not running. This shouldn't happen so please contact an admin");
+        }
+
+        if (gameServer.Status.StopPhase != StopPhase.None && DateTime.UtcNow < gameServer.Status.KillAllowedAt)
+        {
+            throw new BadRequestException("Server is stopping normally. Kill becomes available if the shutdown takes longer than expected");
         }
 
         logger.LogAudit($"Game server killed '{gameServer.Name}'");

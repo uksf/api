@@ -73,6 +73,7 @@ public class GameServerStatus
     public StopPhase StopPhase { get; set; }
     public DateTime? StopPhaseEnteredAt { get; set; }
     public DateTime? StopRequestedAt { get; set; }
+    public DateTime? KillAllowedAt { get; set; }
     public float Uptime { get; set; }
     public int EntityCount { get; set; }
     public int AiCount { get; set; }
