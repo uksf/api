@@ -135,20 +135,26 @@ public partial class NpcBrokerService(
         }
 
         var parsedTurns = new List<NpcTurnDto>();
+        var learned = new List<(string SpeakerId, string OldDisplay, string NewName)>();
         foreach (var rawTurn in rawTurns)
         {
             var turnDict = ToDict(rawTurn);
             var speakerId = ToSafeString(turnDict.GetValueOrDefault("speakerId"));
-            var speakerName = ToSafeString(turnDict.GetValueOrDefault("speakerName"));
             var text = NpcTextSanitiser.Sanitise(ToSafeString(turnDict.GetValueOrDefault("text")));
             if (string.IsNullOrEmpty(text)) continue;
+
+            var learnedName = NpcPlayerRoster.LearnName(sessionId, speakerId, text);
+            if (learnedName is not null)
+            {
+                learned.Add((speakerId, learnedName.Value.OldDisplay, learnedName.Value.NewName));
+            }
 
             var t = (long)ToDouble(turnDict.GetValueOrDefault("t") ?? 0L);
             parsedTurns.Add(
                 new NpcTurnDto
                 {
                     SpeakerId = speakerId,
-                    SpeakerName = speakerName,
+                    SpeakerName = NpcPlayerRoster.DisplayName(sessionId, speakerId),
                     Text = text,
                     T = t
                 }
@@ -156,6 +162,15 @@ public partial class NpcBrokerService(
         }
 
         if (parsedTurns.Count == 0) return;
+
+        // An introduction rewrites the whole transcript: the speaker's old label (or bare
+        // UID) becomes their name everywhere it already appeared, in every session, so no
+        // history ever shows one person as two.
+        foreach (var (speakerId, oldDisplay, newName) in learned)
+        {
+            await RewriteSpeakerAsync(sessionId, speakerId, oldDisplay, newName);
+            logger.LogInfo($"npc roster: '{oldDisplay}' is now '{newName}'");
+        }
 
         // Deconflict before any brain call. The LATEST utterance carries the address
         // intent: a room batches everything said in the debounce window, so classifying
@@ -173,6 +188,7 @@ public partial class NpcBrokerService(
             return;
         }
 
+        NormaliseSpeakers(sessionId, session);
         var scripted = session.Mode == "scripted";
         var request = new RespondRequest
         {
@@ -274,5 +290,6 @@ public partial class NpcBrokerService(
 
         await sessionsContext.DeleteMany(x => x.SessionId == sessionId);
         await clipsContext.DeleteMany(x => x.SessionId == sessionId);
+        NpcPlayerRoster.Reset(sessionId);
     }
 }
