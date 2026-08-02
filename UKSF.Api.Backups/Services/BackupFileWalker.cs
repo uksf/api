@@ -69,7 +69,7 @@ public class BackupFileWalker(IFileSystemProvider fileSystemProvider) : IBackupF
 
             foreach (var file in Read(directory, fileSystemProvider.GetFiles, result))
             {
-                if (IsExcluded(entry, file))
+                if (IsExcluded(entry, file) || !IsIncluded(entry, file))
                 {
                     continue;
                 }
@@ -94,9 +94,15 @@ public class BackupFileWalker(IFileSystemProvider fileSystemProvider) : IBackupF
         }
     }
 
+    /// <summary>An exclude is either a path inside the selection, or a bare name pattern that applies at any depth.</summary>
     private static bool IsExcluded(DomainBackupEntry entry, string path)
     {
-        return entry.Excludes.Any(x => BackupPaths.Contains(x, path));
+        return entry.Excludes.Any(x => BackupGlob.IsGlob(x) && !BackupGlob.HasSeparator(x) ? BackupGlob.MatchesName(x, path) : BackupPaths.Contains(x, path));
+    }
+
+    private static bool IsIncluded(DomainBackupEntry entry, string path)
+    {
+        return entry.IncludePatterns.Count == 0 || entry.IncludePatterns.Any(x => BackupGlob.MatchesName(x, path));
     }
 
     private void Add(DomainBackupEntry entry, string path, BackupWalkResult result, HashSet<string> seen)

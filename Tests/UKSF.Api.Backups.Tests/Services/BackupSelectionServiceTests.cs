@@ -168,6 +168,66 @@ public class BackupSelectionServiceTests
     }
 
     [Fact]
+    public async Task Patterns_are_trimmed_and_deduplicated()
+    {
+        var result = await _subject.AddEntry(
+            new DomainBackupEntry
+            {
+                Path = @"C:\Server\Arma\Profiles",
+                EntryType = BackupEntryType.Folder,
+                IncludePatterns = [" *.Arma3Profile ", "*.ARMA3PROFILE", "*.vars.*", "  "]
+            }
+        );
+
+        result.IncludePatterns.Should().BeEquivalentTo(["*.Arma3Profile", "*.vars.*"]);
+    }
+
+    [Fact]
+    public async Task A_pattern_containing_a_path_is_rejected()
+    {
+        var act = () => _subject.AddEntry(
+            new DomainBackupEntry
+            {
+                Path = @"C:\Server\Arma\Profiles",
+                EntryType = BackupEntryType.Folder,
+                IncludePatterns = [@"Users\*.Arma3Profile"]
+            }
+        );
+
+        (await act.Should().ThrowAsync<UksfException>()).Which.Message.Should().Contain("cannot contain a path");
+    }
+
+    [Fact]
+    public async Task Patterns_on_a_file_entry_are_rejected()
+    {
+        var act = () => _subject.AddEntry(
+            new DomainBackupEntry
+            {
+                Path = @"C:\Server\Teamspeak\deets.txt",
+                EntryType = BackupEntryType.File,
+                IncludePatterns = ["*.txt"]
+            }
+        );
+
+        (await act.Should().ThrowAsync<UksfException>()).Which.Message.Should().Contain("folder entry");
+    }
+
+    [Fact]
+    public async Task A_name_pattern_exclude_is_kept_as_typed_and_not_treated_as_a_path()
+    {
+        var result = await _subject.AddEntry(
+            new DomainBackupEntry
+            {
+                Path = @"C:\Server\Arma\Profiles",
+                EntryType = BackupEntryType.Folder,
+                Excludes = ["DevRun_*"]
+            }
+        );
+
+        result.Excludes.Should().ContainSingle().Which.Should().Be("DevRun_*");
+    }
+
+    [Fact]
     public async Task Excludes_on_a_file_entry_are_rejected()
     {
         var act = () => _subject.AddEntry(
