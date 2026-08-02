@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using FluentAssertions;
 using Moq;
@@ -64,6 +65,23 @@ public class FileTreeServiceTests
         _mockFileSystemProvider.Setup(x => x.GetFiles(@"C:\Server")).Throws<UnauthorizedAccessException>();
 
         _subject.GetChildren(@"C:\Server").Should().BeEmpty();
+    }
+
+    [Fact]
+    public void A_broken_junction_among_the_children_does_not_take_out_the_listing()
+    {
+        _mockFileSystemProvider.Setup(x => x.DirectoryExists(@"C:\Server\Arma\Environments\Release")).Returns(true);
+        _mockFileSystemProvider.Setup(x => x.GetDirectories(@"C:\Server\Arma\Environments\Release"))
+                               .Returns([@"C:\Server\Arma\Environments\Release\Contact", @"C:\Server\Arma\Environments\Release\Keys"]);
+        _mockFileSystemProvider.Setup(x => x.GetDirectories(@"C:\Server\Arma\Environments\Release\Contact"))
+                               .Throws(new DirectoryNotFoundException(@"Could not find a part of the path 'C:\Server\Arma\Environments\Release\Contact'."));
+        _mockFileSystemProvider.Setup(x => x.GetFiles(@"C:\Server\Arma\Environments\Release\Contact"))
+                               .Throws(new DirectoryNotFoundException(@"Could not find a part of the path 'C:\Server\Arma\Environments\Release\Contact'."));
+
+        var result = _subject.GetChildren(@"C:\Server\Arma\Environments\Release").ToList();
+
+        result.Select(x => x.Name).Should().ContainInOrder("Contact", "Keys");
+        result.Single(x => x.Name == "Contact").HasChildren.Should().BeFalse();
     }
 
     [Fact]

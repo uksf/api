@@ -48,7 +48,7 @@ public class BackupsController(
     [HttpPost("run")]
     public Task<DomainBackupRun> RunNow()
     {
-        return backupRunner.Run();
+        return backupRunner.Start();
     }
 
     [HttpGet("tree")]

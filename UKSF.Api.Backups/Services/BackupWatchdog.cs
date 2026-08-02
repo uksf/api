@@ -9,6 +9,7 @@ public interface IBackupWatchdog
     Task<DomainBackupRun> LastSuccess();
     Task CheckToday();
     Task CheckOnStartup();
+    Task<int> ResolveInterrupted();
 }
 
 /// <summary>
@@ -22,6 +23,25 @@ public class BackupWatchdog(IBackupRunsContext backupRunsContext, IBackupAlertSe
     {
         var last = backupRunsContext.Get(x => x.State == BackupRunState.Success).MaxBy(x => x.Started);
         return Task.FromResult(last);
+    }
+
+    /// <summary>
+    ///     A run only leaves Running when it finishes, so anything still Running at startup died with the last process.
+    ///     Left alone it would read as in-progress forever and hide the failure.
+    /// </summary>
+    public async Task<int> ResolveInterrupted()
+    {
+        var interrupted = backupRunsContext.Get(x => x.State == BackupRunState.Running).ToList();
+
+        foreach (var run in interrupted)
+        {
+            run.State = BackupRunState.Failed;
+            run.Finished = clock.UtcNow();
+            run.Error = "Interrupted - the API stopped while the backup was running";
+            await backupRunsContext.Replace(run);
+        }
+
+        return interrupted.Count;
     }
 
     /// <summary>Runs after the scheduled backup hour: no success today means the run failed, was skipped, or never fired.</summary>

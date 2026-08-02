@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
@@ -49,6 +50,35 @@ public class BackupRunnerTests
         sequence.Should().ContainInOrder("dump", "archive", "encrypt", "prune-local", "ensure-space", "upload", "prune-remote");
         run.State.Should().Be(BackupRunState.Success);
         run.DriveFileId.Should().Be("drive-id");
+    }
+
+    [Fact]
+    public async Task Start_returns_the_running_record_without_waiting_for_the_backup()
+    {
+        var archiveStarted = new TaskCompletionSource();
+        var release = new TaskCompletionSource();
+        _harness.MockArchiveService.Setup(x => x.WriteArchive(
+                                              It.IsAny<IReadOnlyList<DomainBackupEntry>>(),
+                                              It.IsAny<Stream>(),
+                                              It.IsAny<IReadOnlyList<BackupWalkFile>>(),
+                                              It.IsAny<CancellationToken>()
+                                          )
+                )
+                .Returns(async () =>
+                    {
+                        archiveStarted.TrySetResult();
+                        await release.Task;
+                        return new BackupManifest();
+                    }
+                );
+
+        var run = await _harness.Subject.Start();
+
+        run.State.Should().Be(BackupRunState.Running);
+        run.Finished.Should().BeNull();
+
+        await archiveStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        release.SetResult();
     }
 
     [Fact]

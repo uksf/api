@@ -22,6 +22,30 @@ public class BackupArchiveService(IFileSystemProvider fileSystemProvider, IBacku
 {
     private const string ManifestName = "manifest.json";
 
+    /// <summary>Deflating these again costs hours and saves nothing - OCAP alone is gigabytes of gz and protobuf.</summary>
+    private static readonly HashSet<string> AlreadyCompressed = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".gz",
+        ".zip",
+        ".7z",
+        ".rar",
+        ".bz2",
+        ".xz",
+        ".pbo",
+        ".pbd",
+        ".pb",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".webp",
+        ".mp4",
+        ".mkv",
+        ".webm",
+        ".mp3",
+        ".ogg",
+        ".wav"
+    };
+
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
     public async Task<BackupManifest> WriteArchive(
@@ -80,7 +104,7 @@ public class BackupArchiveService(IFileSystemProvider fileSystemProvider, IBacku
         {
             var size = fileSystemProvider.GetFileSize(file.SourcePath);
 
-            var archiveEntry = archive.CreateEntry(file.EntryName, CompressionLevel.Optimal);
+            var archiveEntry = archive.CreateEntry(file.EntryName, CompressionFor(file.EntryName));
             archiveEntry.LastWriteTime = fileSystemProvider.GetLastWriteTimeUtc(file.SourcePath);
 
             await using (var source = fileSystemProvider.OpenRead(file.SourcePath))
@@ -109,6 +133,11 @@ public class BackupArchiveService(IFileSystemProvider fileSystemProvider, IBacku
             manifest.Skips.Add(new BackupSkip { Path = file.SourcePath, Reason = exception.Message });
             return false;
         }
+    }
+
+    private static CompressionLevel CompressionFor(string entryName)
+    {
+        return AlreadyCompressed.Contains(Path.GetExtension(entryName)) ? CompressionLevel.NoCompression : CompressionLevel.Optimal;
     }
 
     private static async Task WriteManifest(ZipArchive archive, BackupManifest manifest, CancellationToken cancellationToken)

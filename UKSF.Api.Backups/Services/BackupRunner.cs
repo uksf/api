@@ -10,6 +10,9 @@ namespace UKSF.Api.Backups.Services;
 public interface IBackupRunner
 {
     Task<DomainBackupRun> Run(CancellationToken cancellationToken = default);
+
+    /// <summary>Records the run and returns at once, so a manual trigger does not sit on an HTTP request for an hour.</summary>
+    Task<DomainBackupRun> Start();
 }
 
 public class BackupRunner(
@@ -29,11 +32,41 @@ public class BackupRunner(
 {
     private const string DefaultBackupPath = @"E:\Backups";
 
+    public async Task<DomainBackupRun> Start()
+    {
+        var run = await CreateRun();
+
+        _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Execute(run, CancellationToken.None);
+                }
+                catch (Exception exception)
+                {
+                    logger.LogWarning($"Backup {run.Id} ended: {exception.Message}");
+                }
+            }
+        );
+
+        return run;
+    }
+
     public async Task<DomainBackupRun> Run(CancellationToken cancellationToken = default)
+    {
+        var run = await CreateRun();
+        return await Execute(run, cancellationToken);
+    }
+
+    private async Task<DomainBackupRun> CreateRun()
     {
         var run = new DomainBackupRun { Started = clock.UtcNow(), State = BackupRunState.Running };
         await backupRunsContext.Add(run);
+        return run;
+    }
 
+    private async Task<DomainBackupRun> Execute(DomainBackupRun run, CancellationToken cancellationToken)
+    {
         var backupPath = variablesService.GetVariable("BACKUP_PATH").AsStringWithDefault(DefaultBackupPath);
         var stagingPath = Path.Combine(backupPath, $"staging-{run.Id}");
 

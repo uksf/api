@@ -41,13 +41,15 @@ public class FileTreeService(IFileSystemProvider fileSystemProvider) : IFileTree
         return directories.Concat(files).ToList();
     }
 
+    // A broken junction throws on enumeration - C:\Server\Arma\Environments\Release holds several - so an
+    // unreadable child must not take out the whole listing.
     private static IEnumerable<string> Read(string path, Func<string, IEnumerable<string>> read)
     {
         try
         {
             return read(path).OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList();
         }
-        catch (UnauthorizedAccessException)
+        catch (Exception exception) when (exception is UnauthorizedAccessException or IOException)
         {
             return [];
         }
@@ -71,7 +73,7 @@ public class FileTreeService(IFileSystemProvider fileSystemProvider) : IFileTree
         {
             return fileSystemProvider.GetDirectories(path).Any() || fileSystemProvider.GetFiles(path).Any();
         }
-        catch (UnauthorizedAccessException)
+        catch (Exception exception) when (exception is UnauthorizedAccessException or IOException)
         {
             return false;
         }

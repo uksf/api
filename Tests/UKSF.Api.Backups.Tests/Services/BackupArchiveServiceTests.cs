@@ -186,6 +186,45 @@ public class BackupArchiveServiceTests
     }
 
     [Fact]
+    public async Task Already_compressed_files_are_stored_rather_than_deflated_again()
+    {
+        GivenWalk(
+            new BackupWalkResult
+            {
+                Files =
+                [
+                    new BackupWalkFile
+                    {
+                        SourcePath = @"D:\OCAP\data\op.json.gz",
+                        EntryName = "files/D/OCAP/data/op.json.gz",
+                        SelectionPath = @"D:\OCAP\data"
+                    },
+                    new BackupWalkFile
+                    {
+                        SourcePath = @"C:\Server\Nginx\nginx.conf",
+                        EntryName = "files/C/Server/Nginx/nginx.conf",
+                        SelectionPath = @"C:\Server\Nginx"
+                    }
+                ]
+            }
+        );
+        GivenFile(@"D:\OCAP\data\op.json.gz", new string('a', 4096));
+        GivenFile(@"C:\Server\Nginx\nginx.conf", new string('b', 4096));
+
+        using var output = new MemoryStream();
+        await _subject.WriteArchive([], output);
+
+        output.Position = 0;
+        using var archive = new ZipArchive(output, ZipArchiveMode.Read);
+        var gz = archive.GetEntry("files/D/OCAP/data/op.json.gz");
+        var conf = archive.GetEntry("files/C/Server/Nginx/nginx.conf");
+
+        // stored: compressed size equals the original, deflated: far smaller for repeated bytes
+        gz.CompressedLength.Should().Be(4096);
+        conf.CompressedLength.Should().BeLessThan(200);
+    }
+
+    [Fact]
     public async Task Walk_skips_are_carried_into_the_manifest()
     {
         GivenWalk(new BackupWalkResult { Skips = [new BackupSkip { Path = @"C:\Server\Gone", Reason = "Folder no longer exists" }] });

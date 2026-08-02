@@ -80,6 +80,34 @@ public class BackupWatchdogTests
     }
 
     [Fact]
+    public async Task A_run_left_running_by_a_dead_process_is_marked_failed()
+    {
+        var replaced = new List<DomainBackupRun>();
+        _mockRunsContext.Setup(x => x.Replace(It.IsAny<DomainBackupRun>())).Callback((DomainBackupRun run) => replaced.Add(run)).Returns(Task.CompletedTask);
+        GivenRuns(
+            new DomainBackupRun { Started = Now.AddHours(-3), State = BackupRunState.Running },
+            new DomainBackupRun { Started = Now.AddDays(-1), State = BackupRunState.Success }
+        );
+
+        var resolved = await _subject.ResolveInterrupted();
+
+        resolved.Should().Be(1);
+        replaced.Should().ContainSingle();
+        replaced[0].State.Should().Be(BackupRunState.Failed);
+        replaced[0].Error.Should().Contain("Interrupted");
+        replaced[0].Finished.Should().Be(Now);
+    }
+
+    [Fact]
+    public async Task Nothing_running_means_nothing_to_resolve()
+    {
+        GivenRuns(new DomainBackupRun { Started = Now.AddDays(-1), State = BackupRunState.Success });
+
+        (await _subject.ResolveInterrupted()).Should().Be(0);
+        _mockRunsContext.Verify(x => x.Replace(It.IsAny<DomainBackupRun>()), Times.Never);
+    }
+
+    [Fact]
     public async Task A_recent_success_passes_the_startup_check()
     {
         GivenRuns(new DomainBackupRun { Started = Now.AddHours(-25), State = BackupRunState.Success });
