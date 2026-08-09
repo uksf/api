@@ -56,7 +56,7 @@ public class ClacksClientTests
         body.RootElement.GetProperty("model").GetString().Should().Be("luna");
         body.RootElement.GetProperty("effort").GetString().Should().Be("low");
         var fallbacks = body.RootElement.GetProperty("fallbacks").EnumerateArray().Select(e => e.GetString()).ToArray();
-        fallbacks.Should().Equal("qwen3.5-9b", "qwen3.5-9b-npc", "haiku");
+        fallbacks.Should().Equal("qwen3.5-9b", "haiku");
         var messages = body.RootElement.GetProperty("messages").EnumerateArray().ToArray();
         messages[0].GetProperty("content").GetString().Should().Be("SYS");
         messages[1].GetProperty("content").GetString().Should().Be("USR");

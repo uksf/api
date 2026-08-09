@@ -12,7 +12,7 @@ public static class ClacksCandidates
     // reasoning, which buys nothing on a two-sentence NPC line.
     public const string NpcChatEffort = "low";
 
-    public static readonly string[] NpcChatFallbacks = ["qwen3.5-9b", "qwen3.5-9b-npc", "haiku"];
+    public static readonly string[] NpcChatFallbacks = ["qwen3.5-9b", "haiku"];
 
     public const string VoiceModel = "pockettts";
 
