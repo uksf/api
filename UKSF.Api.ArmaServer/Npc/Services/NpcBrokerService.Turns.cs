@@ -33,15 +33,13 @@ public partial class NpcBrokerService
         }
     }
 
-    /// Stream a dynamic line: forward each PCM frame to the game as clacks produces
-    /// it, then close the stream. First audio reaches the player after the brain plus
-    /// roughly the first frame of synthesis, not the whole clip.
-    private async Task StreamDynamicTurn(int apiPort, string npcId, string turnId, RespondResult result)
+    /// Stream a dynamic line. Returns true when at least one TTS frame was emitted (delivery evidence).
+    private async Task<bool> StreamDynamicTurn(int apiPort, string npcId, string turnId, RespondResult result)
     {
         if (string.IsNullOrEmpty(result.Text))
         {
             logger.LogWarning($"npc_turn: dynamic response had no text for npcId '{npcId}'");
-            return;
+            return false;
         }
 
         var voiceId = string.IsNullOrEmpty(result.VoiceId) ? "oracle" : result.VoiceId;
@@ -64,8 +62,8 @@ public partial class NpcBrokerService
             logger.LogError($"npc_turn: dynamic stream failed for turnId '{turnId}'", exception);
         }
 
-        // The client opened a stream on the first frame; always close it so a partial
-        // or failed synthesis never leaves a clip hanging open.
+        // Always close so a partial or failed synthesis never leaves a clip hanging open.
         await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildAudioEnd(npcId, turnId));
+        return seq > 0;
     }
 }

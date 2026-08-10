@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Driver;
 using UKSF.Api.ArmaServer.DataContext;
@@ -18,7 +19,8 @@ public interface INpcBrokerService
     Task HandleMissionEndedAsync(string sessionId);
 }
 
-// Turn-serving helpers (scripted clip + dynamic stream) live in NpcBrokerService.Turns.cs.
+// Turn-serving helpers live in NpcBrokerService.Turns.cs; registration in .Registration.cs;
+// guarded orchestration in .Guarded.cs.
 public partial class NpcBrokerService(
     INpcSessionsContext sessionsContext,
     INpcAudioClipsContext clipsContext,
@@ -34,83 +36,7 @@ public partial class NpcBrokerService(
 {
     private const string DeflectionId = "__deflection__";
     private const int HistoryLimit = 40;
-
-    public async Task HandleRegisterAsync(int apiPort, Dictionary<string, object> data)
-    {
-        if (!variablesService.GetFeatureState("NPC_BROKER")) return;
-
-        var npcId = ToSafeString(data.GetValueOrDefault("npcId"));
-        if (string.IsNullOrEmpty(npcId))
-        {
-            logger.LogWarning("NPC register event received with empty npcId — ignoring.");
-            return;
-        }
-
-        // Warm the NPC chat + voice engines while we build the session below, so the prerender
-        // (and the first turn) hit a loaded model instead of a cold load. Fire-and-forget — a
-        // warm hint must never delay or fail registration (WarmAsync swallows its own errors).
-        _ = clacksClient.WarmAsync(NpcWarmKeeper.WarmRoles, NpcWarmKeeper.LeaseMs);
-
-        var sessionId = ToSafeString(data.GetValueOrDefault("sessionId"));
-        var knowledge = ToSafeString(data.GetValueOrDefault("knowledge"));
-        var voiceId = ToSafeString(data.GetValueOrDefault("voiceId"));
-        var mode = ToSafeString(data.GetValueOrDefault("mode"));
-        if (string.IsNullOrEmpty(mode)) mode = "dynamic";
-
-        var personaDict = ToDict(data.GetValueOrDefault("persona"));
-        var persona = new NpcPersona
-        {
-            Name = ToSafeString(personaDict.GetValueOrDefault("name")),
-            Role = ToSafeString(personaDict.GetValueOrDefault("role")),
-            Language = ToSafeString(personaDict.GetValueOrDefault("language")),
-            Mood = ToSafeString(personaDict.GetValueOrDefault("mood")),
-            AttitudeToPlayers = ToSafeString(personaDict.GetValueOrDefault("attitudeToPlayers"))
-        };
-
-        var scriptedDict = ToDict(data.GetValueOrDefault("scripted"));
-        var linesList = ToList(scriptedDict.GetValueOrDefault("lines"));
-        var scriptedLines = new List<NpcScriptedLine>();
-        foreach (var lineObj in linesList)
-        {
-            var lineDict = ToDict(lineObj);
-            scriptedLines.Add(
-                new NpcScriptedLine
-                {
-                    Id = ToSafeString(lineDict.GetValueOrDefault("id")),
-                    Topic = ToSafeString(lineDict.GetValueOrDefault("topic")),
-                    Line = ToSafeString(lineDict.GetValueOrDefault("line"))
-                }
-            );
-        }
-
-        var scripted = new NpcScripted { Lines = scriptedLines, Deflection = ToSafeString(scriptedDict.GetValueOrDefault("deflection")) };
-
-        var session = new DomainNpcSession
-        {
-            NpcId = npcId,
-            SessionId = sessionId,
-            Persona = persona,
-            Knowledge = knowledge,
-            Mode = mode,
-            Scripted = scripted,
-            VoiceId = voiceId,
-            History = [],
-            CreatedAt = DateTime.UtcNow
-        };
-
-        var existing = sessionsContext.GetSingle(x => x.SessionId == session.SessionId && x.NpcId == session.NpcId);
-        if (existing is not null)
-        {
-            session.Id = existing.Id;
-            await sessionsContext.Replace(session);
-        }
-        else
-        {
-            await sessionsContext.Add(session);
-        }
-
-        await PrerenderClipsAsync(apiPort, npcId, sessionId, voiceId, mode, scripted);
-    }
+    private static readonly SemaphoreSlim GuardedTurnLock = new(1, 1);
 
     public async Task HandleTurnAsync(int apiPort, Dictionary<string, object> data)
     {
@@ -163,20 +89,12 @@ public partial class NpcBrokerService(
 
         if (parsedTurns.Count == 0) return;
 
-        // An introduction rewrites the whole transcript: the speaker's old label (or bare
-        // UID) becomes their name everywhere it already appeared, in every session, so no
-        // history ever shows one person as two.
         foreach (var (speakerId, oldDisplay, newName) in learned)
         {
             await RewriteSpeakerAsync(sessionId, speakerId, oldDisplay, newName);
             logger.LogInfo($"npc roster: '{oldDisplay}' is now '{newName}'");
         }
 
-        // The LATEST utterance carries the address intent: a room batches everything said
-        // in the debounce window, so an older line to someone else must not drown a fresh
-        // line to this NPC.
-        // Absent means a modpack older than the earshot broadcast, which only ever sent to
-        // the NPC being looked at — treat that as addressed rather than silencing it.
         var gazeRaw = ToSafeString(data.GetValueOrDefault("gazeAddressed"));
         var gazeAddressed = gazeRaw.Length == 0 || gazeRaw.ToLowerInvariant() is "true" or "1";
         var decision = DecideAddress(session, sessionId, parsedTurns[^1].Text, gazeAddressed);
@@ -186,7 +104,22 @@ public partial class NpcBrokerService(
             return;
         }
 
+        // Guarded sources fail borderline addressing closed — no classifier, no state change.
+        var isGuarded = string.Equals(session.InteractionProfile, NpcInteractionProfiles.Guarded, StringComparison.OrdinalIgnoreCase);
+        if (isGuarded && decision == AddressDecision.AskTheBrain)
+        {
+            await CancelTurnAsync(apiPort, npcId, "guarded borderline address");
+            return;
+        }
+
         NormaliseSpeakers(sessionId, session);
+
+        if (isGuarded)
+        {
+            await HandleGuardedTurnAsync(apiPort, session, npcId, sessionId, turnId, parsedTurns);
+            return;
+        }
+
         var scripted = session.Mode == "scripted";
         var request = new RespondRequest
         {
@@ -198,7 +131,7 @@ public partial class NpcBrokerService(
             VoiceId = session.VoiceId,
             History = NpcHistoryBudget.Trim(session.History),
             NewTurns = parsedTurns,
-            TextOnly = !scripted, // dynamic turns stream; the brain returns text + mood only
+            TextOnly = !scripted,
             MayNotBeAddressed = decision == AddressDecision.AskTheBrain
         };
 
@@ -210,8 +143,6 @@ public partial class NpcBrokerService(
             return;
         }
 
-        // The brain declined the turn: the address check was borderline and it judged the
-        // words meant for someone else. No audio, no history entry — as if never asked.
         if (string.Equals(result.Text?.Trim(), "[none]", StringComparison.OrdinalIgnoreCase))
         {
             logger.LogInfo($"npc_turn: brain declined turn for '{npcId}' — not addressed");
@@ -228,6 +159,27 @@ public partial class NpcBrokerService(
             await StreamDynamicTurn(apiPort, npcId, turnId, result);
         }
 
+        await CommitConversationHistoryAsync(session, npcId, sessionId, parsedTurns, result.Text, result.Mood);
+    }
+
+    public async Task HandleMissionEndedAsync(string sessionId)
+    {
+        if (string.IsNullOrEmpty(sessionId)) return;
+
+        await sessionsContext.DeleteMany(x => x.SessionId == sessionId);
+        await clipsContext.DeleteMany(x => x.SessionId == sessionId);
+        NpcPlayerRoster.Reset(sessionId);
+    }
+
+    private async Task CommitConversationHistoryAsync(
+        DomainNpcSession session,
+        string npcId,
+        string sessionId,
+        List<NpcTurnDto> parsedTurns,
+        string replyText,
+        string mood
+    )
+    {
         var newEntries = new List<NpcHistoryEntry>();
         foreach (var turn in parsedTurns)
         {
@@ -247,8 +199,8 @@ public partial class NpcBrokerService(
             {
                 Role = "npc",
                 Speaker = string.Empty,
-                Text = result.Text,
-                Mood = result.Mood,
+                Text = replyText,
+                Mood = mood,
                 T = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
             }
         );
@@ -256,9 +208,6 @@ public partial class NpcBrokerService(
         var update = Builders<DomainNpcSession>.Update.PushEach(x => x.History, newEntries, slice: -HistoryLimit);
         await sessionsContext.Update(x => x.NpcId == npcId && x.SessionId == sessionId, update);
 
-        // Nearby NPCs heard this exchange too. Without it, asking one NPC a question and
-        // the other a follow-up leaves the second blind to everything just said next to
-        // him. Written as overheard so the prompt can mark it as ambient, not addressed.
         var overheard = parsedTurns.Select(turn => new NpcHistoryEntry
                                        {
                                            Role = "overheard",
@@ -273,21 +222,12 @@ public partial class NpcBrokerService(
             {
                 Role = "overheard",
                 Speaker = session.Persona?.Name ?? npcId,
-                Text = result.Text,
-                Mood = result.Mood,
+                Text = replyText,
+                Mood = mood,
                 T = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
             }
         );
         var overheardUpdate = Builders<DomainNpcSession>.Update.PushEach(x => x.History, overheard, slice: -HistoryLimit);
         await sessionsContext.Update(x => x.NpcId != npcId && x.SessionId == sessionId, overheardUpdate);
-    }
-
-    public async Task HandleMissionEndedAsync(string sessionId)
-    {
-        if (string.IsNullOrEmpty(sessionId)) return;
-
-        await sessionsContext.DeleteMany(x => x.SessionId == sessionId);
-        await clipsContext.DeleteMany(x => x.SessionId == sessionId);
-        NpcPlayerRoster.Reset(sessionId);
     }
 }

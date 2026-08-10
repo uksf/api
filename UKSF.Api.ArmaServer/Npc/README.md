@@ -33,15 +33,25 @@ This directory contains the C# implementation of the NPC speech broker. Inbound 
   },
   "knowledge": "string",
   "mode": "scripted | dynamic",
+  "interactionProfile": "conversation | guarded",
+  "resetGuarded": false,
   "scripted": {
     "lines": [{ "id": "string", "topic": "string", "line": "string" }],
     "deflection": "string"
+  },
+  "guarded": {
+    "concern": "string",
+    "facts": [
+      { "id": "string", "topic": "string", "text": "speakable canonical sentence" },
+      { "id": "string", "topic": "string", "text": "speakable canonical sentence" },
+      { "id": "string", "topic": "string", "text": "speakable canonical sentence" }
+    ]
   },
   "voiceId": "string"
 }
 ```
 
-`scripted` is present only when `mode = "scripted"`. `apiPort` is NOT in `Data` — it rides the event envelope as `gameServerEvent.ApiPort`.
+`scripted` is present only when `mode = "scripted"`. `interactionProfile` defaults to `conversation` when omitted (legacy missions). `guarded` is required for `interactionProfile = "guarded"` and is rejected with `mode = "scripted"`. Duplicate guarded registration with unchanged content preserves state/history; changed content requires `resetGuarded: true`. Canonical fact text never enters model prompts. `apiPort` is NOT in `Data` — it rides the event envelope as `gameServerEvent.ApiPort`.
 
 ---
 

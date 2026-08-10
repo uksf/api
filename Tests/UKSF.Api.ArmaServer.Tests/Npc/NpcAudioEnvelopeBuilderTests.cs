@@ -48,6 +48,46 @@ public class NpcAudioEnvelopeBuilderTests
         cmds[0].Should().Be("[\"npc_audio\",\"n\",\"t\",0,1,\"\",0]");
     }
 
+    [Fact]
+    public void GuardedState_EscapesQuotes_OmitsFactText_TruncatesFreeText()
+    {
+        var longReason = new string('r', 400);
+        var cmd = NpcAudioEnvelopeBuilder.BuildGuardedState(
+            "npc\"1",
+            "engaged",
+            true,
+            false,
+            ["f1", "f2"],
+            "f2",
+            "afraid",
+            "looks down",
+            longReason,
+            "quoted \"span\"",
+            12,
+            34
+        );
+
+        cmd.Should().StartWith("[\"npc_guarded_state\",");
+        cmd.Should().Contain("npc\"\"1");
+        cmd.Should().Contain("engaged");
+        cmd.Should().Contain("true");
+        cmd.Should().Contain("f1,f2");
+        cmd.Should().Contain("quoted \"\"span\"\"");
+        cmd.Should().NotContain("Trucks have been rolling");
+        cmd.Length.Should().BeLessThan(4096);
+        // free text truncated to 240
+        cmd.Should().NotContain(longReason);
+    }
+
+    [Fact]
+    public void GuardedState_DoesNotDoubleEscapeDisclosedIds()
+    {
+        var cmd = NpcAudioEnvelopeBuilder.BuildGuardedState("npc1", "engaged", false, false, ["f\"1"], null, "neutral", null, null, null, 0, 0);
+        // Quote once → one doubled quote, not quadruple.
+        cmd.Should().Contain("f\"\"1");
+        cmd.Should().NotContain("f\"\"\"\"1");
+    }
+
     // Extracts the base64 payload field from an npc_audio command.
     // Format: ["npc_audio","<npcId>","<turnId>",<index>,<total>,"<payload>",<durationMs>]
     private static string ExtractPayload(string cmd)

@@ -1,0 +1,238 @@
+{
+  "version": 1,
+  "facts": [
+    { "id": "f1", "topic": "strange traffic", "text": "Trucks have been rolling past the farm after dark." },
+    { "id": "f2", "topic": "where they stop", "text": "They stop at the old mill by the river bend." },
+    { "id": "f3", "topic": "when they return", "text": "They come back every third night near midnight." }
+  ],
+  "concern": "retaliation against family and village",
+  "paths": [
+    {
+      "id": "clean-three-step",
+      "steps": [
+        {
+          "classifications": [
+            { "t": 1, "tag": "relevant_question", "topicSlot": 1, "addressesConcern": false, "ambiguous": false, "reason": "asks traffic", "evidence": "trucks" }
+          ],
+          "expectBand": "engaged",
+          "expectDisclosed": ["f1"],
+          "expectDirective": "disclose",
+          "expectPermitted": "f1"
+        },
+        {
+          "classifications": [
+            { "t": 2, "tag": "relevant_question", "topicSlot": 2, "addressesConcern": false, "ambiguous": false, "reason": "asks stop", "evidence": "stop" }
+          ],
+          "expectBand": "cooperative",
+          "expectDisclosed": ["f1", "f2"],
+          "expectDirective": "disclose",
+          "expectPermitted": "f2"
+        },
+        {
+          "classifications": [
+            { "t": 3, "tag": "relevant_question", "topicSlot": 3, "addressesConcern": true, "ambiguous": false, "reason": "asks return and safety", "evidence": "when" }
+          ],
+          "expectBand": "cooperative",
+          "expectDisclosed": ["f1", "f2", "f3"],
+          "expectDirective": "disclose",
+          "expectPermitted": "f3"
+        }
+      ]
+    },
+    {
+      "id": "direct-fact-3",
+      "steps": [
+        {
+          "classifications": [
+            { "t": 1, "tag": "relevant_question", "topicSlot": 3, "addressesConcern": false, "ambiguous": false, "reason": "asks return early", "evidence": "midnight" }
+          ],
+          "expectBand": "engaged",
+          "expectDisclosed": [],
+          "expectDirective": "normal",
+          "expectPermitted": null
+        }
+      ]
+    },
+    {
+      "id": "two-relevant-one-fact",
+      "steps": [
+        {
+          "classifications": [
+            { "t": 1, "tag": "relevant_question", "topicSlot": 1, "addressesConcern": false, "ambiguous": false, "reason": "q1", "evidence": "a" },
+            { "t": 2, "tag": "relevant_question", "topicSlot": 2, "addressesConcern": false, "ambiguous": false, "reason": "q2", "evidence": "b" }
+          ],
+          "expectBand": "engaged",
+          "expectDisclosed": ["f1"],
+          "expectDirective": "disclose",
+          "expectPermitted": "f1"
+        }
+      ]
+    },
+    {
+      "id": "pressure-recover",
+      "steps": [
+        {
+          "classifications": [
+            { "t": 1, "tag": "pressure", "topicSlot": null, "addressesConcern": false, "ambiguous": false, "reason": "push", "evidence": "talk" }
+          ],
+          "expectBand": "closed",
+          "expectDisclosed": [],
+          "expectDirective": "normal",
+          "expectPermitted": null
+        },
+        {
+          "classifications": [
+            { "t": 2, "tag": "rapport", "topicSlot": null, "addressesConcern": false, "ambiguous": false, "reason": "kind", "evidence": "please" }
+          ],
+          "expectBand": "guarded",
+          "expectDisclosed": [],
+          "expectDirective": "normal",
+          "expectPermitted": null
+        },
+        {
+          "classifications": [
+            { "t": 3, "tag": "relevant_question", "topicSlot": 1, "addressesConcern": false, "ambiguous": false, "reason": "q", "evidence": "trucks" }
+          ],
+          "expectBand": "engaged",
+          "expectDisclosed": ["f1"],
+          "expectDirective": "disclose",
+          "expectPermitted": "f1"
+        }
+      ]
+    },
+    {
+      "id": "threat-backoff",
+      "steps": [
+        {
+          "classifications": [
+            { "t": 1, "tag": "threat", "topicSlot": null, "addressesConcern": false, "ambiguous": false, "reason": "family", "evidence": "hurt them" }
+          ],
+          "expectBand": "closed",
+          "expectWarning": true,
+          "expectBurned": false,
+          "expectDisclosed": [],
+          "expectDirective": "warn",
+          "expectPermitted": null
+        },
+        {
+          "classifications": [
+            { "t": 2, "tag": "back_off", "topicSlot": null, "addressesConcern": false, "ambiguous": false, "reason": "sorry", "evidence": "apologise" }
+          ],
+          "expectBand": "closed",
+          "expectWarning": false,
+          "expectBurned": false,
+          "expectDisclosed": [],
+          "expectDirective": "back_off",
+          "expectPermitted": null
+        }
+      ]
+    },
+    {
+      "id": "threat-burn",
+      "steps": [
+        {
+          "classifications": [
+            { "t": 1, "tag": "threat", "topicSlot": null, "addressesConcern": false, "ambiguous": false, "reason": "t1", "evidence": "kill" }
+          ],
+          "expectBand": "closed",
+          "expectWarning": true,
+          "expectBurned": false,
+          "expectDisclosed": [],
+          "expectDirective": "warn",
+          "expectPermitted": null
+        },
+        {
+          "classifications": [
+            { "t": 2, "tag": "threat", "topicSlot": null, "addressesConcern": false, "ambiguous": false, "reason": "t2", "evidence": "again" }
+          ],
+          "expectBand": "closed",
+          "expectWarning": true,
+          "expectBurned": true,
+          "expectDisclosed": [],
+          "expectDirective": "burned",
+          "expectPermitted": null
+        },
+        {
+          "classifications": [
+            { "t": 3, "tag": "relevant_question", "topicSlot": 1, "addressesConcern": false, "ambiguous": false, "reason": "later", "evidence": "trucks" },
+            { "t": 4, "tag": "rapport", "topicSlot": null, "addressesConcern": false, "ambiguous": false, "reason": "nice", "evidence": "friend" }
+          ],
+          "expectBand": "closed",
+          "expectBurned": true,
+          "expectDisclosed": [],
+          "expectDirective": "refuse",
+          "expectPermitted": null
+        }
+      ]
+    },
+    {
+      "id": "threat-backoff-order-in-batch",
+      "steps": [
+        {
+          "classifications": [
+            { "t": 10, "tag": "threat", "topicSlot": null, "addressesConcern": false, "ambiguous": false, "reason": "first", "evidence": "hurt" },
+            { "t": 20, "tag": "back_off", "topicSlot": null, "addressesConcern": false, "ambiguous": false, "reason": "second", "evidence": "sorry" }
+          ],
+          "expectBand": "closed",
+          "expectWarning": false,
+          "expectBurned": false,
+          "expectDisclosed": [],
+          "expectDirective": "back_off",
+          "expectPermitted": null
+        }
+      ]
+    },
+    {
+      "id": "threat-then-question-in-batch",
+      "steps": [
+        {
+          "classifications": [
+            { "t": 1, "tag": "threat", "topicSlot": null, "addressesConcern": false, "ambiguous": false, "reason": "threat first", "evidence": "hurt" },
+            { "t": 2, "tag": "relevant_question", "topicSlot": 1, "addressesConcern": false, "ambiguous": false, "reason": "question second", "evidence": "trucks" }
+          ],
+          "expectBand": "closed",
+          "expectWarning": true,
+          "expectBurned": false,
+          "expectDisclosed": [],
+          "expectDirective": "warn",
+          "expectPermitted": null
+        }
+      ]
+    },
+    {
+      "id": "question-then-threat-in-batch",
+      "steps": [
+        {
+          "classifications": [
+            { "t": 1, "tag": "relevant_question", "topicSlot": 1, "addressesConcern": false, "ambiguous": false, "reason": "question first", "evidence": "trucks" },
+            { "t": 2, "tag": "threat", "topicSlot": null, "addressesConcern": false, "ambiguous": false, "reason": "threat second", "evidence": "hurt" }
+          ],
+          "expectBand": "closed",
+          "expectWarning": true,
+          "expectBurned": false,
+          "expectDisclosed": [],
+          "expectDirective": "warn",
+          "expectPermitted": null
+        }
+      ]
+    },
+    {
+      "id": "ambiguous-no-change",
+      "steps": [
+        {
+          "classifications": [
+            { "t": 1, "tag": "threat", "topicSlot": null, "addressesConcern": false, "ambiguous": true, "reason": "unclear", "evidence": "???" },
+            { "t": 2, "tag": "relevant_question", "topicSlot": 1, "addressesConcern": false, "ambiguous": true, "reason": "garbled", "evidence": "mrrph" },
+            { "t": 3, "tag": "other", "topicSlot": null, "addressesConcern": false, "ambiguous": false, "reason": "noise", "evidence": "hmm" }
+          ],
+          "expectBand": "guarded",
+          "expectWarning": false,
+          "expectBurned": false,
+          "expectDisclosed": [],
+          "expectDirective": "normal",
+          "expectPermitted": null
+        }
+      ]
+    }
+  ]
+}

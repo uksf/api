@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace UKSF.Api.ArmaServer.Npc.Services;
@@ -8,6 +9,7 @@ public static class NpcAudioEnvelopeBuilder
     // Whole command must stay < 64 KB (listener.rs rejects > 65536). 48 KB of base64
     // leaves generous headroom for the SQF wrapper, ids, and any quote-doubling.
     private const int DefaultChunkSize = 49152;
+    private const int GuardedFreeTextMax = 240;
 
     public static List<string> BuildAudio(string npcId, string turnId, string audioBase64, long durationMs, int chunkSize = DefaultChunkSize) =>
         BuildChunked("npc_audio", [Quote(npcId), Quote(turnId)], audioBase64, durationMs, chunkSize);
@@ -29,6 +31,38 @@ public static class NpcAudioEnvelopeBuilder
     /// The turn is dead — dropped as addressed to someone else, or declined by the brain.
     /// The client stops the filler loop instead of padding a silence that will never fill.
     public static string BuildTurnCancel(string npcId) => $"[\"npc_turn_cancel\",{Quote(npcId)}]";
+
+    /// Bounded guarded-state/emote command. No canonical fact text. Free text truncated.
+    public static string BuildGuardedState(
+        string npcId,
+        string cooperationBand,
+        bool pendingWarning,
+        bool burned,
+        IReadOnlyList<string> disclosedFactIds,
+        string eligibleFactId,
+        string mood,
+        string emote,
+        string reason,
+        string evidence,
+        long classifyMs,
+        long replyMs
+    )
+    {
+        // Join raw IDs; Quote escapes once. Do not Escape before Quote.
+        var disclosed = string.Join(",", (disclosedFactIds ?? []).Select(id => id ?? ""));
+        return $"[\"npc_guarded_state\",{Quote(npcId)},{Quote(cooperationBand ?? "")}," +
+               $"{(pendingWarning ? "true" : "false")},{(burned ? "true" : "false")}," +
+               $"{Quote(disclosed)},{Quote(eligibleFactId ?? "")},{Quote(mood ?? "")}," +
+               $"{Quote(Truncate(emote))},{Quote(Truncate(reason))},{Quote(Truncate(evidence))}," +
+               $"{classifyMs},{replyMs}]";
+    }
+
+    private static string Truncate(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return "";
+        var clean = value.Replace('\n', ' ').Replace('\r', ' ').Trim();
+        return clean.Length <= GuardedFreeTextMax ? clean : clean[..GuardedFreeTextMax];
+    }
 
     private static List<string> BuildChunked(string type, string[] leadingFields, string audioBase64, long durationMs, int chunkSize)
     {
@@ -62,7 +96,7 @@ public static class NpcAudioEnvelopeBuilder
 
     private static string Escape(string value)
     {
-        if (!value.Contains('"')) return value;
+        if (string.IsNullOrEmpty(value) || !value.Contains('"')) return value ?? "";
         var builder = new StringBuilder(value.Length + 8);
         foreach (var c in value) builder.Append(c == '"' ? "\"\"" : c.ToString());
         return builder.ToString();
