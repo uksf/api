@@ -140,6 +140,7 @@ public partial class NpcBrokerService(
         {
             logger.LogWarning($"npc_turn: brain returned null for npcId '{npcId}' — NPC stays silent this turn");
             await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId));
+            await SendDebugStateAsync(apiPort, npcId, "", AddressDecisionWire(decision));
             return;
         }
 
@@ -147,6 +148,7 @@ public partial class NpcBrokerService(
         {
             logger.LogInfo($"npc_turn: brain declined turn for '{npcId}' — not addressed");
             await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId));
+            await SendDebugStateAsync(apiPort, npcId, result.Provider, "none");
             return;
         }
 
@@ -160,6 +162,7 @@ public partial class NpcBrokerService(
         }
 
         await CommitConversationHistoryAsync(session, npcId, sessionId, parsedTurns, result.Text, result.Mood);
+        await SendDebugStateAsync(apiPort, npcId, result.Provider, AddressDecisionWire(decision));
     }
 
     public async Task HandleMissionEndedAsync(string sessionId)

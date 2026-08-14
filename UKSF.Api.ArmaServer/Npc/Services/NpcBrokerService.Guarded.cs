@@ -26,6 +26,7 @@ public partial class NpcBrokerService
             {
                 logger.LogWarning($"npc_turn guarded: session vanished for '{npcId}' before work");
                 await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId));
+                await SendDebugStateAsync(apiPort, npcId, "", "stay_silent");
                 return;
             }
 
@@ -33,6 +34,7 @@ public partial class NpcBrokerService
             {
                 logger.LogWarning($"npc_turn guarded: missing config for '{npcId}'");
                 await StreamSafeAndSkipCommit(apiPort, session, npcId, turnId, NpcGuardedProfile.SafeDeflection);
+                await SendDebugStateAsync(apiPort, npcId, "", "answer", disclosedFactIds: session.GuardedState?.DisclosedFactIds);
                 return;
             }
 
@@ -64,6 +66,14 @@ public partial class NpcBrokerService
             if (classify?.Classifications is null)
             {
                 await StreamSafeAndSkipCommit(apiPort, session, npcId, turnId, NpcGuardedProfile.SafeDeflection);
+                await SendDebugStateAsync(
+                    apiPort,
+                    npcId,
+                    classify?.Provider,
+                    "answer",
+                    classifyMs: classify?.Ms ?? 0,
+                    disclosedFactIds: stateSnapshot.DisclosedFactIds
+                );
                 return;
             }
 
@@ -132,16 +142,25 @@ public partial class NpcBrokerService
             if (!delivered)
             {
                 logger.LogWarning($"npc_turn guarded: zero TTS frames for '{npcId}' turn '{turnId}' — state/history unchanged");
+                await SendGuardedDebugStateAsync(apiPort, npcId, classify, session.Guarded, engine, modelReply, stateSnapshot.DisclosedFactIds);
                 return;
             }
 
-            if (!commitState) return;
+            if (!commitState)
+            {
+                await SendGuardedDebugStateAsync(apiPort, npcId, classify, session.Guarded, engine, modelReply, stateSnapshot.DisclosedFactIds);
+                return;
+            }
 
             var nextState = engine.NextState.Clone();
             if (!string.IsNullOrEmpty(disclosedId) && !nextState.DisclosedFactIds.Contains(disclosedId)) nextState.DisclosedFactIds.Add(disclosedId);
 
             var committed = await CommitGuardedAsync(session, npcId, sessionId, parsedTurns, spoken, mood, nextState);
-            if (!committed) return;
+            if (!committed)
+            {
+                await SendGuardedDebugStateAsync(apiPort, npcId, classify, session.Guarded, engine, modelReply, nextState.DisclosedFactIds);
+                return;
+            }
 
             await commandSender.SendCommandAsync(
                 apiPort,
@@ -160,6 +179,8 @@ public partial class NpcBrokerService
                     modelReply?.Ms ?? 0
                 )
             );
+
+            await SendGuardedDebugStateAsync(apiPort, npcId, classify, session.Guarded, engine, modelReply, nextState.DisclosedFactIds);
         }
         finally
         {

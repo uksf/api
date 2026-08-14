@@ -105,6 +105,9 @@ public partial class NpcBrokerService
 
     private static string RedactCanonical(string value, NpcGuardedConfig config)
     {
+        if (string.IsNullOrEmpty(value)) return value;
+        var concern = config?.Concern;
+        if (!string.IsNullOrEmpty(concern) && value.Contains(concern, StringComparison.OrdinalIgnoreCase)) return "[redacted]";
         var containsFact = (config?.Facts ?? []).Any(fact => !string.IsNullOrEmpty(fact.Text) && value.Contains(fact.Text, StringComparison.OrdinalIgnoreCase));
         return containsFact ? "[redacted]" : value;
     }

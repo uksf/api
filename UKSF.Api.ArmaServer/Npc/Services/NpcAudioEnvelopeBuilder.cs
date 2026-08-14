@@ -57,6 +57,32 @@ public static class NpcAudioEnvelopeBuilder
                $"{classifyMs},{replyMs}]";
     }
 
+    /// Per-turn pipeline telemetry for the admin console. Decisions and IDs only — never
+    /// fact text. Free text truncated like guarded state.
+    public static string BuildDebugState(
+        string npcId,
+        string provider,
+        string addressDecision,
+        string tag,
+        int? topicSlot,
+        bool addressesConcern,
+        bool ambiguous,
+        string reason,
+        string evidence,
+        long classifyMs,
+        long replyMs,
+        string eligibleFactId,
+        IReadOnlyList<string> disclosedFactIds
+    )
+    {
+        var disclosed = string.Join(",", (disclosedFactIds ?? []).Select(id => id ?? ""));
+        return $"[\"npc_debug_state\",{Quote(npcId)},{Quote(provider ?? "")},{Quote(addressDecision ?? "")}," +
+               $"{Quote(tag ?? "")},{Quote(topicSlot?.ToString() ?? "")}," +
+               $"{(addressesConcern ? "true" : "false")},{(ambiguous ? "true" : "false")}," +
+               $"{Quote(Truncate(reason))},{Quote(Truncate(evidence))}," +
+               $"{classifyMs},{replyMs},{Quote(eligibleFactId ?? "")},{Quote(disclosed)}]";
+    }
+
     private static string Truncate(string value)
     {
         if (string.IsNullOrEmpty(value)) return "";

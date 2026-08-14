@@ -41,5 +41,6 @@ public partial class NpcBrokerService
     {
         logger.LogInfo($"npc_turn: '{npcId}' stays silent ({reason})");
         await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId));
+        await SendDebugStateAsync(apiPort, npcId, "", "stay_silent");
     }
 }

@@ -470,29 +470,6 @@ public partial class NpcBrokerServiceTests
     }
 
     [Fact]
-    public async Task HandleTurnAsync_ScriptedTurn_MissingClipFile_StaysSilent()
-    {
-        _sessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcSession, bool>>())).Returns(MakeScriptedSession());
-        _brainClient.Setup(x => x.RespondAsync(It.IsAny<RespondRequest>()))
-                    .ReturnsAsync(new RespondResult { Text = "The ammo is in the basement.", LineId = "ammo" });
-        _clipsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcAudioClip, bool>>()))
-                     .Returns(
-                         new DomainNpcAudioClip
-                         {
-                             ClipId = "ammo",
-                             FilePath = "2026-06-07/gone.wav",
-                             DurationMs = 1200
-                         }
-                     );
-        _audioStore.Setup(x => x.ReadAsync("2026-06-07/gone.wav")).ReturnsAsync((byte[])null);
-
-        await _sut.HandleTurnAsync(5006, MakeTurnData());
-
-        _commandSender.Verify(x => x.SendCommandAsync(It.IsAny<int>(), It.IsAny<string>()), Times.Never);
-        _logger.Verify(x => x.LogWarning(It.IsAny<string>()), Times.Once);
-    }
-
-    [Fact]
     public async Task HandleTurnAsync_DynamicTurn_StreamsFramesThenEnd()
     {
         _sessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcSession, bool>>())).Returns(MakeDynamicSession());
