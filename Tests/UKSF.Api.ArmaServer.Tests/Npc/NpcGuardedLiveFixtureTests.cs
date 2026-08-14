@@ -189,7 +189,7 @@ public class NpcGuardedLiveFixtureTests
     private static NpcBrainService BuildLiveBrain(string clacksUrl)
     {
         var factory = new Mock<IHttpClientFactory>();
-        factory.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
+        factory.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(() => new HttpClient());
         var vars = new Mock<IVariablesService>();
         vars.Setup(x => x.GetVariable("CLACKS_URL")).Returns(new DomainVariableItem { Key = "CLACKS_URL", Item = clacksUrl });
         var voices = new Mock<INpcVoicesContext>();
