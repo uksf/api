@@ -164,6 +164,8 @@ public class NpcPromptBuilderTests
         var prompt = NpcPromptBuilder.BuildSystemPrompt(req);
 
         prompt.Should().Contain("[mood:");
+        prompt.Should().Contain("Your disposition is wary");
+        prompt.Should().Contain($"If none of those moods fit, use [mood:{MoodScripts.Neutral}]");
         foreach (var mood in MoodScripts.All)
         {
             prompt.Should().Contain(mood);

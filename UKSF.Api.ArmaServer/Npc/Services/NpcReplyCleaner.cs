@@ -28,9 +28,8 @@ public static partial class NpcReplyCleaner
             return (MoodScripts.Neutral, raw.Trim());
         }
 
-        var mood = match.Groups[1].Value.ToLowerInvariant();
         var rest = raw[match.Length..].Trim();
-        return MoodScripts.IsValid(mood) ? (mood, rest) : (MoodScripts.Neutral, rest);
+        return (MoodScripts.Normalise(match.Groups[1].Value), rest);
     }
 
     [GeneratedRegex(@"^\s*you said:\s*", RegexOptions.IgnoreCase)]

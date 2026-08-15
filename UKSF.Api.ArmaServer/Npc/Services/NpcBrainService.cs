@@ -176,7 +176,7 @@ public class NpcBrainService(IClacksClient clacksClient, INpcVoicesContext voice
                     Ms = result.Ms
                 };
 
-            var mood = string.IsNullOrWhiteSpace(parsed.Mood) ? MoodScripts.Neutral : parsed.Mood.Trim().ToLowerInvariant();
+            var mood = MoodScripts.Normalise(parsed.Mood);
             return new NpcGuardedReplyResult
             {
                 Ok = true,

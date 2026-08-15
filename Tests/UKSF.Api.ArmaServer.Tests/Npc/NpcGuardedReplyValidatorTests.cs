@@ -94,9 +94,17 @@ public class NpcGuardedReplyValidatorTests
     }
 
     [Fact]
-    public void InvalidMood_Rejected()
+    public void InvalidMood_FallsBackToNeutral_AndKeepsText()
     {
-        NpcGuardedReplyValidator.Validate(new NpcGuardedReplyModelOutput { Text = "Hi", Mood = "furious" }, Config, null, null).Ok.Should().BeFalse();
+        var result = NpcGuardedReplyValidator.Validate(
+            new NpcGuardedReplyModelOutput { Text = "Only what I see from my fields.", Mood = "wary" },
+            Config,
+            null,
+            null
+        );
+        result.Ok.Should().BeTrue();
+        result.Mood.Should().Be(MoodScripts.Neutral);
+        result.SpokenText.Should().Be("Only what I see from my fields.");
     }
 
     [Fact]

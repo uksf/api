@@ -42,6 +42,17 @@ public class NpcGuardedPromptBuilderTests
     }
 
     [Fact]
+    public void ReplyPrompt_RestrictsMoodToClosedList_AndSeparatesDisposition()
+    {
+        var req = MakeReply(null, null);
+        var system = NpcGuardedPromptBuilder.BuildReplySystemPrompt(req);
+        system.Should().Contain("Your disposition is wary");
+        system.Should().Contain($"mood MUST be exactly one of: {string.Join(", ", MoodScripts.All)}");
+        system.Should().Contain($"If none fit, use {MoodScripts.Neutral}");
+        system.Should().NotContain("Your mood is wary");
+    }
+
+    [Fact]
     public void ReplyPrompt_WithPermit_HasIdAndTopic_NotCanonicalText()
     {
         var req = MakeReply("f1", "strange traffic");

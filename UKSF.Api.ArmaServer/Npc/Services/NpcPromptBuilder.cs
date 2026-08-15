@@ -20,7 +20,7 @@ public static partial class NpcPromptBuilder
         var p = req.Persona;
         var lines = new List<string>
         {
-            $"You are {p.Name}, a {p.Role}. You speak {p.Language}. Your current mood is {p.Mood}. " +
+            $"You are {p.Name}, a {p.Role}. You speak {p.Language}. Your disposition is {p.Mood}. " +
             $"Your attitude toward the people in front of you is {p.AttitudeToPlayers}.",
             "You stay in character at all times. You are in a warzone; you are not a neutral assistant and " +
             "you may be blunt, profane, or hostile in character if that fits.",
@@ -58,7 +58,8 @@ public static partial class NpcPromptBuilder
                 "parentheses, brackets, or quotation marks — they would be read out literally and ruin it.\n" +
                 $"- Begin your reply with a mood tag chosen from [{moods}], formatted exactly as [mood:<one of " +
                 "the list>], that fits your persona, your attitude to the people in front of you, and what was " +
-                "just said. Stay consistent with your recent mood unless what happened clearly calls for a shift.\n" +
+                $"just said. Stay consistent with your recent mood unless what happened clearly calls for a shift. " +
+                $"If none of those moods fit, use [mood:{MoodScripts.Neutral}].\n" +
                 "Wrong: *narrows eyes, grips rifle* Get back, you shouldn't be here.\n" +
                 "Right: [mood:angry] Get back. You shouldn't be here.\n" +
                 "Right: [mood:afraid] Please, I don't want any trouble."

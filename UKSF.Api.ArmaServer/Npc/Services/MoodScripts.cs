@@ -52,4 +52,11 @@ public static class MoodScripts
     public static readonly IReadOnlyList<string> All = Generated;
 
     public static bool IsValid(string mood) => All.Contains(mood);
+
+    public static string Normalise(string mood)
+    {
+        if (string.IsNullOrWhiteSpace(mood)) return Neutral;
+        var candidate = mood.Trim().ToLowerInvariant();
+        return IsValid(candidate) ? candidate : Neutral;
+    }
 }

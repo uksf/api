@@ -45,4 +45,15 @@ public class MoodScriptsTests
     {
         MoodScripts.IsValid(mood).Should().Be(expected);
     }
+
+    [Theory]
+    [InlineData("afraid", "afraid")]
+    [InlineData(" ANGRY ", "angry")]
+    [InlineData("wary", "neutral")]
+    [InlineData("", "neutral")]
+    [InlineData(null, "neutral")]
+    public void Normalise_keeps_known_moods_and_falls_back_to_neutral(string mood, string expected)
+    {
+        MoodScripts.Normalise(mood).Should().Be(expected);
+    }
 }

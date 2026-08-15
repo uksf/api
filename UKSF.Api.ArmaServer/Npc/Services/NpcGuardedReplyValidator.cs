@@ -23,8 +23,7 @@ public static class NpcGuardedReplyValidator
         var text = (output.Text ?? string.Empty).Trim();
         if (text.Length == 0) return Fail("empty text");
 
-        var mood = string.IsNullOrWhiteSpace(output.Mood) ? MoodScripts.Neutral : output.Mood.Trim().ToLowerInvariant();
-        if (!MoodScripts.IsValid(mood)) return Fail($"invalid mood '{output.Mood}'");
+        var mood = MoodScripts.Normalise(output.Mood);
 
         var canonicalFacts = (config?.Facts ?? []).Where(f => !string.IsNullOrEmpty(f.Text)).ToList();
         var emote = string.IsNullOrWhiteSpace(output.Emote) ? null : output.Emote.Trim();
