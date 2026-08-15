@@ -113,7 +113,7 @@ public class NpcGuardedPromptBuilderTests
         var system = NpcGuardedPromptBuilder.BuildTurnSystemPrompt(req);
         var user = NpcGuardedPromptBuilder.BuildTurnUserPrompt(req);
         system.Should().Contain("strange traffic");
-        system.Should().Contain("Greetings and check-ins are rapport");
+        system.Should().Contain("Use other only when no other tag fits");
         system.Should().Contain($"mood is one of: {string.Join(", ", MoodScripts.All)}");
         system.Should().Contain("JSON only");
         user.Should().Contain("<<<PLAYER>>>seen any trucks?<<<END_PLAYER>>>");
