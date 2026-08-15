@@ -15,18 +15,11 @@ public partial class NpcBrokerServiceGuardedTests
     public async Task HandleTurnAsync_GuardedAnswer_SendsDebugStateWithTagIdsAndProvider_NoFactText()
     {
         _session = MakeGuardedSession();
-        _brain.Setup(x => x.ClassifyGuardedAsync(It.IsAny<NpcGuardedClassifyRequest>()))
-              .ReturnsAsync(
-                  new NpcGuardedClassifyResult
-                  {
-                      Classifications = [Tag(NpcGuardedTags.RelevantQuestion, 1)],
-                      Provider = "luna@ultron",
-                      Ms = 5
-                  }
-              );
         var reply = OkReply("I noticed some traffic.", "f1");
         reply.Provider = "luna@ultron";
-        _brain.Setup(x => x.ReplyGuardedAsync(It.IsAny<NpcGuardedReplyRequest>())).ReturnsAsync(reply);
+        _lastClassify = [Tag(NpcGuardedTags.RelevantQuestion, 1)];
+        _lastReply = reply;
+        WireTurn();
 
         await _sut.HandleTurnAsync(5006, TurnData());
 
@@ -64,7 +57,8 @@ public partial class NpcBrokerServiceGuardedTests
     public async Task HandleTurnAsync_GuardedNullClassifier_SendsDebugState_NoCommit()
     {
         _session = MakeGuardedSession();
-        _brain.Setup(x => x.ClassifyGuardedAsync(It.IsAny<NpcGuardedClassifyRequest>())).ReturnsAsync((NpcGuardedClassifyResult)null);
+        _brain.Setup(x => x.TurnGuardedAsync(It.IsAny<NpcGuardedTurnRequest>()))
+              .ReturnsAsync(new NpcGuardedTurnResult { Classify = null, Reply = new NpcGuardedReplyResult { Ok = false, Failure = "null model" } });
 
         await _sut.HandleTurnAsync(5006, TurnData());
 
@@ -76,26 +70,10 @@ public partial class NpcBrokerServiceGuardedTests
     public async Task HandleTurnAsync_GuardedReasonWithCanonicalText_RedactedInDebugState()
     {
         _session = MakeGuardedSession();
-        _brain.Setup(x => x.ClassifyGuardedAsync(It.IsAny<NpcGuardedClassifyRequest>()))
-              .ReturnsAsync(
-                  new NpcGuardedClassifyResult
-                  {
-                      Classifications =
-                      [
-                          new NpcGuardedClassification
-                          {
-                              T = 1,
-                              Tag = NpcGuardedTags.RelevantQuestion,
-                              TopicSlot = 1,
-                              Ambiguous = false,
-                              Reason = "Player asked. Trucks have been rolling past the farm after dark.",
-                              Evidence = "trucks"
-                          }
-                      ],
-                      Provider = "luna@ultron",
-                      Ms = 5
-                  }
-              );
+        var leak = Tag(NpcGuardedTags.RelevantQuestion, 1);
+        leak.Reason = "Player asked. Trucks have been rolling past the farm after dark.";
+        leak.Evidence = "trucks";
+        SetupClassify(leak);
         SetupReply("I noticed some traffic.", "neutral", null, "f1");
 
         await _sut.HandleTurnAsync(5006, TurnData());
@@ -116,26 +94,10 @@ public partial class NpcBrokerServiceGuardedTests
     public async Task HandleTurnAsync_GuardedReasonWithConcernText_RedactedInDebugState()
     {
         _session = MakeGuardedSession();
-        _brain.Setup(x => x.ClassifyGuardedAsync(It.IsAny<NpcGuardedClassifyRequest>()))
-              .ReturnsAsync(
-                  new NpcGuardedClassifyResult
-                  {
-                      Classifications =
-                      [
-                          new NpcGuardedClassification
-                          {
-                              T = 1,
-                              Tag = NpcGuardedTags.RelevantQuestion,
-                              TopicSlot = 1,
-                              Ambiguous = false,
-                              Reason = "He mentioned retaliation against family",
-                              Evidence = "family"
-                          }
-                      ],
-                      Provider = "luna@ultron",
-                      Ms = 5
-                  }
-              );
+        var leak = Tag(NpcGuardedTags.RelevantQuestion, 1);
+        leak.Reason = "He mentioned retaliation against family";
+        leak.Evidence = "family";
+        SetupClassify(leak);
         SetupReply("I noticed some traffic.", "neutral", null, "f1");
 
         await _sut.HandleTurnAsync(5006, TurnData());
@@ -161,7 +123,7 @@ public partial class NpcBrokerServiceGuardedTests
 
         await _sut.HandleTurnAsync(5006, TurnData());
 
-        _brain.Verify(x => x.ClassifyGuardedAsync(It.IsAny<NpcGuardedClassifyRequest>()), Times.Never);
+        _brain.Verify(x => x.TurnGuardedAsync(It.IsAny<NpcGuardedTurnRequest>()), Times.Never);
         _commands.Verify(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("npc_turn_cancel"))), Times.Once);
         _commands.Verify(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("\"npc_debug_state\"") && c.Contains("\"stay_silent\""))), Times.Once);
     }

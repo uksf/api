@@ -266,6 +266,7 @@ public partial class NpcBrokerServiceTests
             ["npcId"] = npcId,
             ["sessionId"] = sessionId,
             ["turnId"] = turnId,
+            ["gazeAddressed"] = true,
             ["newTurns"] = newTurns ??
             [
                 new Dictionary<string, object>

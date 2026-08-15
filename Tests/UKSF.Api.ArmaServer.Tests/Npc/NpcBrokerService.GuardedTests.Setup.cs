@@ -56,15 +56,52 @@ public partial class NpcBrokerServiceGuardedTests
         );
     }
 
+    private NpcGuardedClassification[] _lastClassify;
+    private NpcGuardedReplyResult _lastReply;
+
     private void SetupClassify(params NpcGuardedClassification[] classifications)
     {
+        _lastClassify = classifications;
         _brain.Setup(x => x.ClassifyGuardedAsync(It.IsAny<NpcGuardedClassifyRequest>()))
               .ReturnsAsync(new NpcGuardedClassifyResult { Classifications = classifications.ToList(), Ms = 5 });
+        WireTurn();
     }
 
     private void SetupReply(string text, string mood, string emote, string factId)
     {
-        _brain.Setup(x => x.ReplyGuardedAsync(It.IsAny<NpcGuardedReplyRequest>())).ReturnsAsync(OkReply(text, factId, mood, emote));
+        _lastReply = OkReply(text, factId, mood, emote);
+        WireTurn();
+    }
+
+    private void SetupFailedReply(string failure = "null model")
+    {
+        _lastReply = new NpcGuardedReplyResult { Ok = false, Failure = failure };
+        WireTurn();
+    }
+
+    private void SetupTurnThrow(Exception exception)
+    {
+        _brain.Setup(x => x.TurnGuardedAsync(It.IsAny<NpcGuardedTurnRequest>())).ThrowsAsync(exception);
+    }
+
+    private void WireTurn()
+    {
+        var classify = _lastClassify;
+        var reply = _lastReply;
+        _brain.Setup(x => x.TurnGuardedAsync(It.IsAny<NpcGuardedTurnRequest>()))
+              .ReturnsAsync(() => new NpcGuardedTurnResult
+                  {
+                      Classify = classify is null
+                          ? null
+                          : new NpcGuardedClassifyResult
+                          {
+                              Classifications = classify.ToList(),
+                              Provider = reply?.Provider ?? "luna@ultron",
+                              Ms = 5
+                          },
+                      Reply = reply
+                  }
+              );
     }
 
     private static NpcGuardedReplyResult OkReply(string text, string factId, string mood = "neutral", string emote = null) =>

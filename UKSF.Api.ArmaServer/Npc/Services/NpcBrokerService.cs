@@ -95,8 +95,7 @@ public partial class NpcBrokerService(
             logger.LogInfo($"npc roster: '{oldDisplay}' is now '{newName}'");
         }
 
-        var gazeRaw = ToSafeString(data.GetValueOrDefault("gazeAddressed"));
-        var gazeAddressed = gazeRaw.Length == 0 || gazeRaw.ToLowerInvariant() is "true" or "1";
+        var gazeAddressed = ParseGazeAddressed(data.GetValueOrDefault("gazeAddressed"));
         var decision = DecideAddress(session, sessionId, parsedTurns[^1].Text, gazeAddressed);
         if (decision == AddressDecision.StaySilent)
         {

@@ -1,6 +1,8 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using UKSF.Api.ArmaServer.Npc.Models;
+using static UKSF.Api.ArmaServer.Converters.PersistenceConversionHelpers;
 
 namespace UKSF.Api.ArmaServer.Npc.Services;
 
@@ -36,6 +38,15 @@ public partial class NpcBrokerService
             _                               => gazeAddressed ? AddressDecision.Answer : AddressDecision.StaySilent
         };
     }
+
+    private static bool ParseGazeAddressed(object raw) =>
+        raw switch
+        {
+            null     => false,
+            bool b   => b,
+            string s => s.Equals("true", StringComparison.OrdinalIgnoreCase) || s == "1",
+            _        => ToBool(raw)
+        };
 
     private async Task CancelTurnAsync(int apiPort, string npcId, string reason)
     {

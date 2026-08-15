@@ -15,6 +15,7 @@ public interface INpcBrainClient
     Task<PrerenderResult> PrerenderAsync(PrerenderRequest request);
     Task<NpcGuardedClassifyResult> ClassifyGuardedAsync(NpcGuardedClassifyRequest request);
     Task<NpcGuardedReplyResult> ReplyGuardedAsync(NpcGuardedReplyRequest request);
+    Task<NpcGuardedTurnResult> TurnGuardedAsync(NpcGuardedTurnRequest request);
 }
 
 /// <summary>
@@ -22,7 +23,7 @@ public interface INpcBrainClient
 /// resolves scripted line choices, cleans dynamic replies, and voices them (role "npc-voice").
 /// Scripted turns use prerendered clips, so only dynamic turns synth at respond time.
 /// </summary>
-public class NpcBrainService(IClacksClient clacksClient, INpcVoicesContext voicesContext, IUksfLogger logger) : INpcBrainClient
+public partial class NpcBrainService(IClacksClient clacksClient, INpcVoicesContext voicesContext, IUksfLogger logger) : INpcBrainClient
 {
     public async Task<RespondResult> RespondAsync(RespondRequest request)
     {

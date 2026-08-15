@@ -212,3 +212,22 @@ public class NpcGuardedValidatedReply
     public string DisclosedFactId { get; set; }
     public string Failure { get; set; }
 }
+
+public class NpcGuardedTurnRequest
+{
+    public string NpcId { get; set; } = string.Empty;
+    public NpcPersona Persona { get; set; } = new();
+    public string Knowledge { get; set; } = string.Empty;
+    public string Concern { get; set; } = string.Empty;
+    public List<(string Id, string Topic)> TopicCues { get; set; } = [];
+    public NpcGuardedState State { get; set; } = new();
+    public List<NpcHistoryEntry> History { get; set; } = [];
+    public List<NpcTurnDto> NewTurns { get; set; } = [];
+    public string VoiceId { get; set; } = string.Empty;
+}
+
+public class NpcGuardedTurnResult
+{
+    public NpcGuardedClassifyResult Classify { get; set; }
+    public NpcGuardedReplyResult Reply { get; set; }
+}

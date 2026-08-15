@@ -84,6 +84,46 @@ public class NpcGuardedPromptBuilderTests
     }
 
     [Fact]
+    public void TurnPrompt_HasCuesAndMoodList_NotCanonicalFacts()
+    {
+        var req = new NpcGuardedTurnRequest
+        {
+            Persona = new NpcPersona
+            {
+                Name = "Tomas",
+                Role = "farmer",
+                Language = "English",
+                Mood = "wary",
+                AttitudeToPlayers = "cautious"
+            },
+            Knowledge = "local farmer brief",
+            Concern = "retaliation against family",
+            TopicCues = [("f1", "strange traffic"), ("f2", "where they stop"), ("f3", "when they return")],
+            State = new NpcGuardedState(),
+            NewTurns =
+            [
+                new NpcTurnDto
+                {
+                    SpeakerId = "p",
+                    Text = "seen any trucks?",
+                    T = 1
+                }
+            ]
+        };
+        var system = NpcGuardedPromptBuilder.BuildTurnSystemPrompt(req);
+        var user = NpcGuardedPromptBuilder.BuildTurnUserPrompt(req);
+        system.Should().Contain("strange traffic");
+        system.Should().Contain($"mood is one of: {string.Join(", ", MoodScripts.All)}");
+        system.Should().Contain("JSON only");
+        user.Should().Contain("<<<PLAYER>>>seen any trucks?<<<END_PLAYER>>>");
+        foreach (var fact in Canonical)
+        {
+            system.Should().NotContain(fact);
+            user.Should().NotContain(fact);
+        }
+    }
+
+    [Fact]
     public void ReplyPrompt_MayIncludeDisclosedCanonicalInHistory()
     {
         var req = MakeReply(null, null);

@@ -20,8 +20,9 @@ public partial class NpcBrokerServiceGuardedTests
 
         await _sut.HandleTurnAsync(5006, TurnData());
 
-        _brain.Verify(x => x.ClassifyGuardedAsync(It.IsAny<NpcGuardedClassifyRequest>()), Times.Once);
-        _brain.Verify(x => x.ReplyGuardedAsync(It.IsAny<NpcGuardedReplyRequest>()), Times.Once);
+        _brain.Verify(x => x.TurnGuardedAsync(It.IsAny<NpcGuardedTurnRequest>()), Times.Once);
+        _brain.Verify(x => x.ClassifyGuardedAsync(It.IsAny<NpcGuardedClassifyRequest>()), Times.Never);
+        _brain.Verify(x => x.ReplyGuardedAsync(It.IsAny<NpcGuardedReplyRequest>()), Times.Never);
         _brain.Verify(x => x.RespondAsync(It.IsAny<RespondRequest>()), Times.Never);
         _commands.Verify(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("npc_audio_frame"))), Times.AtLeastOnce);
         _commands.Verify(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("npc_guarded_state"))), Times.Once);
@@ -33,26 +34,28 @@ public partial class NpcBrokerServiceGuardedTests
     {
         _session = MakeGuardedSession();
         SetupClassify(Tag(NpcGuardedTags.RelevantQuestion, 3));
-        NpcGuardedReplyRequest captured = null;
-        _brain.Setup(x => x.ReplyGuardedAsync(It.IsAny<NpcGuardedReplyRequest>()))
-              .Callback<NpcGuardedReplyRequest>(r => captured = r)
-              .ReturnsAsync(OkReply("Not sure about that.", null));
+        SetupReply("Not sure about that.", "neutral", null, null);
+        string spoken = null;
+        _clacks.Setup(x => x.SpeakStreamAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Func<string, Task>>()))
+               .Callback<string, string, string, Func<string, Task>>((_, text, _, _) => spoken = text)
+               .Returns(async (string _, string _, string _, Func<string, Task> onFrame) => await onFrame("QQ=="));
 
         await _sut.HandleTurnAsync(5006, TurnData());
 
-        captured.PermittedFactId.Should().BeNull();
+        spoken.Should().Be("Not sure about that.");
+        spoken.Should().NotContain("midnight");
     }
 
     [Fact]
     public async Task NullClassifier_SafeDeflection_NoRetry_NoCommit()
     {
         _session = MakeGuardedSession();
-        _brain.Setup(x => x.ClassifyGuardedAsync(It.IsAny<NpcGuardedClassifyRequest>())).ReturnsAsync((NpcGuardedClassifyResult)null);
+        _brain.Setup(x => x.TurnGuardedAsync(It.IsAny<NpcGuardedTurnRequest>()))
+              .ReturnsAsync(new NpcGuardedTurnResult { Classify = null, Reply = new NpcGuardedReplyResult { Ok = false, Failure = "null model" } });
 
         await _sut.HandleTurnAsync(5006, TurnData());
 
-        _brain.Verify(x => x.ReplyGuardedAsync(It.IsAny<NpcGuardedReplyRequest>()), Times.Never);
-        _brain.Verify(x => x.ClassifyGuardedAsync(It.IsAny<NpcGuardedClassifyRequest>()), Times.Once);
+        _brain.Verify(x => x.TurnGuardedAsync(It.IsAny<NpcGuardedTurnRequest>()), Times.Once);
         _updates.Should().Be(0);
         _clacks.Verify(
             x => x.SpeakStreamAsync(It.IsAny<string>(), NpcGuardedProfile.SafeDeflection, It.IsAny<string>(), It.IsAny<Func<string, Task>>()),
@@ -65,11 +68,11 @@ public partial class NpcBrokerServiceGuardedTests
     {
         _session = MakeGuardedSession();
         SetupClassify(Tag(NpcGuardedTags.Other));
-        _brain.Setup(x => x.ReplyGuardedAsync(It.IsAny<NpcGuardedReplyRequest>())).ThrowsAsync(new InvalidOperationException("boom"));
+        SetupTurnThrow(new InvalidOperationException("boom"));
 
         await _sut.HandleTurnAsync(5006, TurnData());
 
-        _brain.Verify(x => x.ReplyGuardedAsync(It.IsAny<NpcGuardedReplyRequest>()), Times.Once);
+        _brain.Verify(x => x.TurnGuardedAsync(It.IsAny<NpcGuardedTurnRequest>()), Times.Once);
         _clacks.Verify(x => x.SpeakStreamAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Func<string, Task>>()), Times.Once);
     }
 
@@ -154,7 +157,7 @@ public partial class NpcBrokerServiceGuardedTests
 
         await _sut.HandleTurnAsync(5006, data);
 
-        _brain.Verify(x => x.ClassifyGuardedAsync(It.IsAny<NpcGuardedClassifyRequest>()), Times.Never);
+        _brain.Verify(x => x.TurnGuardedAsync(It.IsAny<NpcGuardedTurnRequest>()), Times.Never);
         _commands.Verify(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("npc_turn_cancel"))), Times.Once);
     }
 
@@ -164,15 +167,19 @@ public partial class NpcBrokerServiceGuardedTests
         _session = MakeGuardedSession();
         var gate = new TaskCompletionSource();
         var started = 0;
-        _brain.Setup(x => x.ClassifyGuardedAsync(It.IsAny<NpcGuardedClassifyRequest>()))
+        _lastClassify = [Tag(NpcGuardedTags.RelevantQuestion, 1)];
+        _lastReply = OkReply("ok", "f1");
+        _brain.Setup(x => x.TurnGuardedAsync(It.IsAny<NpcGuardedTurnRequest>()))
               .Returns(async () =>
                   {
                       var n = System.Threading.Interlocked.Increment(ref started);
                       if (n == 1) await gate.Task;
-                      return new NpcGuardedClassifyResult { Classifications = [Tag(NpcGuardedTags.RelevantQuestion, 1)], Ms = 1 };
+                      return new NpcGuardedTurnResult
+                      {
+                          Classify = new NpcGuardedClassifyResult { Classifications = [Tag(NpcGuardedTags.RelevantQuestion, 1)], Ms = 1 }, Reply = _lastReply
+                      };
                   }
               );
-        SetupReply("ok", "neutral", null, "f1");
 
         var t1 = _sut.HandleTurnAsync(5006, TurnData(turnId: "t1"));
         await Task.Delay(50);

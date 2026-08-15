@@ -42,65 +42,47 @@ public partial class NpcBrokerService
             var stateSnapshot = session.GuardedState.Clone();
             var topicCues = session.Guarded.Facts.Select(f => (f.Id, f.Topic)).ToList();
 
-            NpcGuardedClassifyResult classify;
+            NpcGuardedTurnResult turn;
             try
             {
-                classify = await brainClient.ClassifyGuardedAsync(
-                    new NpcGuardedClassifyRequest
-                    {
-                        NpcId = npcId,
-                        Persona = session.Persona,
-                        Concern = session.Guarded.Concern,
-                        TopicCues = topicCues,
-                        State = stateSnapshot,
-                        Utterances = parsedTurns
-                    }
-                );
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"npc_turn guarded: classifier threw for '{npcId}'", ex);
-                classify = null;
-            }
-
-            if (classify?.Classifications is null)
-            {
-                await StreamSafeAndSkipCommit(apiPort, session, npcId, turnId, NpcGuardedProfile.SafeDeflection);
-                await SendDebugStateAsync(
-                    apiPort,
-                    npcId,
-                    classify?.Provider,
-                    "answer",
-                    classifyMs: classify?.Ms ?? 0,
-                    disclosedFactIds: stateSnapshot.DisclosedFactIds
-                );
-                return;
-            }
-
-            var engine = NpcGuardedProfile.Evaluate(stateSnapshot, session.Guarded, classify.Classifications);
-            NpcGuardedReplyResult modelReply;
-            try
-            {
-                modelReply = await brainClient.ReplyGuardedAsync(
-                    new NpcGuardedReplyRequest
+                turn = await brainClient.TurnGuardedAsync(
+                    new NpcGuardedTurnRequest
                     {
                         NpcId = npcId,
                         Persona = session.Persona,
                         Knowledge = session.Knowledge,
+                        Concern = session.Guarded.Concern,
+                        TopicCues = topicCues,
+                        State = stateSnapshot,
                         History = NpcHistoryBudget.Trim(session.History),
                         NewTurns = parsedTurns,
-                        Directive = engine.Directive,
-                        PermittedFactId = engine.PermittedFactId,
-                        PermittedFactTopic = engine.PermittedFactTopic,
                         VoiceId = session.VoiceId
                     }
                 );
             }
             catch (Exception ex)
             {
-                logger.LogError($"npc_turn guarded: reply threw for '{npcId}'", ex);
-                modelReply = null;
+                logger.LogError($"npc_turn guarded: turn threw for '{npcId}'", ex);
+                turn = null;
             }
+
+            var classify = turn?.Classify;
+            var modelReply = turn?.Reply;
+            if (classify?.Classifications is null)
+            {
+                await StreamSafeAndSkipCommit(apiPort, session, npcId, turnId, NpcGuardedProfile.SafeDeflection);
+                await SendDebugStateAsync(
+                    apiPort,
+                    npcId,
+                    classify?.Provider ?? modelReply?.Provider,
+                    "answer",
+                    classifyMs: classify?.Ms ?? modelReply?.Ms ?? 0,
+                    disclosedFactIds: stateSnapshot.DisclosedFactIds
+                );
+                return;
+            }
+
+            var engine = NpcGuardedProfile.Evaluate(stateSnapshot, session.Guarded, classify.Classifications);
 
             var validated = modelReply is { Ok: true }
                 ? NpcGuardedReplyValidator.Validate(
