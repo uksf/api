@@ -184,9 +184,11 @@ public class NpcGuardedReplyModelOutput
     public string Mood { get; set; } = "neutral";
 
     [JsonPropertyName("emote")]
+    [JsonConverter(typeof(LooseOptionalStringConverter))]
     public string Emote { get; set; }
 
     [JsonPropertyName("disclosedFactId")]
+    [JsonConverter(typeof(LooseOptionalStringConverter))]
     public string DisclosedFactId { get; set; }
 }
 

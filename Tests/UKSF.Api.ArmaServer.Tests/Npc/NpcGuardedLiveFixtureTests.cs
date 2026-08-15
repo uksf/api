@@ -64,27 +64,18 @@ public class NpcGuardedLiveFixtureTests
                             )
                             .ToList();
 
-        var classify = await brain.ClassifyGuardedAsync(
-            new NpcGuardedClassifyRequest
-            {
-                NpcId = "live-tomas",
-                Persona = new NpcPersona
-                {
-                    Name = "Tomas",
-                    Role = "farmer",
-                    Language = "English",
-                    Mood = "wary",
-                    AttitudeToPlayers = "cautious"
-                },
-                Concern = corpus.Concern,
-                TopicCues = corpus.Facts.Select(f => (f.Id, f.Topic)).ToList(),
-                State = state.Clone(),
-                Utterances = utterances
-            }
-        );
+        var turn = await TurnOnce(brain, corpus, state, utterances);
+        if (turn?.Classify is null && turn?.Reply?.Failure == "null model")
+        {
+            turn = await TurnOnce(brain, corpus, state, utterances);
+        }
 
-        classify.Should().NotBeNull($"case {cse.Id} rep {rep}: classifier null/rejected");
+        var classify = turn?.Classify;
+        classify.Should().NotBeNull($"case {cse.Id} rep {rep}: classify null/rejected ({turn?.Reply?.Failure})");
         classify!.Classifications.Should().HaveCount(utterances.Count, cse.Id);
+        Console.WriteLine(
+            $"{cse.Id} rep {rep}: {classify.Ms}ms tags=[{string.Join(",", classify.Classifications.Select(c => c.Tag))}] replyOk={turn.Reply?.Ok}"
+        );
 
         if (cse.ExpectTags is { Count: > 0 }) classify.Classifications.Select(c => c.Tag).Should().Equal(cse.ExpectTags, cse.Id);
         if (cse.ExpectTopicSlots is { Count: > 0 })
@@ -112,32 +103,9 @@ public class NpcGuardedLiveFixtureTests
         if (!string.IsNullOrEmpty(cse.ExpectDirective)) engine.Directive.Should().Be(cse.ExpectDirective, cse.Id);
         if (cse.ExpectWarning is not null) engine.NextState.PendingWarning.Should().Be(cse.ExpectWarning.Value, cse.Id);
 
-        // Reply path: schema + composition invariants only. No TTS.
-        var reply = await brain.ReplyGuardedAsync(
-            new NpcGuardedReplyRequest
-            {
-                NpcId = "live-tomas",
-                Persona = new NpcPersona
-                {
-                    Name = "Tomas",
-                    Role = "farmer",
-                    Language = "English",
-                    Mood = "wary",
-                    AttitudeToPlayers = "cautious"
-                },
-                Knowledge = "local farmer brief",
-                History = [],
-                NewTurns = utterances,
-                Directive = engine.Directive,
-                PermittedFactId = engine.PermittedFactId,
-                PermittedFactTopic = engine.PermittedFactTopic,
-                VoiceId = "bm_george"
-            }
-        );
-
-        if (!reply.Ok)
+        var reply = turn.Reply;
+        if (reply is not { Ok: true })
         {
-            // Model failure is allowed; fixed fallback path remains valid.
             return;
         }
 
@@ -185,6 +153,29 @@ public class NpcGuardedLiveFixtureTests
         if (cse.PriorState.DisclosedFactIds is { Count: > 0 }) state.DisclosedFactIds = [..cse.PriorState.DisclosedFactIds];
         return state;
     }
+
+    private static Task<NpcGuardedTurnResult> TurnOnce(NpcBrainService brain, CorpusFile corpus, NpcGuardedState state, List<NpcTurnDto> utterances) =>
+        brain.TurnGuardedAsync(
+            new NpcGuardedTurnRequest
+            {
+                NpcId = "live-tomas",
+                Persona = new NpcPersona
+                {
+                    Name = "Tomas",
+                    Role = "farmer",
+                    Language = "English",
+                    Mood = "wary",
+                    AttitudeToPlayers = "cautious"
+                },
+                Knowledge = "local farmer brief",
+                Concern = corpus.Concern,
+                TopicCues = corpus.Facts.Select(f => (f.Id, f.Topic)).ToList(),
+                State = state.Clone(),
+                History = [],
+                NewTurns = utterances,
+                VoiceId = "bm_george"
+            }
+        );
 
     private static NpcBrainService BuildLiveBrain(string clacksUrl)
     {
