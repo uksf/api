@@ -56,6 +56,7 @@ public partial class NpcBrokerServiceGuardedTests
         await _sut.HandleTurnAsync(5006, TurnData());
 
         _updates.Should().Be(0);
+        _commands.Verify(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("npc_turn_cancel"))), Times.Once);
         _commands.Verify(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("\"npc_debug_state\""))), Times.Once);
     }
 

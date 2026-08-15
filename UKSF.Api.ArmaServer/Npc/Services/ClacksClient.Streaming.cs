@@ -43,8 +43,8 @@ public partial class ClacksClient
             using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
             if (!response.IsSuccessStatusCode)
             {
-                logger.LogWarning($"clacks /speak_stream returned {(int)response.StatusCode} for role '{role}'");
-                return;
+                var error = await response.Content.ReadAsStringAsync();
+                throw new HttpRequestException($"clacks /speak_stream returned {(int)response.StatusCode}: {error}");
             }
 
             await using var stream = await response.Content.ReadAsStreamAsync();
@@ -52,15 +52,35 @@ public partial class ClacksClient
             var clock = Stopwatch.StartNew();
             long firstFrameMs = -1;
             var frames = 0;
+            var errorEvent = false;
             string line;
             while ((line = await reader.ReadLineAsync()) is not null)
             {
-                if (line.StartsWith("data: ", StringComparison.Ordinal))
+                if (line.Equals("event: error", StringComparison.Ordinal))
                 {
-                    if (firstFrameMs < 0) firstFrameMs = clock.ElapsedMilliseconds;
-                    frames++;
-                    await onFrame(line["data: ".Length..]);
+                    errorEvent = true;
+                    continue;
                 }
+
+                if (!line.StartsWith("data: ", StringComparison.Ordinal)) continue;
+                var data = line["data: ".Length..];
+                if (errorEvent)
+                {
+                    throw new InvalidDataException($"clacks /speak_stream failed: {data}");
+                }
+
+                try
+                {
+                    Convert.FromBase64String(data);
+                }
+                catch (FormatException)
+                {
+                    throw new InvalidDataException("clacks /speak_stream returned a non-audio frame");
+                }
+
+                if (firstFrameMs < 0) firstFrameMs = clock.ElapsedMilliseconds;
+                frames++;
+                await onFrame(data);
             }
 
             // Frame spread is the difference between streaming and batching: if first and
@@ -70,6 +90,7 @@ public partial class ClacksClient
         catch (Exception exception)
         {
             logger.LogError($"clacks /speak_stream call failed for role '{role}'", exception);
+            throw;
         }
     }
 }

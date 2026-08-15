@@ -156,9 +156,10 @@ public partial class NpcBrokerService(
         {
             await SendScriptedClip(apiPort, session, npcId, turnId, result);
         }
-        else
+        else if (!await StreamDynamicTurn(apiPort, npcId, turnId, result))
         {
-            await StreamDynamicTurn(apiPort, npcId, turnId, result);
+            await SendDebugStateAsync(apiPort, npcId, result.Provider, AddressDecisionWire(decision));
+            return;
         }
 
         await CommitConversationHistoryAsync(session, npcId, sessionId, parsedTurns, result.Text, result.Mood);

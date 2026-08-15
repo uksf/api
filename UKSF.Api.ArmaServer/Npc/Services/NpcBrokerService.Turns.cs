@@ -39,11 +39,13 @@ public partial class NpcBrokerService
         if (string.IsNullOrEmpty(result.Text))
         {
             logger.LogWarning($"npc_turn: dynamic response had no text for npcId '{npcId}'");
+            await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId));
             return false;
         }
 
         var voiceId = string.IsNullOrEmpty(result.VoiceId) ? "oracle" : result.VoiceId;
         var seq = 0;
+        var failed = false;
         try
         {
             await clacksClient.SpeakStreamAsync(
@@ -59,11 +61,17 @@ public partial class NpcBrokerService
         }
         catch (Exception exception)
         {
+            failed = true;
             logger.LogError($"npc_turn: dynamic stream failed for turnId '{turnId}'", exception);
         }
 
-        // Always close so a partial or failed synthesis never leaves a clip hanging open.
+        if (seq == 0)
+        {
+            await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId));
+            return false;
+        }
+
         await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildAudioEnd(npcId, turnId));
-        return seq > 0;
+        return !failed;
     }
 }

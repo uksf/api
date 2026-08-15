@@ -498,7 +498,7 @@ public partial class NpcBrokerServiceTests
     }
 
     [Fact]
-    public async Task HandleTurnAsync_DynamicTurn_StreamFailureDoesNotBlockHistory()
+    public async Task HandleTurnAsync_DynamicTurn_StreamFailureCancelsWithoutHistory()
     {
         _sessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcSession, bool>>())).Returns(MakeDynamicSession());
         _brainClient.Setup(x => x.RespondAsync(It.IsAny<RespondRequest>()))
@@ -515,10 +515,11 @@ public partial class NpcBrokerServiceTests
 
         await _sut.HandleTurnAsync(5006, MakeTurnData());
 
-        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio_end"))), Times.Once);
+        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_turn_cancel"))), Times.Once);
+        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio_end"))), Times.Never);
         _sessionsContext.Verify(
             x => x.Update(It.IsAny<Expression<Func<DomainNpcSession, bool>>>(), It.IsAny<UpdateDefinition<DomainNpcSession>>()),
-            Times.Exactly(2) // own history + overheard write to the other sessions
+            Times.Never
         );
     }
 }
