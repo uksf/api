@@ -4,7 +4,8 @@ using UKSF.Api.ArmaServer.Npc.Models;
 
 namespace UKSF.Api.ArmaServer.Npc.Services;
 
-/// Treats classifier JSON as untrusted. Rejects the whole batch on any contract break.
+/// Treats classifier JSON as untrusted. Count and timestamp breaks reject the batch.
+/// Unknown tags, bad slots, and missing evidence fall back in place so a spoken line can still land.
 public static class NpcGuardedClassificationValidator
 {
     public static List<NpcGuardedClassification> Validate(IReadOnlyList<NpcGuardedClassification> raw, IReadOnlyList<NpcTurnDto> utterances)
@@ -19,21 +20,15 @@ public static class NpcGuardedClassificationValidator
             var u = utterances[i];
             if (c.T != u.T) return null;
 
-            var tag = (c.Tag ?? string.Empty).Trim().ToLowerInvariant();
-            if (!NpcGuardedTags.IsKnown(tag)) return null;
-
-            int? slot = c.TopicSlot;
-            if (slot is not null)
-            {
-                if (tag != NpcGuardedTags.RelevantQuestion) return null;
-                if (slot is < 1 or > 3) return null;
-            }
-
+            var tag = NpcGuardedTags.Normalise(c.Tag);
+            var slot = tag == NpcGuardedTags.RelevantQuestion && c.TopicSlot is >= 1 and <= 3 ? c.TopicSlot : null;
             var evidence = c.Evidence ?? string.Empty;
-            if (!c.Ambiguous && IsActionable(tag))
+            var ambiguous = c.Ambiguous;
+            if (!ambiguous &&
+                IsActionable(tag) &&
+                (string.IsNullOrWhiteSpace(evidence) || string.IsNullOrEmpty(u.Text) || !u.Text.Contains(evidence, StringComparison.OrdinalIgnoreCase)))
             {
-                if (string.IsNullOrWhiteSpace(evidence)) return null;
-                if (string.IsNullOrEmpty(u.Text) || !u.Text.Contains(evidence, StringComparison.OrdinalIgnoreCase)) return null;
+                ambiguous = true;
             }
 
             cleaned.Add(
@@ -43,7 +38,7 @@ public static class NpcGuardedClassificationValidator
                     Tag = tag,
                     TopicSlot = slot,
                     AddressesConcern = c.AddressesConcern || tag == NpcGuardedTags.AddressesConcern,
-                    Ambiguous = c.Ambiguous,
+                    Ambiguous = ambiguous,
                     Reason = c.Reason ?? string.Empty,
                     Evidence = evidence
                 }

@@ -116,7 +116,7 @@ public class NpcGuardedClassificationValidatorTests
     }
 
     [Fact]
-    public void UnknownTag_RejectsWhole()
+    public void UnknownTag_BecomesOther()
     {
         var raw = new List<NpcGuardedClassification>
         {
@@ -128,11 +128,14 @@ public class NpcGuardedClassificationValidatorTests
                 Ambiguous = false
             }
         };
-        NpcGuardedClassificationValidator.Validate(raw, Turns((1, "hello"))).Should().BeNull();
+        var result = NpcGuardedClassificationValidator.Validate(raw, Turns((1, "hello")));
+        result.Should().NotBeNull();
+        result![0].Tag.Should().Be(NpcGuardedTags.Other);
+        result[0].TopicSlot.Should().BeNull();
     }
 
     [Fact]
-    public void TopicSlotOnNonQuestion_RejectsWhole()
+    public void TopicSlotOnNonQuestion_DropsSlot()
     {
         var raw = new List<NpcGuardedClassification>
         {
@@ -145,11 +148,14 @@ public class NpcGuardedClassificationValidatorTests
                 Ambiguous = false
             }
         };
-        NpcGuardedClassificationValidator.Validate(raw, Turns((1, "I hurt them"))).Should().BeNull();
+        var result = NpcGuardedClassificationValidator.Validate(raw, Turns((1, "I hurt them")));
+        result.Should().NotBeNull();
+        result![0].Tag.Should().Be(NpcGuardedTags.Threat);
+        result[0].TopicSlot.Should().BeNull();
     }
 
     [Fact]
-    public void MissingEvidenceOnActionable_RejectsWhole()
+    public void MissingEvidenceOnActionable_MarksAmbiguous()
     {
         var raw = new List<NpcGuardedClassification>
         {
@@ -161,11 +167,14 @@ public class NpcGuardedClassificationValidatorTests
                 Ambiguous = false
             }
         };
-        NpcGuardedClassificationValidator.Validate(raw, Turns((1, "I hurt your family"))).Should().BeNull();
+        var result = NpcGuardedClassificationValidator.Validate(raw, Turns((1, "I hurt your family")));
+        result.Should().NotBeNull();
+        result![0].Tag.Should().Be(NpcGuardedTags.Threat);
+        result[0].Ambiguous.Should().BeTrue();
     }
 
     [Fact]
-    public void EvidenceNotInUtterance_RejectsWhole()
+    public void EvidenceNotInUtterance_MarksAmbiguous()
     {
         var raw = new List<NpcGuardedClassification>
         {
@@ -177,7 +186,10 @@ public class NpcGuardedClassificationValidatorTests
                 Ambiguous = false
             }
         };
-        NpcGuardedClassificationValidator.Validate(raw, Turns((1, "I hurt your family"))).Should().BeNull();
+        var result = NpcGuardedClassificationValidator.Validate(raw, Turns((1, "I hurt your family")));
+        result.Should().NotBeNull();
+        result![0].Tag.Should().Be(NpcGuardedTags.Threat);
+        result[0].Ambiguous.Should().BeTrue();
     }
 
     [Fact]

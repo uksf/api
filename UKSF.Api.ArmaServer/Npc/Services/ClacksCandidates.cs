@@ -1,18 +1,18 @@
 namespace UKSF.Api.ArmaServer.Npc.Services;
 
-// clacks now serves MODELS, not roles: the caller owns the model + fallback list. The npc usages
-// keep their intent here — chat runs on luna, which needs no desktop up, and falls back to the
-// local 9B; voice runs the same clone engine on every node, so a mission maker hears in testing
-// what players hear live.
+// clacks now serves MODELS, not roles: the caller owns the model + fallback list. Chat is
+// Gemini 3.5 Flash Lite. Luna is the quality fallback with thinking off.
+// Voice runs the same clone engine on every node, so a mission maker hears in testing what
+// players hear live.
 public static class ClacksCandidates
 {
-    public const string NpcChatModel = "luna";
+    public const string NpcChatModel = "google/gemini-3.5-flash-lite";
 
-    // Reasoning effort is pinned low. Left unset the gpt-5.x models spend heavily on hidden
-    // reasoning, which buys nothing on a two-sentence NPC line.
-    public const string NpcChatEffort = "low";
+    // Gemini OpenRouter ignores this field. Luna Codex uses none to disable hidden reasoning.
+    // Unset gpt-5.x defaults to medium; minimal hangs the Codex stream.
+    public const string NpcChatEffort = "none";
 
-    public static readonly string[] NpcChatFallbacks = ["qwen3.5-9b", "haiku"];
+    public static readonly string[] NpcChatFallbacks = ["luna"];
 
     public const string VoiceModel = "pockettts";
 

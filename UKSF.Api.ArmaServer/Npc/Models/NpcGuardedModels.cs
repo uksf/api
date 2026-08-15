@@ -50,6 +50,13 @@ public static class NpcGuardedTags
     ];
 
     public static bool IsKnown(string tag) => !string.IsNullOrEmpty(tag) && All.Contains(tag);
+
+    public static string Normalise(string tag)
+    {
+        if (string.IsNullOrWhiteSpace(tag)) return Other;
+        var candidate = tag.Trim().ToLowerInvariant();
+        return IsKnown(candidate) ? candidate : Other;
+    }
 }
 
 public static class NpcGuardedDirectives

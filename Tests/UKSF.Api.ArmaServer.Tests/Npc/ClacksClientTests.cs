@@ -53,10 +53,10 @@ public class ClacksClientTests
         sent.Should().HaveCount(1);
         sent[0].RequestUri.ToString().Should().Be("http://dedi-ts:8800/v1/chat/completions");
         var body = JsonDocument.Parse(await sent[0].Content.ReadAsStringAsync());
-        body.RootElement.GetProperty("model").GetString().Should().Be("luna");
-        body.RootElement.GetProperty("effort").GetString().Should().Be("low");
+        body.RootElement.GetProperty("model").GetString().Should().Be("google/gemini-3.5-flash-lite");
+        body.RootElement.GetProperty("effort").GetString().Should().Be("none");
         var fallbacks = body.RootElement.GetProperty("fallbacks").EnumerateArray().Select(e => e.GetString()).ToArray();
-        fallbacks.Should().Equal("qwen3.5-9b", "haiku");
+        fallbacks.Should().Equal("luna");
         var messages = body.RootElement.GetProperty("messages").EnumerateArray().ToArray();
         messages[0].GetProperty("content").GetString().Should().Be("SYS");
         messages[1].GetProperty("content").GetString().Should().Be("USR");
