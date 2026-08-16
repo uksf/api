@@ -73,7 +73,8 @@ public static class NpcAudioEnvelopeBuilder
         long classifyMs,
         long replyMs,
         string eligibleFactId,
-        IReadOnlyList<string> disclosedFactIds
+        IReadOnlyList<string> disclosedFactIds,
+        string spoken = null
     )
     {
         var disclosed = string.Join(",", (disclosedFactIds ?? []).Select(id => id ?? ""));
@@ -81,7 +82,7 @@ public static class NpcAudioEnvelopeBuilder
                $"{Quote(tag ?? "")},{Quote(topicSlot?.ToString() ?? "")}," +
                $"{(addressesConcern ? "true" : "false")},{(ambiguous ? "true" : "false")}," +
                $"{Quote(Truncate(reason))},{Quote(Truncate(evidence))}," +
-               $"{classifyMs},{replyMs},{Quote(eligibleFactId ?? "")},{Quote(disclosed)}]";
+               $"{classifyMs},{replyMs},{Quote(eligibleFactId ?? "")},{Quote(disclosed)},{Quote(Truncate(spoken))}]";
     }
 
     private static string Truncate(string value)

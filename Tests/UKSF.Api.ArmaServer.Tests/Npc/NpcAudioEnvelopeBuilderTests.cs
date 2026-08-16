@@ -118,7 +118,7 @@ public class NpcAudioEnvelopeBuilderTests
 
         cmd.Should()
            .Be(
-               "[\"npc_debug_state\",\"npc\"\"1\",\"luna@ultron\",\"answer\",\"relevant_question\",\"2\",true,false,\"r\",\"quoted \"\"span\"\"\",12,34,\"f2\",\"f1,f2\"]"
+               "[\"npc_debug_state\",\"npc\"\"1\",\"luna@ultron\",\"answer\",\"relevant_question\",\"2\",true,false,\"r\",\"quoted \"\"span\"\"\",12,34,\"f2\",\"f1,f2\",\"\"]"
            );
     }
 
@@ -127,7 +127,7 @@ public class NpcAudioEnvelopeBuilderTests
     {
         var cmd = NpcAudioEnvelopeBuilder.BuildDebugState("npc1", null, "stay_silent", null, null, false, false, null, null, 0, 0, null, null);
 
-        cmd.Should().Be("[\"npc_debug_state\",\"npc1\",\"\",\"stay_silent\",\"\",\"\",false,false,\"\",\"\",0,0,\"\",\"\"]");
+        cmd.Should().Be("[\"npc_debug_state\",\"npc1\",\"\",\"stay_silent\",\"\",\"\",false,false,\"\",\"\",0,0,\"\",\"\",\"\"]");
     }
 
     // Extracts the base64 payload field from an npc_audio command.

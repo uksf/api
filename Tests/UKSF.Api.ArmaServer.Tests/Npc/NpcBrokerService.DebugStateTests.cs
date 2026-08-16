@@ -28,7 +28,10 @@ public partial class NpcBrokerServiceTests
         await _sut.HandleTurnAsync(5006, MakeTurnData());
 
         _commandSender.Verify(
-            x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("\"npc_debug_state\"") && c.Contains("\"luna@ultron\"") && c.Contains("\"answer\""))),
+            x => x.SendCommandAsync(
+                5006,
+                It.Is<string>(c => c.Contains("\"npc_debug_state\"") && c.Contains("\"luna@ultron\"") && c.Contains("\"answer\"") && c.Contains("\"go away\""))
+            ),
             Times.Once
         );
     }

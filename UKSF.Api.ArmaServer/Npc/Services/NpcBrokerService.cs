@@ -166,7 +166,7 @@ public partial class NpcBrokerService(
         }
 
         await CommitConversationHistoryAsync(session, npcId, sessionId, parsedTurns, result.Text, result.Mood);
-        await SendDebugStateAsync(apiPort, npcId, result.Provider, AddressDecisionWire(decision));
+        await SendDebugStateAsync(apiPort, npcId, result.Provider, AddressDecisionWire(decision), spoken: result.Text);
     }
 
     public async Task HandleMissionEndedAsync(string sessionId)

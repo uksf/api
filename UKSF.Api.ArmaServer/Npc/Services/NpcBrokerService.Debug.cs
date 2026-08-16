@@ -28,7 +28,8 @@ public partial class NpcBrokerService
         long classifyMs = 0,
         long replyMs = 0,
         string eligibleFactId = null,
-        IReadOnlyList<string> disclosedFactIds = null
+        IReadOnlyList<string> disclosedFactIds = null,
+        string spoken = null
     )
     {
         var classes = (classifications ?? []).Where(c => c is not null).ToList();
@@ -51,7 +52,8 @@ public partial class NpcBrokerService
                 classifyMs,
                 replyMs,
                 eligibleFactId,
-                disclosedFactIds
+                disclosedFactIds,
+                spoken
             )
         );
     }
@@ -63,7 +65,8 @@ public partial class NpcBrokerService
         NpcGuardedConfig config,
         NpcGuardedEngineResult engine,
         NpcGuardedReplyResult reply,
-        IReadOnlyList<string> disclosedFactIds
+        IReadOnlyList<string> disclosedFactIds,
+        string spoken = null
     ) =>
         SendDebugStateAsync(
             apiPort,
@@ -75,7 +78,8 @@ public partial class NpcBrokerService
             classify?.Ms ?? 0,
             reply?.Ms ?? 0,
             engine?.PermittedFactId,
-            disclosedFactIds
+            disclosedFactIds,
+            spoken
         );
 
     private static string SummariseDebugFreeText(IEnumerable<string> parts, NpcGuardedConfig config)

@@ -34,7 +34,14 @@ public partial class NpcBrokerService
             {
                 logger.LogWarning($"npc_turn guarded: missing config for '{npcId}'");
                 await StreamSafeAndSkipCommit(apiPort, session, npcId, turnId, NpcGuardedProfile.SafeDeflection);
-                await SendDebugStateAsync(apiPort, npcId, "", "answer", disclosedFactIds: session.GuardedState?.DisclosedFactIds);
+                await SendDebugStateAsync(
+                    apiPort,
+                    npcId,
+                    "",
+                    "answer",
+                    disclosedFactIds: session.GuardedState?.DisclosedFactIds,
+                    spoken: NpcGuardedProfile.SafeDeflection
+                );
                 return;
             }
 
@@ -77,7 +84,8 @@ public partial class NpcBrokerService
                     classify?.Provider ?? modelReply?.Provider,
                     "answer",
                     classifyMs: classify?.Ms ?? modelReply?.Ms ?? 0,
-                    disclosedFactIds: stateSnapshot.DisclosedFactIds
+                    disclosedFactIds: stateSnapshot.DisclosedFactIds,
+                    spoken: NpcGuardedProfile.SafeDeflection
                 );
                 return;
             }
@@ -130,7 +138,7 @@ public partial class NpcBrokerService
 
             if (!commitState)
             {
-                await SendGuardedDebugStateAsync(apiPort, npcId, classify, session.Guarded, engine, modelReply, stateSnapshot.DisclosedFactIds);
+                await SendGuardedDebugStateAsync(apiPort, npcId, classify, session.Guarded, engine, modelReply, stateSnapshot.DisclosedFactIds, spoken);
                 return;
             }
 
@@ -140,7 +148,7 @@ public partial class NpcBrokerService
             var committed = await CommitGuardedAsync(session, npcId, sessionId, parsedTurns, spoken, mood, nextState);
             if (!committed)
             {
-                await SendGuardedDebugStateAsync(apiPort, npcId, classify, session.Guarded, engine, modelReply, nextState.DisclosedFactIds);
+                await SendGuardedDebugStateAsync(apiPort, npcId, classify, session.Guarded, engine, modelReply, nextState.DisclosedFactIds, spoken);
                 return;
             }
 
@@ -163,7 +171,7 @@ public partial class NpcBrokerService
                 )
             );
 
-            await SendGuardedDebugStateAsync(apiPort, npcId, classify, session.Guarded, engine, modelReply, nextState.DisclosedFactIds);
+            await SendGuardedDebugStateAsync(apiPort, npcId, classify, session.Guarded, engine, modelReply, nextState.DisclosedFactIds, spoken);
         }
         finally
         {
