@@ -41,6 +41,13 @@ public class NpcAudioEnvelopeBuilderTests
     }
 
     [Fact]
+    public void TurnCancelIncludesTurnId()
+    {
+        var cmd = NpcAudioEnvelopeBuilder.BuildTurnCancel("npc1", "turn7");
+        cmd.Should().Be("[\"npc_turn_cancel\",\"npc1\",\"turn7\"]");
+    }
+
+    [Fact]
     public void EmptyBase64ProducesOneEmptyChunk()
     {
         var cmds = NpcAudioEnvelopeBuilder.BuildAudio("n", "t", "", 0, 48000);

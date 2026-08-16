@@ -30,7 +30,7 @@ public static class NpcAudioEnvelopeBuilder
 
     /// The turn is dead — dropped as addressed to someone else, or declined by the brain.
     /// The client stops the filler loop instead of padding a silence that will never fill.
-    public static string BuildTurnCancel(string npcId) => $"[\"npc_turn_cancel\",{Quote(npcId)}]";
+    public static string BuildTurnCancel(string npcId, string turnId) => $"[\"npc_turn_cancel\",{Quote(npcId)},{Quote(turnId ?? "")}]";
 
     /// Bounded guarded-state/emote command. No canonical fact text. Free text truncated.
     public static string BuildGuardedState(

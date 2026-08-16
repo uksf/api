@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -11,7 +9,7 @@ using Xunit;
 
 namespace UKSF.Api.ArmaServer.Tests.Npc;
 
-public class NpcGuardedBrainServiceTests
+public partial class NpcGuardedBrainServiceTests
 {
     private readonly Mock<IClacksClient> _clacks = new();
     private readonly Mock<INpcVoicesContext> _voices = new();
@@ -63,7 +61,7 @@ public class NpcGuardedBrainServiceTests
     }
 
     [Fact]
-    public async Task Classify_UnknownTag_ReturnsNull()
+    public async Task Classify_UnknownTag_BecomesOther()
     {
         _clacks.Setup(x => x.ChatAsync("npc", It.IsAny<string>(), It.IsAny<string>(), true, It.IsAny<int>(), 0d, It.IsAny<object>()))
                .ReturnsAsync(
@@ -75,17 +73,19 @@ public class NpcGuardedBrainServiceTests
                    }
                );
 
-        (await _sut.ClassifyGuardedAsync(
-                MakeClassifyReq(
-                    new NpcTurnDto
-                    {
-                        SpeakerId = "p",
-                        Text = "hello",
-                        T = 1
-                    }
-                )
-            )).Should()
-              .BeNull();
+        var result = await _sut.ClassifyGuardedAsync(
+            MakeClassifyReq(
+                new NpcTurnDto
+                {
+                    SpeakerId = "p",
+                    Text = "hello",
+                    T = 1
+                }
+            )
+        );
+        result.Should().NotBeNull();
+        result!.Classifications.Should().ContainSingle();
+        result.Classifications[0].Tag.Should().Be(NpcGuardedTags.Other);
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public class NpcGuardedBrainServiceTests
     }
 
     [Fact]
-    public async Task Classify_EvidenceNotInUtterance_ReturnsNull()
+    public async Task Classify_EvidenceNotInUtterance_MarksAmbiguous()
     {
         _clacks.Setup(x => x.ChatAsync("npc", It.IsAny<string>(), It.IsAny<string>(), true, It.IsAny<int>(), 0d, It.IsAny<object>()))
                .ReturnsAsync(
@@ -128,17 +128,20 @@ public class NpcGuardedBrainServiceTests
                    }
                );
 
-        (await _sut.ClassifyGuardedAsync(
-                MakeClassifyReq(
-                    new NpcTurnDto
-                    {
-                        SpeakerId = "p",
-                        Text = "I hurt them",
-                        T = 1
-                    }
-                )
-            )).Should()
-              .BeNull();
+        var result = await _sut.ClassifyGuardedAsync(
+            MakeClassifyReq(
+                new NpcTurnDto
+                {
+                    SpeakerId = "p",
+                    Text = "I hurt them",
+                    T = 1
+                }
+            )
+        );
+        result.Should().NotBeNull();
+        result!.Classifications.Should().ContainSingle();
+        result.Classifications[0].Tag.Should().Be(NpcGuardedTags.Threat);
+        result.Classifications[0].Ambiguous.Should().BeTrue();
     }
 
     [Fact]
@@ -264,61 +267,4 @@ public class NpcGuardedBrainServiceTests
         system.Should().Contain("Exactly one");
         foreach (var fact in new[] { "Trucks have been rolling", "old mill", "third night" }) system.Should().NotContain(fact);
     }
-
-    private static NpcGuardedClassifyRequest MakeClassifyReq(params NpcTurnDto[] utterances) =>
-        new()
-        {
-            NpcId = "n1",
-            Persona = new NpcPersona
-            {
-                Name = "Tomas",
-                Role = "farmer",
-                Language = "English",
-                Mood = "wary",
-                AttitudeToPlayers = "cautious"
-            },
-            Concern = "retaliation",
-            TopicCues = [("f1", "traffic"), ("f2", "stop"), ("f3", "return")],
-            State = new NpcGuardedState(),
-            Utterances = utterances is { Length: > 0 }
-                ? utterances.ToList()
-                :
-                [
-                    new NpcTurnDto
-                    {
-                        SpeakerId = "p",
-                        Text = "hello",
-                        T = 1
-                    }
-                ]
-        };
-
-    private static NpcGuardedReplyRequest MakeReplyReq() =>
-        new()
-        {
-            NpcId = "n1",
-            Persona = new NpcPersona
-            {
-                Name = "Tomas",
-                Role = "farmer",
-                Language = "English",
-                Mood = "wary",
-                AttitudeToPlayers = "cautious"
-            },
-            Knowledge = "brief",
-            History = [],
-            NewTurns =
-            [
-                new NpcTurnDto
-                {
-                    SpeakerId = "p",
-                    Text = "hi",
-                    T = 1
-                }
-            ],
-            Directive = NpcGuardedDirectives.Disclose,
-            PermittedFactId = "f1",
-            PermittedFactTopic = "traffic",
-            VoiceId = "bm_george"
-        };
 }

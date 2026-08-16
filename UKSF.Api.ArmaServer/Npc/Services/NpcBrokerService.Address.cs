@@ -48,10 +48,10 @@ public partial class NpcBrokerService
             _        => ToBool(raw)
         };
 
-    private async Task CancelTurnAsync(int apiPort, string npcId, string reason)
+    private async Task CancelTurnAsync(int apiPort, string npcId, string turnId, string reason)
     {
         logger.LogInfo($"npc_turn: '{npcId}' stays silent ({reason})");
-        await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId));
+        await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId, turnId));
         await SendDebugStateAsync(apiPort, npcId, "", "stay_silent");
     }
 }

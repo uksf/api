@@ -25,7 +25,7 @@ public partial class NpcBrokerService
             if (session is null)
             {
                 logger.LogWarning($"npc_turn guarded: session vanished for '{npcId}' before work");
-                await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId));
+                await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId, turnId));
                 await SendDebugStateAsync(apiPort, npcId, "", "stay_silent");
                 return;
             }

@@ -99,7 +99,7 @@ public partial class NpcBrokerService(
         var decision = DecideAddress(session, sessionId, parsedTurns[^1].Text, gazeAddressed);
         if (decision == AddressDecision.StaySilent)
         {
-            await CancelTurnAsync(apiPort, npcId, gazeAddressed ? "names another NPC" : "not addressed");
+            await CancelTurnAsync(apiPort, npcId, turnId, gazeAddressed ? "names another NPC" : "not addressed");
             return;
         }
 
@@ -107,7 +107,7 @@ public partial class NpcBrokerService(
         var isGuarded = string.Equals(session.InteractionProfile, NpcInteractionProfiles.Guarded, StringComparison.OrdinalIgnoreCase);
         if (isGuarded && decision == AddressDecision.AskTheBrain)
         {
-            await CancelTurnAsync(apiPort, npcId, "guarded borderline address");
+            await CancelTurnAsync(apiPort, npcId, turnId, "guarded borderline address");
             return;
         }
 
@@ -138,7 +138,7 @@ public partial class NpcBrokerService(
         if (result is null)
         {
             logger.LogWarning($"npc_turn: brain returned null for npcId '{npcId}' — NPC stays silent this turn");
-            await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId));
+            await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId, turnId));
             await SendDebugStateAsync(apiPort, npcId, "", AddressDecisionWire(decision));
             return;
         }
@@ -146,7 +146,7 @@ public partial class NpcBrokerService(
         if (string.Equals(result.Text?.Trim(), "[none]", StringComparison.OrdinalIgnoreCase))
         {
             logger.LogInfo($"npc_turn: brain declined turn for '{npcId}' — not addressed");
-            await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId));
+            await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId, turnId));
             await SendDebugStateAsync(apiPort, npcId, result.Provider, "none");
             return;
         }

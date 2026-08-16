@@ -39,7 +39,7 @@ public partial class NpcBrokerService
         if (string.IsNullOrEmpty(result.Text))
         {
             logger.LogWarning($"npc_turn: dynamic response had no text for npcId '{npcId}'");
-            await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId));
+            await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId, turnId));
             return false;
         }
 
@@ -67,7 +67,7 @@ public partial class NpcBrokerService
 
         if (seq == 0)
         {
-            await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId));
+            await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId, turnId));
             return false;
         }
 
