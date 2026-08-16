@@ -61,6 +61,7 @@ public class NpcAudioEnvelopeBuilderTests
         var longReason = new string('r', 400);
         var cmd = NpcAudioEnvelopeBuilder.BuildGuardedState(
             "npc\"1",
+            "turn7",
             "engaged",
             true,
             false,
@@ -76,6 +77,7 @@ public class NpcAudioEnvelopeBuilderTests
 
         cmd.Should().StartWith("[\"npc_guarded_state\",");
         cmd.Should().Contain("npc\"\"1");
+        cmd.Should().Contain("turn7");
         cmd.Should().Contain("engaged");
         cmd.Should().Contain("true");
         cmd.Should().Contain("f1,f2");
@@ -89,7 +91,7 @@ public class NpcAudioEnvelopeBuilderTests
     [Fact]
     public void GuardedState_DoesNotDoubleEscapeDisclosedIds()
     {
-        var cmd = NpcAudioEnvelopeBuilder.BuildGuardedState("npc1", "engaged", false, false, ["f\"1"], null, "neutral", null, null, null, 0, 0);
+        var cmd = NpcAudioEnvelopeBuilder.BuildGuardedState("npc1", "turn7", "engaged", false, false, ["f\"1"], null, "neutral", null, null, null, 0, 0);
         // Quote once → one doubled quote, not quadruple.
         cmd.Should().Contain("f\"\"1");
         cmd.Should().NotContain("f\"\"\"\"1");

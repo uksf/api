@@ -145,6 +145,25 @@ public class NpcGuardedReplyValidatorTests
     }
 
     [Fact]
+    public void ConcernTextInEmote_Rejected()
+    {
+        var result = NpcGuardedReplyValidator.Validate(
+            new NpcGuardedReplyModelOutput
+            {
+                Text = "Hi",
+                Mood = "neutral",
+                Emote = "worries about family"
+            },
+            Config,
+            null,
+            null
+        );
+
+        result.Ok.Should().BeFalse();
+        result.Failure.Should().Contain("concern");
+    }
+
+    [Fact]
     public void MatchingIdWithoutPermitText_Rejected()
     {
         NpcGuardedReplyValidator.Validate(

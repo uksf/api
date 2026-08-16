@@ -32,6 +32,7 @@ public static class NpcGuardedReplyValidator
             if (emote.Length > MaxEmoteLength) return Fail("emote too long");
             if (emote.Contains('\n') || emote.Contains('\r')) return Fail("emote unsafe");
             if (canonicalFacts.Any(f => ContainsIgnoreCase(emote, f.Text))) return Fail("canonical fact text in emote");
+            if (!string.IsNullOrEmpty(config?.Concern) && ContainsIgnoreCase(emote, config.Concern)) return Fail("concern text in emote");
         }
 
         var claimedId = string.IsNullOrWhiteSpace(output.DisclosedFactId) ? null : output.DisclosedFactId.Trim();

@@ -10,27 +10,31 @@ namespace UKSF.Api.ArmaServer.Npc.Services;
 public partial class NpcBrokerService
 {
     /// Serve a scripted line from its prerendered clip and send it as one complete clip.
-    private async Task SendScriptedClip(int apiPort, DomainNpcSession session, string npcId, string turnId, RespondResult result)
+    private async Task<bool> SendScriptedClip(int apiPort, DomainNpcSession session, string npcId, string turnId, RespondResult result)
     {
         var lineId = string.IsNullOrEmpty(result.LineId) ? DeflectionId : result.LineId;
         var clip = clipsContext.GetSingle(x => x.SessionId == session.SessionId && x.NpcId == npcId && x.ClipId == lineId);
         if (clip is null)
         {
             logger.LogWarning($"npc_turn: scripted clip not found for voiceId='{session.VoiceId}', lineId='{lineId}'");
-            return;
+            await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId, turnId));
+            return false;
         }
 
         var bytes = await audioStore.ReadAsync(clip.FilePath);
         if (bytes is null)
         {
             logger.LogWarning($"npc_turn: scripted clip file missing '{clip.FilePath}' for lineId '{lineId}'");
-            return;
+            await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId, turnId));
+            return false;
         }
 
         foreach (var cmd in NpcAudioEnvelopeBuilder.BuildAudio(npcId, turnId, Convert.ToBase64String(bytes), clip.DurationMs))
         {
             await commandSender.SendCommandAsync(apiPort, cmd);
         }
+
+        return true;
     }
 
     /// Stream a dynamic line. Returns true when at least one TTS frame was emitted (delivery evidence).

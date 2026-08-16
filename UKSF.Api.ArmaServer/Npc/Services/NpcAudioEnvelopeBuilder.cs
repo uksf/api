@@ -35,6 +35,7 @@ public static class NpcAudioEnvelopeBuilder
     /// Bounded guarded-state/emote command. No canonical fact text. Free text truncated.
     public static string BuildGuardedState(
         string npcId,
+        string turnId,
         string cooperationBand,
         bool pendingWarning,
         bool burned,
@@ -50,7 +51,7 @@ public static class NpcAudioEnvelopeBuilder
     {
         // Join raw IDs; Quote escapes once. Do not Escape before Quote.
         var disclosed = string.Join(",", (disclosedFactIds ?? []).Select(id => id ?? ""));
-        return $"[\"npc_guarded_state\",{Quote(npcId)},{Quote(cooperationBand ?? "")}," +
+        return $"[\"npc_guarded_state\",{Quote(npcId)},{Quote(turnId ?? "")},{Quote(cooperationBand ?? "")}," +
                $"{(pendingWarning ? "true" : "false")},{(burned ? "true" : "false")}," +
                $"{Quote(disclosed)},{Quote(eligibleFactId ?? "")},{Quote(mood ?? "")}," +
                $"{Quote(Truncate(emote))},{Quote(Truncate(reason))},{Quote(Truncate(evidence))}," +

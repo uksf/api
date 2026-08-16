@@ -45,7 +45,7 @@ public partial class NpcBrokerServiceTests
             x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("\"npc_debug_state\"") && c.Contains("\"none\"") && c.Contains("\"luna@ultron\""))),
             Times.Once
         );
-        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("npc_turn_cancel"))), Times.Once);
+        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("npc_turn_cancel") && c.Contains("turn7"))), Times.Once);
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public partial class NpcBrokerServiceTests
     }
 
     [Fact]
-    public async Task HandleTurnAsync_ScriptedTurn_MissingClipFile_SendsDebugStateOnly()
+    public async Task HandleTurnAsync_ScriptedTurn_MissingClipFile_CancelsWithoutHistory()
     {
         _sessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcSession, bool>>())).Returns(MakeScriptedSession());
         _brainClient.Setup(x => x.RespondAsync(It.IsAny<RespondRequest>()))
@@ -83,8 +83,15 @@ public partial class NpcBrokerServiceTests
 
         await _sut.HandleTurnAsync(5006, MakeTurnData());
 
-        _commandSender.Verify(x => x.SendCommandAsync(It.IsAny<int>(), It.Is<string>(c => !c.Contains("npc_debug_state"))), Times.Never);
+        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("npc_turn_cancel") && c.Contains("turn7"))), Times.Once);
         _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("\"npc_debug_state\""))), Times.Once);
+        _sessionsContext.Verify(
+            x => x.Update(
+                It.IsAny<System.Linq.Expressions.Expression<Func<DomainNpcSession, bool>>>(),
+                It.IsAny<MongoDB.Driver.UpdateDefinition<DomainNpcSession>>()
+            ),
+            Times.Never
+        );
         _logger.Verify(x => x.LogWarning(It.IsAny<string>()), Times.Once);
     }
 }

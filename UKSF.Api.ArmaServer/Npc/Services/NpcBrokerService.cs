@@ -153,7 +153,11 @@ public partial class NpcBrokerService(
 
         if (scripted)
         {
-            await SendScriptedClip(apiPort, session, npcId, turnId, result);
+            if (!await SendScriptedClip(apiPort, session, npcId, turnId, result))
+            {
+                await SendDebugStateAsync(apiPort, npcId, result.Provider, AddressDecisionWire(decision));
+                return;
+            }
         }
         else if (!await StreamDynamicTurn(apiPort, npcId, turnId, result))
         {

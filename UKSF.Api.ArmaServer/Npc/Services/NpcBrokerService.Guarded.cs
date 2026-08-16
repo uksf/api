@@ -123,7 +123,7 @@ public partial class NpcBrokerService
 
             if (!delivered)
             {
-                logger.LogWarning($"npc_turn guarded: zero TTS frames for '{npcId}' turn '{turnId}' — state/history unchanged");
+                logger.LogWarning($"npc_turn guarded: stream not delivered for '{npcId}' turn '{turnId}' — state/history unchanged");
                 await SendGuardedDebugStateAsync(apiPort, npcId, classify, session.Guarded, engine, modelReply, stateSnapshot.DisclosedFactIds);
                 return;
             }
@@ -148,6 +148,7 @@ public partial class NpcBrokerService
                 apiPort,
                 NpcAudioEnvelopeBuilder.BuildGuardedState(
                     npcId,
+                    turnId,
                     nextState.CooperationBand,
                     nextState.PendingWarning,
                     nextState.Burned,

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -80,8 +81,16 @@ public partial class NpcBrokerService
                 T = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
             }
         );
-        var overheardUpdate = Builders<DomainNpcSession>.Update.PushEach(x => x.History, overheard, slice: -HistoryLimit);
-        await sessionsContext.Update(x => x.NpcId != npcId && x.SessionId == sessionId, overheardUpdate);
+        try
+        {
+            var overheardUpdate = Builders<DomainNpcSession>.Update.PushEach(x => x.History, overheard, slice: -HistoryLimit);
+            await sessionsContext.Update(x => x.NpcId != npcId && x.SessionId == sessionId, overheardUpdate);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"npc_turn guarded: overheard history update failed for '{npcId}' session '{sessionId}'", ex);
+        }
+
         return true;
     }
 
