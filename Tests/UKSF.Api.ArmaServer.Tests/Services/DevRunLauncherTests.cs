@@ -17,7 +17,8 @@ public class DevRunLauncherTests
     public DevRunLauncherTests()
     {
         _mockVariables.Setup(x => x.GetVariable("SERVER_PATH_RELEASE"))
-                      .Returns(new DomainVariableItem { Key = "SERVER_PATH_RELEASE", Item = @"C:/dev/server" });
+                      .Returns(new DomainVariableItem { Key = "SERVER_PATH_RELEASE", Item = @"C:/release/server" });
+        _mockVariables.Setup(x => x.GetVariable("SERVER_PATH_DEV")).Returns(new DomainVariableItem { Key = "SERVER_PATH_DEV", Item = @"C:/dev/server" });
         _mockVariables.Setup(x => x.GetVariable("MODPACK_REPO_PATH"))
                       .Returns(new DomainVariableItem { Key = "MODPACK_REPO_PATH", Item = Path.Combine(Path.GetTempPath(), "uksf-devrun-tests-modpack") });
     }
@@ -42,7 +43,7 @@ public class DevRunLauncherTests
         captured.MissionName.Should().Be("DevRun_8c1f9d22.VR");
         captured.GamePort.Should().Be(3304);
         captured.ApiPort.Should().Be(3305);
-        captured.ServerExecutablePath.Should().EndWith("arma3server_x64.exe");
+        captured.ServerExecutablePath.Should().Be(Path.Combine(@"C:/dev/server", "arma3server_x64.exe"));
         captured.Mods.Should().ContainSingle().Which.Should().Be(modPath);
         captured.FunctionFiles.Should().ContainKey("fn_runUserSqf.sqf");
         captured.FunctionFiles["fn_runUserSqf.sqf"].Should().Contain("uksf_dev_runId = \"8c1f9d22-1234\"");

@@ -12,7 +12,7 @@ public class DevRunLauncher(ISyntheticServerLauncher syntheticLauncher, IVariabl
 
     public SyntheticLaunchResult Launch(string runId, string sqf, IReadOnlyList<string> mods, string worldName = null)
     {
-        var serverRoot = variablesService.GetVariable("SERVER_PATH_RELEASE").AsString();
+        var serverRoot = variablesService.GetVariable("SERVER_PATH_DEV").AsString();
         var shortId = runId.Length >= 8 ? runId[..8] : runId;
         var profileName = $"DevRun_{shortId}";
         var effectiveWorld = string.IsNullOrWhiteSpace(worldName) ? "VR" : worldName;
