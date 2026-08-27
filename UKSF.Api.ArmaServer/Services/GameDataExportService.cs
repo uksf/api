@@ -14,7 +14,7 @@ namespace UKSF.Api.ArmaServer.Services;
 public class GameDataExportService : IGameDataExportService
 {
     private const int DefaultPollMs = 2000;
-    private const int DefaultTimeoutSeconds = 600;
+    private const int DefaultTimeoutSeconds = 1200;
     private const int FileSanityFloorBytes = 1024;
 
     private readonly IGameDataExportProcessLauncher _launcher;
