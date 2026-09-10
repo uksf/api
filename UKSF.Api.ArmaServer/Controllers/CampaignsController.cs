@@ -13,9 +13,9 @@ namespace UKSF.Api.ArmaServer.Controllers;
 [Permissions(Permissions.Member)]
 public class CampaignsController(
     ICampaignsContext campaignsContext,
-    IOpsContext opsContext,
+    IOperationsContext operationsContext,
     IIntelPagesContext intelPagesContext,
-    IOpsService opsService,
+    IOperationsService operationsService,
     IHttpContextService httpContextService,
     IUksfLogger logger
 ) : ControllerBase
@@ -38,7 +38,7 @@ public class CampaignsController(
     public DomainCampaign Get([FromRoute] string id)
     {
         var campaign = campaignsContext.GetSingle(id);
-        if (campaign is { Status: CampaignStatus.Upcoming } && !httpContextService.UserHasPermission(Permissions.Command))
+        if (campaign is null || (campaign.Status == CampaignStatus.Upcoming && !httpContextService.UserHasPermission(Permissions.Command)))
         {
             throw new NotFoundException("Campaign not found");
         }
@@ -67,14 +67,19 @@ public class CampaignsController(
     public async Task Delete([FromRoute] string id)
     {
         var campaign = campaignsContext.GetSingle(id);
-        if (campaign is { Status: CampaignStatus.Past })
+        if (campaign is null)
+        {
+            throw new NotFoundException("Campaign not found");
+        }
+
+        if (campaign.Status == CampaignStatus.Past)
         {
             throw new BadRequestException("Past campaigns cannot be deleted");
         }
 
-        foreach (var op in opsContext.Get(x => x.CampaignId == id).ToList())
+        foreach (var operation in operationsContext.Get(x => x.CampaignId == id).ToList())
         {
-            await opsService.DeleteOp(op.Id);
+            await operationsService.DeleteOperation(operation.Id);
         }
 
         await intelPagesContext.DeleteMany(x => x.Scope == IntelScope.Campaign && x.OwnerId == id);

@@ -32,7 +32,7 @@ public class GameServerProcessManagerTests
     private readonly Mock<IMissionsService> _mockMissionsService = new();
     private readonly Mock<IRptLogService> _mockRptLogService = new();
     private readonly Mock<IMissionStatsService> _mockMissionStatsService = new();
-    private readonly Mock<IOpSessionCaptureService> _mockOpSessionCaptureService = new();
+    private readonly Mock<IMissionSessionCaptureService> _mockOpSessionCaptureService = new();
     private readonly Mock<IVariablesService> _mockVariablesService = new();
     private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly Mock<IServersClient> _mockServersClient;

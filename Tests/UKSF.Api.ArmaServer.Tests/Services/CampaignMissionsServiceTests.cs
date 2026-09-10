@@ -12,21 +12,21 @@ using Xunit;
 
 namespace UKSF.Api.ArmaServer.Tests.Services;
 
-public class OpsServiceTests
+public class CampaignMissionsServiceTests
 {
     private readonly Mock<IGameServersService> _mockGameServersService = new();
     private readonly Mock<IMissionsService> _mockMissionsService = new();
-    private readonly Mock<IOpsContext> _mockOpsContext = new();
+    private readonly Mock<ICampaignMissionsContext> _mockCampaignMissionsContext = new();
     private readonly Mock<IIntelPagesContext> _mockIntelPagesContext = new();
     private readonly Mock<IGameServerLaunchService> _mockGameServerLaunchService = new();
-    private readonly OpsService _service;
+    private readonly CampaignMissionsService _service;
 
-    public OpsServiceTests()
+    public CampaignMissionsServiceTests()
     {
-        _service = new OpsService(
+        _service = new CampaignMissionsService(
             _mockGameServersService.Object,
             _mockMissionsService.Object,
-            _mockOpsContext.Object,
+            _mockCampaignMissionsContext.Object,
             _mockIntelPagesContext.Object,
             _mockGameServerLaunchService.Object
         );
@@ -77,17 +77,28 @@ public class OpsServiceTests
     }
 
     [Fact]
+    public void NextStandardOpTime_stores_1900_london_as_utc_in_gmt()
+    {
+        // 2026-01-10 is a Saturday in GMT. 12:00 UTC is before 19:00 local → same day 19:00 UTC.
+        var now = new DateTime(2026, 1, 10, 12, 0, 0, DateTimeKind.Utc);
+
+        var result = _service.NextStandardOpTimeUtc(now);
+
+        result.Should().Be(new DateTime(2026, 1, 10, 19, 0, 0, DateTimeKind.Utc));
+    }
+
+    [Fact]
     public void ApplyDefaults_sets_main_server_when_serverId_missing()
     {
         DomainGameServer main = new() { Name = "Main Server" };
         DomainGameServer other = new() { Name = "Other" };
         _mockGameServersService.Setup(x => x.GetServers()).Returns([other, main]);
-        DomainOp op = new() { Title = "X" };
+        DomainMission mission = new() { Title = "X" };
 
-        _service.ApplyDefaults(op);
+        _service.ApplyDefaults(mission);
 
-        op.ServerId.Should().Be(main.Id);
-        op.ScheduledTime.Should().NotBe(default);
+        mission.ServerId.Should().Be(main.Id);
+        mission.ScheduledTime.Should().NotBe(default);
     }
 
     [Fact]
@@ -96,11 +107,11 @@ public class OpsServiceTests
         DomainGameServer singleton = new() { Name = "Some Server", ServerOption = GameServerOption.Singleton };
         DomainGameServer other = new() { Name = "Other", ServerOption = GameServerOption.None };
         _mockGameServersService.Setup(x => x.GetServers()).Returns([other, singleton]);
-        DomainOp op = new() { Title = "X" };
+        DomainMission mission = new() { Title = "X" };
 
-        _service.ApplyDefaults(op);
+        _service.ApplyDefaults(mission);
 
-        op.ServerId.Should().Be(singleton.Id);
+        mission.ServerId.Should().Be(singleton.Id);
     }
 
     [Fact]
@@ -109,22 +120,22 @@ public class OpsServiceTests
         DomainGameServer first = new() { Name = "First", ServerOption = GameServerOption.None };
         DomainGameServer second = new() { Name = "Second", ServerOption = GameServerOption.None };
         _mockGameServersService.Setup(x => x.GetServers()).Returns([first, second]);
-        DomainOp op = new() { Title = "X" };
+        DomainMission mission = new() { Title = "X" };
 
-        _service.ApplyDefaults(op);
+        _service.ApplyDefaults(mission);
 
-        op.ServerId.Should().Be(first.Id);
+        mission.ServerId.Should().Be(first.Id);
     }
 
     [Fact]
     public void ApplyDefaults_does_not_overwrite_existing_serverId()
     {
         _mockGameServersService.Setup(x => x.GetServers()).Returns([new DomainGameServer { Name = "Main Server" }]);
-        DomainOp op = new() { Title = "X", ServerId = "chosen", ScheduledTime = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) };
+        DomainMission mission = new() { Title = "X", ServerId = "chosen", ScheduledTime = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) };
 
-        _service.ApplyDefaults(op);
+        _service.ApplyDefaults(mission);
 
-        op.ServerId.Should().Be("chosen");
+        mission.ServerId.Should().Be("chosen");
     }
 
     [Fact]
@@ -132,39 +143,40 @@ public class OpsServiceTests
     {
         var chosen = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         _mockGameServersService.Setup(x => x.GetServers()).Returns([new DomainGameServer { Name = "Main Server" }]);
-        DomainOp op = new() { Title = "X", ServerId = "s1", ScheduledTime = chosen };
+        DomainMission mission = new() { Title = "X", ServerId = "s1", ScheduledTime = chosen };
 
-        _service.ApplyDefaults(op);
+        _service.ApplyDefaults(mission);
 
-        op.ScheduledTime.Should().Be(chosen);
+        mission.ScheduledTime.Should().Be(chosen);
     }
 
     [Fact]
-    public async Task DeleteOp_deletes_op_scoped_intel_then_the_op()
+    public async Task DeleteMission_deletes_mission_scoped_intel_then_the_mission()
     {
         Expression<Func<DomainIntelPage, bool>> captured = null;
         _mockIntelPagesContext.Setup(x => x.DeleteMany(It.IsAny<Expression<Func<DomainIntelPage, bool>>>()))
                               .Callback<Expression<Func<DomainIntelPage, bool>>>(e => captured = e)
                               .Returns(Task.CompletedTask);
 
-        await _service.DeleteOp("op1");
+        await _service.DeleteMission("m1");
 
         _mockIntelPagesContext.Verify(x => x.DeleteMany(It.IsAny<Expression<Func<DomainIntelPage, bool>>>()), Times.Once);
-        _mockOpsContext.Verify(x => x.Delete("op1"), Times.Once);
+        _mockCampaignMissionsContext.Verify(x => x.Delete("m1"), Times.Once);
 
         var predicate = captured.Compile();
-        predicate(new DomainIntelPage { Scope = IntelScope.Op, OwnerId = "op1" }).Should().BeTrue();
-        predicate(new DomainIntelPage { Scope = IntelScope.Op, OwnerId = "op2" }).Should().BeFalse();
-        predicate(new DomainIntelPage { Scope = IntelScope.Campaign, OwnerId = "op1" }).Should().BeFalse();
+        predicate(new DomainIntelPage { Scope = IntelScope.Mission, OwnerId = "m1" }).Should().BeTrue();
+        predicate(new DomainIntelPage { Scope = IntelScope.Mission, OwnerId = "m2" }).Should().BeFalse();
+        predicate(new DomainIntelPage { Scope = IntelScope.Operation, OwnerId = "m1" }).Should().BeFalse();
+        predicate(new DomainIntelPage { Scope = IntelScope.Campaign, OwnerId = "m1" }).Should().BeFalse();
     }
 
     [Fact]
     public void ToDto_reports_missing_mission_file()
     {
-        DomainOp op = new() { Title = "X", MissionName = "gone.Altis.pbo" };
+        DomainMission mission = new() { Title = "X", MissionName = "gone.Altis.pbo" };
         _mockMissionsService.Setup(x => x.FindMissionFilePath("gone.Altis.pbo")).Returns((string)null);
 
-        var dto = _service.ToDto(op);
+        var dto = _service.ToDto(mission);
 
         dto.MissionFileState.Should().Be(MissionFileState.Missing);
     }
@@ -172,65 +184,65 @@ public class OpsServiceTests
     [Fact]
     public void ToDto_reports_present_when_mission_file_found()
     {
-        DomainOp op = new() { Title = "X", MissionName = "here.Altis.pbo" };
+        DomainMission mission = new() { Title = "X", MissionName = "here.Altis.pbo" };
         _mockMissionsService.Setup(x => x.FindMissionFilePath("here.Altis.pbo")).Returns("/missions/here.Altis.pbo");
 
-        var dto = _service.ToDto(op);
+        var dto = _service.ToDto(mission);
 
-        dto.Op.Should().Be(op);
+        dto.Mission.Should().Be(mission);
         dto.MissionFileState.Should().Be(MissionFileState.Present);
     }
 
     [Fact]
     public void ToDto_reports_missing_when_missionName_empty()
     {
-        DomainOp op = new() { Title = "X", MissionName = "" };
+        DomainMission mission = new() { Title = "X", MissionName = "" };
 
-        var dto = _service.ToDto(op);
+        var dto = _service.ToDto(mission);
 
         dto.MissionFileState.Should().Be(MissionFileState.Missing);
         _mockMissionsService.Verify(x => x.FindMissionFilePath(It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
-    public async Task LaunchOpAsync_throws_when_mission_file_missing()
+    public async Task LaunchMissionAsync_throws_when_mission_file_missing()
     {
-        DomainOp op = new() { Id = "op1", MissionName = "gone.Altis.pbo", ServerId = "s1" };
+        DomainMission mission = new() { Id = "m1", MissionName = "gone.Altis.pbo", ServerId = "s1" };
         _mockMissionsService.Setup(x => x.FindMissionFilePath("gone.Altis.pbo")).Returns((string)null);
 
-        var act = () => _service.LaunchOpAsync(op, "user1");
+        var act = () => _service.LaunchMissionAsync(mission, "user1");
 
         await act.Should().ThrowAsync<BadRequestException>();
         _mockGameServerLaunchService.Verify(x => x.LaunchAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
-    public async Task LaunchOpAsync_does_not_persist_when_launch_fails()
+    public async Task LaunchMissionAsync_does_not_persist_when_launch_fails()
     {
-        DomainOp op = new() { Id = "op1", MissionName = "m.Altis.pbo", ServerId = "s1" };
+        DomainMission mission = new() { Id = "m1", MissionName = "m.Altis.pbo", ServerId = "s1" };
         _mockMissionsService.Setup(x => x.FindMissionFilePath("m.Altis.pbo")).Returns("/missions/m.Altis.pbo");
         _mockGameServerLaunchService.Setup(x => x.LaunchAsync("s1", "m.Altis.pbo", "user1")).ThrowsAsync(new BadRequestException("boom"));
 
-        var act = () => _service.LaunchOpAsync(op, "user1");
+        var act = () => _service.LaunchMissionAsync(mission, "user1");
 
         await act.Should().ThrowAsync<BadRequestException>();
-        _mockOpsContext.Verify(x => x.Replace(It.IsAny<DomainOp>()), Times.Never);
+        _mockCampaignMissionsContext.Verify(x => x.Replace(It.IsAny<DomainMission>()), Times.Never);
     }
 
     [Fact]
-    public async Task LaunchOpAsync_snapshots_and_resets_session_and_status_on_success()
+    public async Task LaunchMissionAsync_snapshots_and_resets_session_and_status_on_success()
     {
-        DomainOp op = new()
+        DomainMission mission = new()
         {
-            Id = "op1", MissionName = "m.Altis.pbo", ServerId = "s1", Status = OpStatus.Complete, SessionId = "stale-session"
+            Id = "m1", MissionName = "m.Altis.pbo", ServerId = "s1", Status = MissionStatus.Complete, SessionId = "stale-session"
         };
         _mockMissionsService.Setup(x => x.FindMissionFilePath("m.Altis.pbo")).Returns("/missions/m.Altis.pbo");
         _mockGameServerLaunchService.Setup(x => x.LaunchAsync("s1", "m.Altis.pbo", "user1")).ReturnsAsync([]);
 
-        await _service.LaunchOpAsync(op, "user1");
+        await _service.LaunchMissionAsync(mission, "user1");
 
-        _mockOpsContext.Verify(x => x.Replace(It.Is<DomainOp>(o =>
+        _mockCampaignMissionsContext.Verify(x => x.Replace(It.Is<DomainMission>(o =>
             o.LaunchedServerId == "s1" && o.LaunchedMission == "m.Altis.pbo" && o.LaunchedAt != null
-            && o.SessionId == null && o.Status == OpStatus.Scheduled)), Times.Once);
+            && o.SessionId == null && o.Status == MissionStatus.Scheduled)), Times.Once);
     }
 }

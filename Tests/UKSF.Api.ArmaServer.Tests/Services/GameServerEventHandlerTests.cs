@@ -29,7 +29,7 @@ public class GameServerEventHandlerTests
     private readonly Mock<IPersistenceSessionsService> _mockPersistenceSessionsService = new();
     private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly Mock<INpcBrokerService> _mockNpcBrokerService = new();
-    private readonly Mock<IOpSessionCaptureService> _mockOpSessionCaptureService = new();
+    private readonly Mock<IMissionSessionCaptureService> _mockOpSessionCaptureService = new();
     private readonly GameServerEventHandler _sut;
 
     public GameServerEventHandlerTests()

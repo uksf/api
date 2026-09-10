@@ -6,8 +6,9 @@ namespace UKSF.Api.ArmaServer.Models;
 
 public enum IntelScope
 {
-    Campaign,
-    Op
+    Campaign = 0,
+    Operation = 1,
+    Mission = 2
 }
 
 public class DomainIntelPage : MongoObject

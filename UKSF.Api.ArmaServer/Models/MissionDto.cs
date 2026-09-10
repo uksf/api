@@ -6,8 +6,8 @@ public enum MissionFileState
     Present
 }
 
-public class OpDto
+public class MissionDto
 {
-    public DomainOp Op { get; set; }
+    public DomainMission Mission { get; set; }
     public MissionFileState MissionFileState { get; set; }
 }

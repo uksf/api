@@ -66,7 +66,8 @@ public static class ApiArmaServerExtensions
                            .AddContext<INpcVoicesContext, NpcVoicesContext>()
                            .AddContext<INpcVoiceJobsContext, NpcVoiceJobsContext>()
                            .AddCachedContext<ICampaignsContext, CampaignsContext>()
-                           .AddCachedContext<IOpsContext, OpsContext>()
+                           .AddCachedContext<IOperationsContext, OperationsContext>()
+                           .AddCachedContext<ICampaignMissionsContext, CampaignMissionsContext>()
                            .AddCachedContext<IIntelPagesContext, IntelPagesContext>();
         }
 
@@ -109,8 +110,9 @@ public static class ApiArmaServerExtensions
                            .AddSingleton<INpcBrainClient, NpcBrainService>()
                            .AddSingleton<IGameServerCommandSender, GameServerCommandSender>()
                            .AddSingleton<INpcBrokerService, NpcBrokerService>()
-                           .AddTransient<IOpsService, OpsService>()
-                           .AddTransient<IOpSessionCaptureService, OpSessionCaptureService>()
+                           .AddTransient<IOperationsService, OperationsService>()
+                           .AddTransient<ICampaignMissionsService, CampaignMissionsService>()
+                           .AddTransient<IMissionSessionCaptureService, MissionSessionCaptureService>()
                            .AddTransient<IGameServerLaunchService, GameServerLaunchService>();
         }
 
@@ -130,7 +132,7 @@ public static class ApiArmaServerExtensions
         {
             return services.AddSelfCreatingScheduledAction<IActionCheckForServerUpdate, ActionCheckForServerUpdate>()
                            .AddSelfCreatingScheduledAction<IActionCleanupRunningServers, ActionCleanupRunningServers>()
-                           .AddSelfCreatingScheduledAction<IActionLaunchDueOps, ActionLaunchDueOps>();
+                           .AddSelfCreatingScheduledAction<IActionLaunchDueMissions, ActionLaunchDueMissions>();
         }
     }
 

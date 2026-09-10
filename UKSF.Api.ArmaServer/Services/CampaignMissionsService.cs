@@ -5,36 +5,36 @@ using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.ArmaServer.Services;
 
-public interface IOpsService
+public interface ICampaignMissionsService
 {
-    void ApplyDefaults(DomainOp op);
+    void ApplyDefaults(DomainMission mission);
     DateTime NextStandardOpTimeUtc(DateTime nowUtc);
-    OpDto ToDto(DomainOp op);
-    Task DeleteOp(string id);
-    Task<List<ValidationReport>> LaunchOpAsync(DomainOp op, string launchedBy);
+    MissionDto ToDto(DomainMission mission);
+    Task DeleteMission(string id);
+    Task<List<ValidationReport>> LaunchMissionAsync(DomainMission mission, string launchedBy);
 }
 
-public class OpsService(
+public class CampaignMissionsService(
     IGameServersService gameServersService,
     IMissionsService missionsService,
-    IOpsContext opsContext,
+    ICampaignMissionsContext campaignMissionsContext,
     IIntelPagesContext intelPagesContext,
     IGameServerLaunchService gameServerLaunchService
-) : IOpsService
+) : ICampaignMissionsService
 {
     private const int StandardOpHourLocal = 19;
     private static readonly TimeZoneInfo LondonZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/London");
 
-    public void ApplyDefaults(DomainOp op)
+    public void ApplyDefaults(DomainMission mission)
     {
-        if (string.IsNullOrEmpty(op.ServerId))
+        if (string.IsNullOrEmpty(mission.ServerId))
         {
-            op.ServerId = ResolveMainServerId();
+            mission.ServerId = ResolveMainServerId();
         }
 
-        if (op.ScheduledTime == default)
+        if (mission.ScheduledTime == default)
         {
-            op.ScheduledTime = NextStandardOpTimeUtc(DateTime.UtcNow);
+            mission.ScheduledTime = NextStandardOpTimeUtc(DateTime.UtcNow);
         }
     }
 
@@ -51,33 +51,33 @@ public class OpsService(
         return TimeZoneInfo.ConvertTimeToUtc(candidate, LondonZone);
     }
 
-    public OpDto ToDto(DomainOp op)
+    public MissionDto ToDto(DomainMission mission)
     {
-        return new OpDto { Op = op, MissionFileState = ResolveMissionFileState(op.MissionName) };
+        return new MissionDto { Mission = mission, MissionFileState = ResolveMissionFileState(mission.MissionName) };
     }
 
-    public async Task DeleteOp(string id)
+    public async Task DeleteMission(string id)
     {
-        await intelPagesContext.DeleteMany(x => x.Scope == IntelScope.Op && x.OwnerId == id);
-        await opsContext.Delete(id);
+        await intelPagesContext.DeleteMany(x => x.Scope == IntelScope.Mission && x.OwnerId == id);
+        await campaignMissionsContext.Delete(id);
     }
 
-    public async Task<List<ValidationReport>> LaunchOpAsync(DomainOp op, string launchedBy)
+    public async Task<List<ValidationReport>> LaunchMissionAsync(DomainMission mission, string launchedBy)
     {
-        var dto = ToDto(op);
+        var dto = ToDto(mission);
         if (dto.MissionFileState == MissionFileState.Missing)
         {
             throw new BadRequestException("The mission file for this op is missing. Re-assign or restore it before launching.");
         }
 
-        var reports = await gameServerLaunchService.LaunchAsync(op.ServerId, op.MissionName, launchedBy);
+        var reports = await gameServerLaunchService.LaunchAsync(mission.ServerId, mission.MissionName, launchedBy);
 
-        op.LaunchedServerId = op.ServerId;
-        op.LaunchedMission = op.MissionName;
-        op.LaunchedAt = DateTime.UtcNow;
-        op.SessionId = null;
-        op.Status = OpStatus.Scheduled;
-        await opsContext.Replace(op);
+        mission.LaunchedServerId = mission.ServerId;
+        mission.LaunchedMission = mission.MissionName;
+        mission.LaunchedAt = DateTime.UtcNow;
+        mission.SessionId = null;
+        mission.Status = MissionStatus.Scheduled;
+        await campaignMissionsContext.Replace(mission);
 
         return reports;
     }

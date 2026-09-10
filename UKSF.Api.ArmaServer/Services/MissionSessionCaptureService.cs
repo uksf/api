@@ -3,13 +3,13 @@ using UKSF.Api.ArmaServer.Models;
 
 namespace UKSF.Api.ArmaServer.Services;
 
-public interface IOpSessionCaptureService
+public interface IMissionSessionCaptureService
 {
     Task CaptureStartedAsync(string serverId, string sessionId);
     Task CaptureEndedAsync(string sessionId);
 }
 
-public class OpSessionCaptureService(IOpsContext opsContext) : IOpSessionCaptureService
+public class MissionSessionCaptureService(ICampaignMissionsContext campaignMissionsContext) : IMissionSessionCaptureService
 {
     public async Task CaptureStartedAsync(string serverId, string sessionId)
     {
@@ -18,8 +18,8 @@ public class OpSessionCaptureService(IOpsContext opsContext) : IOpSessionCapture
             return;
         }
 
-        var pending = opsContext
-                      .Get(x => x.LaunchedServerId == serverId && x.Status == OpStatus.Scheduled && string.IsNullOrEmpty(x.SessionId))
+        var pending = campaignMissionsContext
+                      .Get(x => x.LaunchedServerId == serverId && x.Status == MissionStatus.Scheduled && string.IsNullOrEmpty(x.SessionId))
                       .OrderByDescending(x => x.LaunchedAt)
                       .FirstOrDefault();
         if (pending is null)
@@ -27,7 +27,7 @@ public class OpSessionCaptureService(IOpsContext opsContext) : IOpSessionCapture
             return;
         }
 
-        await opsContext.Update(pending.Id, x => x.SessionId, sessionId);
+        await campaignMissionsContext.Update(pending.Id, x => x.SessionId, sessionId);
     }
 
     public async Task CaptureEndedAsync(string sessionId)
@@ -37,12 +37,12 @@ public class OpSessionCaptureService(IOpsContext opsContext) : IOpSessionCapture
             return;
         }
 
-        var op = opsContext.Get(x => x.SessionId == sessionId).FirstOrDefault();
-        if (op is null)
+        var mission = campaignMissionsContext.Get(x => x.SessionId == sessionId).FirstOrDefault();
+        if (mission is null)
         {
             return;
         }
 
-        await opsContext.Update(op.Id, x => x.Status, OpStatus.Complete);
+        await campaignMissionsContext.Update(mission.Id, x => x.Status, MissionStatus.Complete);
     }
 }
