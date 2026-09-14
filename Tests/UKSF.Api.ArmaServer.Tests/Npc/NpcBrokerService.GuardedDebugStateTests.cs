@@ -12,7 +12,7 @@ namespace UKSF.Api.ArmaServer.Tests.Npc;
 public partial class NpcBrokerServiceGuardedTests
 {
     [Fact]
-    public async Task HandleTurnAsync_GuardedAnswer_SendsDebugStateWithTagIdsAndProvider_NoFactText()
+    public async Task HandleTurnAsync_GuardedAnswer_SendsDebugStateWithTagIdsProviderAndSpokenText()
     {
         _session = MakeGuardedSession();
         var reply = OkReply("I noticed some traffic.", "f1");
@@ -23,18 +23,13 @@ public partial class NpcBrokerServiceGuardedTests
 
         await _sut.HandleTurnAsync(5006, TurnData());
 
-        _commands.Verify(
-            x => x.SendCommandAsync(
-                5006,
-                It.Is<string>(c => c.Contains("\"npc_debug_state\"") &&
-                                   c.Contains("\"luna@ultron\"") &&
-                                   c.Contains("\"relevant_question\"") &&
-                                   c.Contains("\"f1\"") &&
-                                   !c.Contains("Trucks have been rolling")
-                )
-            ),
-            Times.Once
-        );
+        var debug = DebugStateCommand();
+        debug.Should().Contain("\"luna@ultron\"");
+        debug.Should().Contain("\"relevant_question\"");
+        debug.Should().Contain("\"f1\"");
+        LastQuotedField(debug).Should().Contain("I noticed some traffic.");
+        LastQuotedField(debug).Should().Contain("Trucks have been rolling past the farm after dark.");
+        StripLastQuotedField(debug).Should().NotContain("Trucks have been rolling");
     }
 
     [Fact]
@@ -92,8 +87,10 @@ public partial class NpcBrokerServiceGuardedTests
                                      .Select(i => (string)i.Arguments[1])
                                      .ToList();
         debugCommands.Should().HaveCount(1);
-        debugCommands[0].Should().NotContain("Trucks have been rolling");
         debugCommands[0].Should().Contain("[redacted]");
+        LastQuotedField(debugCommands[0]).Should().Contain("I noticed some traffic.");
+        LastQuotedField(debugCommands[0]).Should().Contain("Trucks have been rolling past the farm after dark.");
+        StripLastQuotedField(debugCommands[0]).Should().NotContain("Trucks have been rolling");
     }
 
     [Fact]
@@ -147,5 +144,32 @@ public partial class NpcBrokerServiceGuardedTests
 
         _commands.Verify(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("\"npc_debug_state\""))), Times.Once);
         _logger.Verify(x => x.LogWarning(It.Is<string>(m => m.Contains("commit target missing"))), Times.Once);
+    }
+
+    private string DebugStateCommand()
+    {
+        var debugCommands = _commands.Invocations
+                                     .Where(i => i.Method.Name == nameof(IGameServerCommandSender.SendCommandAsync) &&
+                                                 i.Arguments[1] is string c &&
+                                                 c.Contains("\"npc_debug_state\"")
+                                     )
+                                     .Select(i => (string)i.Arguments[1])
+                                     .ToList();
+        debugCommands.Should().ContainSingle();
+        return debugCommands[0];
+    }
+
+    private static string LastQuotedField(string cmd)
+    {
+        var lastComma = cmd.LastIndexOf(',');
+        lastComma.Should().BeGreaterThan(0);
+        return cmd[(lastComma + 1)..];
+    }
+
+    private static string StripLastQuotedField(string cmd)
+    {
+        var lastComma = cmd.LastIndexOf(',');
+        lastComma.Should().BeGreaterThan(0);
+        return cmd[..lastComma];
     }
 }
