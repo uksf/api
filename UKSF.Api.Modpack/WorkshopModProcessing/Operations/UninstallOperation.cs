@@ -4,8 +4,13 @@ using UKSF.Api.Modpack.Services;
 
 namespace UKSF.Api.Modpack.WorkshopModProcessing.Operations;
 
-public sealed class UninstallOperation(IWorkshopModsContext workshopModsContext, IWorkshopModsProcessingService workshopModsProcessingService)
-    : WorkshopModOperationBase(workshopModsContext, workshopModsProcessingService), IUninstallOperation
+public sealed class UninstallOperation(
+    IWorkshopModsContext workshopModsContext,
+    IWorkshopModsProcessingService workshopModsProcessingService,
+    IWorkshopModDependencyFilesService workshopModDependencyFilesService,
+    IWorkshopModRootFilesService workshopModRootFilesService
+) : WorkshopModOperationBase(workshopModsContext, workshopModsProcessingService, workshopModDependencyFilesService, workshopModRootFilesService),
+    IUninstallOperation
 {
     private WorkshopModStatus _previousStatus;
     private bool _wasEverReleased;
@@ -37,13 +42,18 @@ public sealed class UninstallOperation(IWorkshopModsContext workshopModsContext,
         return null;
     }
 
-    protected override Task ExecuteCoreAsync(DomainWorkshopMod workshopMod, List<string> selectedPbos, CancellationToken cancellationToken)
+    protected override Task ExecuteCoreAsync(
+        DomainWorkshopMod workshopMod,
+        List<string> selectedPbos,
+        List<string> selectedExtensions,
+        CancellationToken cancellationToken
+    )
     {
         ExecutionFilesChanged = false;
 
         if (workshopMod.RootMod)
         {
-            WorkshopModsProcessingService.DeleteRootModFromRepos(workshopMod);
+            WorkshopModRootFilesService.DeleteRootModFromRepos(workshopMod);
             ExecutionFilesChanged = true;
         }
         else
@@ -51,7 +61,14 @@ public sealed class UninstallOperation(IWorkshopModsContext workshopModsContext,
             var pbosToDelete = workshopMod.Pbos ?? [];
             if (pbosToDelete.Count > 0)
             {
-                WorkshopModsProcessingService.DeletePbosFromDependencies(pbosToDelete);
+                WorkshopModDependencyFilesService.DeletePbosFromDependencies(pbosToDelete);
+                ExecutionFilesChanged = true;
+            }
+
+            var filesToDelete = workshopMod.Extensions ?? [];
+            if (filesToDelete.Count > 0)
+            {
+                WorkshopModDependencyFilesService.DeleteExtensionsFromDependencies(filesToDelete);
                 ExecutionFilesChanged = true;
             }
         }
@@ -70,6 +87,8 @@ public sealed class UninstallOperation(IWorkshopModsContext workshopModsContext,
         }
 
         workshopMod.Pbos = [];
+        workshopMod.Extensions = [];
         workshopMod.AvailablePbos = [];
+        workshopMod.AvailableExtensions = [];
     }
 }

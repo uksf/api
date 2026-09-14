@@ -25,7 +25,9 @@ public class V1ChatResponse
 {
     public string Model { get; set; }
     public List<V1Choice> Choices { get; set; }
-    [JsonPropertyName("_clacks")] public V1Clacks Clacks { get; set; }
+
+    [JsonPropertyName("_clacks")]
+    public V1Clacks Clacks { get; set; }
 }
 
 public class V1Choice
@@ -74,14 +76,15 @@ public interface IClacksClient
 {
     Task<ClacksChatResult> ChatAsync(string role, string system, string user, bool json, int maxTokens, double temperature, object meta = null);
     Task<ClacksSpeakResult> SpeakAsync(string role, string text, string voiceId);
+    Task SpeakStreamAsync(string role, string text, string voiceId, Func<string, Task> onFrame);
     Task<bool> PutVoiceAsync(string voiceId, byte[] wavBytes);
     Task<ClacksEmoteResult> EmoteAsync(string voiceId, string text, string emoText, double emoAlpha);
     Task<bool> WarmAsync(IReadOnlyCollection<string> models, int leaseMs);
 }
 
 // HTTP client for the local clacks daemon (the LLM mesh). clacks serves MODELS; the npc candidate
-// lists + placement live in ClacksCandidates.
-public class ClacksClient(IHttpClientFactory httpClientFactory, IVariablesService variablesService, IUksfLogger logger) : IClacksClient
+// lists + placement live in ClacksCandidates. SpeakStreamAsync lives in ClacksClient.Streaming.cs.
+public partial class ClacksClient(IHttpClientFactory httpClientFactory, IVariablesService variablesService, IUksfLogger logger) : IClacksClient
 {
     public async Task<ClacksChatResult> ChatAsync(string role, string system, string user, bool json, int maxTokens, double temperature, object meta = null)
     {
@@ -96,13 +99,15 @@ public class ClacksClient(IHttpClientFactory httpClientFactory, IVariablesServic
         try
         {
             using var client = httpClientFactory.CreateClient();
-            client.Timeout = TimeSpan.FromSeconds(30);
+            client.Timeout = TimeSpan.FromSeconds(60); // a fallback may need a cold model load
             var response = await client.PostAsJsonAsync(
                 $"{baseUrl}/v1/chat/completions",
                 new
                 {
                     model = ClacksCandidates.NpcChatModel,
+                    effort = ClacksCandidates.NpcChatEffort,
                     fallbacks = ClacksCandidates.NpcChatFallbacks,
+                    // No service_tier: "fast" hangs the codex path (70s+ stall vs 1s without).
                     messages = new[] { new { role = "system", content = system }, new { role = "user", content = user } },
                     json,
                     max_tokens = maxTokens,
@@ -118,10 +123,7 @@ public class ClacksClient(IHttpClientFactory httpClientFactory, IVariablesServic
             }
 
             var v1 = await response.Content.ReadFromJsonAsync<V1ChatResponse>(NpcBrainJson.Options);
-            if (v1 is null)
-            {
-                return null;
-            }
+            if (v1 is null) return null;
 
             return new ClacksChatResult
             {
@@ -226,6 +228,7 @@ public class ClacksClient(IHttpClientFactory httpClientFactory, IVariablesServic
                 new
                 {
                     model = ClacksCandidates.EmoteModel,
+                    nodes = ClacksCandidates.EmoteNodes,
                     voiceId,
                     text,
                     emoText,

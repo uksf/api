@@ -2,6 +2,7 @@ using MassTransit;
 using MongoDB.Driver;
 using UKSF.Api.ArmaMissions;
 using UKSF.Api.ArmaServer;
+using UKSF.Api.Backups;
 using UKSF.Api.Commands;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Configuration;
@@ -75,6 +76,7 @@ public static class ServiceExtensions
                            .AddTransient<ICommandRequestService, CommandRequestService>()
                            .AddTransient<ILoaService, LoaService>()
                            .AddTransient<ILoginService, LoginService>()
+                           .AddTransient<IOcapEmbedTokenService, OcapEmbedTokenService>()
                            .AddTransient<IPermissionsService, PermissionsService>()
                            .AddTransient<ICommentThreadService, CommentThreadService>()
                            .AddTransient<IBoardService, BoardService>()
@@ -131,6 +133,7 @@ public static class ServiceExtensions
                            .AddUksfModpack()
                            .AddUksfArmaMissions()
                            .AddUksfArmaServer()
+                           .AddUksfBackups()
                            .AddUksfLauncher()
                            .AddUksfIntegrationDiscord()
                            .AddUksfIntegrationInstagram()

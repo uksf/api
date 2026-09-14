@@ -20,8 +20,20 @@ public class DomainNpcSession : MongoObject
     [JsonPropertyName("mode")]
     public string Mode { get; set; } = "dynamic"; // "scripted" | "dynamic"
 
+    /// conversation (default) | guarded. Missing on legacy docs → conversation.
+    [JsonPropertyName("interactionProfile")]
+    public string InteractionProfile { get; set; } = NpcInteractionProfiles.Conversation;
+
     [JsonPropertyName("scripted")]
     public NpcScripted Scripted { get; set; } = new();
+
+    /// Authoring payload for guarded sources. Null/absent on conversation NPCs.
+    [JsonPropertyName("guarded")]
+    public NpcGuardedConfig Guarded { get; set; }
+
+    /// Runtime cooperation/warning/burn/ledger. Null/absent on conversation NPCs.
+    [JsonPropertyName("guardedState")]
+    public NpcGuardedState GuardedState { get; set; }
 
     [JsonPropertyName("voiceId")]
     public string VoiceId { get; set; } = string.Empty;

@@ -78,4 +78,24 @@ public class NpcBrainDtosTests
         result.Items[0].Id.Should().Be("f0");
         result.Items[0].DurationMs.Should().Be(600);
     }
+
+    [Fact]
+    public void DomainNpcSession_MissingGuardedFields_DefaultToConversation()
+    {
+        const string json = """{"npcId":"n1","sessionId":"s1","mode":"dynamic","knowledge":"k"}""";
+        var session = JsonSerializer.Deserialize<DomainNpcSession>(json, NpcBrainJson.Options);
+        session!.InteractionProfile.Should().Be(NpcInteractionProfiles.Conversation);
+        session.Guarded.Should().BeNull();
+        session.GuardedState.Should().BeNull();
+    }
+
+    [Fact]
+    public void GuardedReplyModelOutput_DeserialisesForcedJson()
+    {
+        const string json = """{"text":"stay back","mood":"afraid","emote":"steps away","disclosedFactId":"f1"}""";
+        var output = JsonSerializer.Deserialize<NpcGuardedReplyModelOutput>(json, NpcBrainJson.Options);
+        output!.Text.Should().Be("stay back");
+        output.Mood.Should().Be("afraid");
+        output.DisclosedFactId.Should().Be("f1");
+    }
 }

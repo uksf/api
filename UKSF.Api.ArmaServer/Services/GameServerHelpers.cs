@@ -39,7 +39,11 @@ public interface IGameServerHelpers
 public class GameServerHelpers(IVariablesService variablesService, IProcessUtilities processUtilities, IUksfLogger logger, IConfiguration configuration)
     : IGameServerHelpers
 {
-    private string ApiUrl => configuration["Kestrel:Endpoints:Http:Url"];
+    // Force 127.0.0.1 — the game extension posts events here, and on Windows
+    // `localhost` can resolve to ::1 in a way that hangs the arma process's HTTP
+    // client even when curl from the shell reaches both stacks fine.
+    private string ApiUrl =>
+        (configuration["Kestrel:Endpoints:Http:Url"] ?? "http://127.0.0.1:5500").Replace("localhost", "127.0.0.1", StringComparison.OrdinalIgnoreCase);
 
     private static readonly string[] BaseConfig =
     [
@@ -52,8 +56,8 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
         "motdInterval = 999999;",
         "maxPlayers = {3};",
         "kickDuplicate = 1;",
-        "verifySignatures = 2;",
-        "allowedFilePatching = 1;",
+        "verifySignatures = {6};",
+        "allowedFilePatching = {7};",
         "unsafeCVL = 1;",
         "disableVoN = 1;",
         "persistent = 1;",
@@ -147,7 +151,9 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
             gameServer.AdminPassword,
             playerCount,
             missionSelection.Replace(".pbo", ""),
-            variablesService.GetVariable("SERVER_COMMAND_PASSWORD").AsString()
+            variablesService.GetVariable("SERVER_COMMAND_PASSWORD").AsString(),
+            gameServer.VerifySignatures ?? 2,
+            gameServer.AllowedFilePatching ?? 1
         );
     }
 

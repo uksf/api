@@ -17,7 +17,10 @@ public class GameServerCommandSender(IHttpClientFactory httpClientFactory, IUksf
         {
             using var client = httpClientFactory.CreateClient();
             var content = new StringContent(sqfArray, Encoding.UTF8, "text/plain");
-            var response = await client.PostAsync($"http://localhost:{apiPort}/command", content);
+            // 127.0.0.1, not localhost: the extension listener binds IPv4 only, and the
+            // IPv6 attempt localhost resolves to first costs a stall on every command —
+            // which turns a streamed clip into one late burst.
+            var response = await client.PostAsync($"http://127.0.0.1:{apiPort}/command", content);
             if (!response.IsSuccessStatusCode)
             {
                 logger.LogWarning($"NPC command push to game server port {apiPort} returned {(int)response.StatusCode}");

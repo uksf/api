@@ -169,7 +169,7 @@ public partial class GameServerProcessManager
                 return;
             }
 
-            if (StopWatchdogExceeded(server.Status, DateTime.UtcNow))
+            if (StopPhaseWatchdog.WatchdogExceeded(server.Status, DateTime.UtcNow))
             {
                 await ForceKillServer(server);
                 return;
@@ -236,28 +236,6 @@ public partial class GameServerProcessManager
         await ResetServerToDeadAsync(server, push: true);
 
         logger.LogInfo($"Process monitor detected server '{server.Name}' is offline");
-    }
-
-    public static bool StopWatchdogExceeded(GameServerStatus status, DateTime nowUtc)
-    {
-        if (status.StopPhase == StopPhase.None)
-        {
-            return false;
-        }
-
-        if (status.StopPhaseEnteredAt is { } enteredAt)
-        {
-            var ceiling = status.StopPhase switch
-            {
-                StopPhase.Ending   => EndingCeiling,
-                StopPhase.Saving   => SavingCeiling,
-                StopPhase.Stopping => StoppingCeiling,
-                _                  => StopBackstopCeiling
-            };
-            return nowUtc - enteredAt > ceiling;
-        }
-
-        return status.StopRequestedAt is { } requestedAt && nowUtc - requestedAt > StopBackstopCeiling;
     }
 
     private static TimeSpan CalculateTickInterval(List<DomainGameServer> servers)

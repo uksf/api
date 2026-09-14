@@ -4,11 +4,17 @@ using UKSF.Api.Modpack.Services;
 
 namespace UKSF.Api.Modpack.WorkshopModProcessing.Operations;
 
-public abstract class WorkshopModOperationBase(IWorkshopModsContext workshopModsContext, IWorkshopModsProcessingService workshopModsProcessingService)
-    : IModOperation
+public abstract class WorkshopModOperationBase(
+    IWorkshopModsContext workshopModsContext,
+    IWorkshopModsProcessingService workshopModsProcessingService,
+    IWorkshopModDependencyFilesService workshopModDependencyFilesService,
+    IWorkshopModRootFilesService workshopModRootFilesService
+) : IModOperation
 {
     protected readonly IWorkshopModsContext WorkshopModsContext = workshopModsContext;
     protected readonly IWorkshopModsProcessingService WorkshopModsProcessingService = workshopModsProcessingService;
+    protected readonly IWorkshopModDependencyFilesService WorkshopModDependencyFilesService = workshopModDependencyFilesService;
+    protected readonly IWorkshopModRootFilesService WorkshopModRootFilesService = workshopModRootFilesService;
 
     protected abstract WorkshopModStatus ActiveStatus { get; }
     protected abstract string CancelPrefix { get; }
@@ -61,17 +67,22 @@ public abstract class WorkshopModOperationBase(IWorkshopModsContext workshopMods
             await WorkshopModsProcessingService.UpdateModStatus(workshopMod, ActiveStatus, "Checking...");
 
             var workshopModPath = WorkshopModsProcessingService.GetWorkshopModPath(workshopMod.SteamId);
-            var currentPbos = workshopMod.Pbos ?? [];
-            var pbos = WorkshopModsProcessingService.GetModFiles(workshopModPath);
-            var pbosChanged = !currentPbos.OrderBy(x => x).SequenceEqual(pbos.OrderBy(x => x));
-
-            if (pbosChanged)
+            var pbos = WorkshopModsProcessingService.GetPboFiles(workshopModPath);
+            var extensions = WorkshopModsProcessingService.GetExtensions(workshopModPath);
+            if (pbos.Count == 0 && extensions.Count == 0)
             {
-                await WorkshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.InterventionRequired, "Select PBOs to install");
+                throw new InvalidOperationException($"No PBOs or extensions found in {workshopModPath}");
             }
 
-            await WorkshopModsProcessingService.SetAvailablePbos(workshopMod, pbos);
-            return OperationResult.Successful(interventionRequired: pbosChanged, availablePbos: pbos);
+            var contentChanged = HasChanged(workshopMod.Pbos, pbos) || HasChanged(workshopMod.Extensions, extensions);
+
+            if (contentChanged)
+            {
+                await WorkshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.InterventionRequired, "Select files to install");
+            }
+
+            await WorkshopModsProcessingService.SetAvailable(workshopMod, pbos, extensions);
+            return OperationResult.Successful(interventionRequired: contentChanged, availablePbos: pbos, availableExtensions: extensions);
         }
         catch (Exception exception)
         {
@@ -79,9 +90,19 @@ public abstract class WorkshopModOperationBase(IWorkshopModsContext workshopMods
         }
     }
 
+    private static bool HasChanged(List<string> installed, List<string> available)
+    {
+        return !(installed ?? []).OrderBy(x => x).SequenceEqual(available.OrderBy(x => x));
+    }
+
     protected bool ExecutionFilesChanged { get; set; } = true;
 
-    public async Task<OperationResult> ExecuteAsync(string workshopModId, List<string> selectedPbos, CancellationToken cancellationToken = default)
+    public async Task<OperationResult> ExecuteAsync(
+        string workshopModId,
+        List<string> selectedPbos,
+        List<string> selectedExtensions,
+        CancellationToken cancellationToken = default
+    )
     {
         var workshopMod = GetMod(workshopModId);
         if (workshopMod == null)
@@ -101,7 +122,7 @@ public abstract class WorkshopModOperationBase(IWorkshopModsContext workshopMods
         try
         {
             await WorkshopModsProcessingService.UpdateModStatus(workshopMod, ActiveStatus, ActiveStatusMessage);
-            await ExecuteCoreAsync(workshopMod, selectedPbos, cancellationToken);
+            await ExecuteCoreAsync(workshopMod, selectedPbos ?? [], selectedExtensions ?? [], cancellationToken);
             ApplyCompletedState(workshopMod);
             await PersistCompletedAsync(workshopMod);
 
@@ -132,5 +153,10 @@ public abstract class WorkshopModOperationBase(IWorkshopModsContext workshopMods
 
     protected virtual Task PersistCompletedAsync(DomainWorkshopMod workshopMod) => WorkshopModsContext.Replace(workshopMod);
 
-    protected abstract Task ExecuteCoreAsync(DomainWorkshopMod workshopMod, List<string> selectedPbos, CancellationToken cancellationToken);
+    protected abstract Task ExecuteCoreAsync(
+        DomainWorkshopMod workshopMod,
+        List<string> selectedPbos,
+        List<string> selectedExtensions,
+        CancellationToken cancellationToken
+    );
 }

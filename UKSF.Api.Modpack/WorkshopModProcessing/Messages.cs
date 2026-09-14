@@ -32,6 +32,7 @@ public class WorkshopModInterventionResolved : IWorkshopModCommand
 {
     public string WorkshopModId { get; init; }
     public List<string> SelectedPbos { get; init; }
+    public List<string> SelectedExtensions { get; init; }
 }
 
 // Unified Internal Commands
@@ -52,6 +53,7 @@ public class WorkshopModExecuteCommand : IWorkshopModCommand
     public string WorkshopModId { get; init; }
     public WorkshopModOperationType OperationType { get; init; }
     public List<string> SelectedPbos { get; init; }
+    public List<string> SelectedExtensions { get; init; }
 }
 
 public class WorkshopModUninstallInternalCommand : IWorkshopModCommand
@@ -76,6 +78,7 @@ public class WorkshopModCheckComplete : IWorkshopModCommand
     public string WorkshopModId { get; init; }
     public bool InterventionRequired { get; init; }
     public List<string> AvailablePbos { get; init; }
+    public List<string> AvailableExtensions { get; init; }
 }
 
 public class WorkshopModExecuteComplete : IWorkshopModCommand

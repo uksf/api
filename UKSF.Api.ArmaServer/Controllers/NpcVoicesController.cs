@@ -84,7 +84,7 @@ public class NpcVoicesController(
             throw new BadRequestException($"Voice '{voiceId}' already exists");
         }
 
-        var filePath = await store.SaveAsync(voiceId, bytes);
+        var filePath = await store.SaveBaseAsync(voiceId, bytes);
         var sha = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
 
         var doc = new DomainNpcVoice

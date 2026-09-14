@@ -24,4 +24,8 @@
         <ProjectReference Include="..\UKSF.Api.Tests.Common\UKSF.Api.Tests.Common.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+        <None Include="Npc\TestData\**\*" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
 </Project>

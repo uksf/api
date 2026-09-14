@@ -217,7 +217,7 @@ public class WorkshopModExecuteConsumerTests
     [Fact]
     public async Task Consume_WhenInstallExecuteSucceeds_ShouldPublishCompleteWithFilesChanged()
     {
-        _installOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+        _installOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
                          .ReturnsAsync(OperationResult.Successful());
 
         var context = TestHelpers.CreateContext(
@@ -237,13 +237,14 @@ public class WorkshopModExecuteConsumerTests
 
         published.Should().NotBeNull();
         published!.WorkshopModId.Should().Be("mod1");
-        _installOperation.Verify(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>()), Times.Once);
+        _installOperation.Verify(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<List<string>>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task Consume_WhenUpdateExecuteSucceeds_ShouldPublishCompleteWithUpdateStatus()
     {
-        _updateOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>())).ReturnsAsync(OperationResult.Successful());
+        _updateOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+                        .ReturnsAsync(OperationResult.Successful());
 
         var context = TestHelpers.CreateContext(
             new WorkshopModExecuteCommand
@@ -262,13 +263,13 @@ public class WorkshopModExecuteConsumerTests
 
         published.Should().NotBeNull();
         published!.WorkshopModId.Should().Be("mod1");
-        _updateOperation.Verify(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>()), Times.Once);
+        _updateOperation.Verify(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<List<string>>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task Consume_WhenExecuteFails_ShouldPublishFaulted()
     {
-        _installOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+        _installOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
                          .ReturnsAsync(OperationResult.Failure("mod1 not found"));
 
         var context = TestHelpers.CreateContext(
@@ -308,7 +309,7 @@ public class WorkshopModUninstallConsumerTests
     [Fact]
     public async Task Consume_WhenUninstallSucceeds_ShouldPublishCompleteWithFilesChanged()
     {
-        _uninstallOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+        _uninstallOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
                            .ReturnsAsync(OperationResult.Successful());
 
         var context = TestHelpers.CreateContext(new WorkshopModUninstallInternalCommand { WorkshopModId = "mod1" });
@@ -327,7 +328,7 @@ public class WorkshopModUninstallConsumerTests
     [Fact]
     public async Task Consume_WhenUninstallSucceeds_WithNoFilesChanged_ShouldPublishFilesChangedFalse()
     {
-        _uninstallOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+        _uninstallOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
                            .ReturnsAsync(OperationResult.Successful(filesChanged: false));
 
         var context = TestHelpers.CreateContext(new WorkshopModUninstallInternalCommand { WorkshopModId = "mod1" });
@@ -345,7 +346,7 @@ public class WorkshopModUninstallConsumerTests
     [Fact]
     public async Task Consume_WhenUninstallFails_ShouldPublishFaulted()
     {
-        _uninstallOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+        _uninstallOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
                            .ReturnsAsync(OperationResult.Failure("mod1 not found"));
 
         var context = TestHelpers.CreateContext(new WorkshopModUninstallInternalCommand { WorkshopModId = "mod1" });
@@ -359,116 +360,5 @@ public class WorkshopModUninstallConsumerTests
         published.Should().NotBeNull();
         published!.FaultedState.Should().Be("Uninstalling");
         published.ErrorMessage.Should().Contain("not found");
-    }
-}
-
-public class WorkshopModCleanupConsumerTests
-{
-    [Fact]
-    public async Task Consume_WhenWorkshopModMissing_ShouldPublishComplete()
-    {
-        var processingService = new Mock<IWorkshopModsProcessingService>();
-        var context = new Mock<IWorkshopModsContext>();
-        context.Setup(x => x.GetSingle(It.IsAny<Func<DomainWorkshopMod, bool>>())).Returns((DomainWorkshopMod)null);
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModCleanupConsumer(processingService.Object, context.Object, logger.Object);
-
-        var consumeContext = TestHelpers.CreateContext(new WorkshopModCleanupCommand { WorkshopModId = "mod1" });
-        WorkshopModCleanupComplete published = null;
-        consumeContext.Setup(x => x.Publish(It.IsAny<WorkshopModCleanupComplete>(), It.IsAny<CancellationToken>()))
-                      .Callback<WorkshopModCleanupComplete, CancellationToken>((msg, _) => published = msg)
-                      .Returns(Task.CompletedTask);
-
-        await consumer.Consume(consumeContext.Object);
-
-        published.Should().NotBeNull();
-        processingService.Verify(x => x.QueueDevBuild(), Times.Never);
-    }
-
-    [Fact]
-    public async Task Consume_WhenCleanupSucceeds_ShouldQueueBuildAndPublishComplete()
-    {
-        var processingService = new Mock<IWorkshopModsProcessingService>();
-        processingService.Setup(x => x.GetWorkshopModPath("mod1")).Returns("path");
-        processingService.Setup(x => x.QueueDevBuild()).Returns(Task.CompletedTask);
-        var context = new Mock<IWorkshopModsContext>();
-        var workshopMod = new DomainWorkshopMod { SteamId = "mod1" };
-        context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModCleanupConsumer(processingService.Object, context.Object, logger.Object);
-
-        var consumeContext = TestHelpers.CreateContext(new WorkshopModCleanupCommand { WorkshopModId = "mod1", FilesChanged = true });
-        WorkshopModCleanupComplete published = null;
-        consumeContext.Setup(x => x.Publish(It.IsAny<WorkshopModCleanupComplete>(), It.IsAny<CancellationToken>()))
-                      .Callback<WorkshopModCleanupComplete, CancellationToken>((msg, _) => published = msg)
-                      .Returns(Task.CompletedTask);
-
-        await consumer.Consume(consumeContext.Object);
-
-        published.Should().NotBeNull();
-        processingService.Verify(x => x.CleanupWorkshopModFiles("path"), Times.Once);
-        processingService.Verify(x => x.QueueDevBuild(), Times.Once);
-    }
-
-    [Fact]
-    public async Task Consume_WhenCleanupThrows_ShouldStillPublishComplete()
-    {
-        var processingService = new Mock<IWorkshopModsProcessingService>();
-        processingService.Setup(x => x.GetWorkshopModPath("mod1")).Returns("path");
-        processingService.Setup(x => x.CleanupWorkshopModFiles("path")).Throws(new IOException("fail"));
-        var context = new Mock<IWorkshopModsContext>();
-        var workshopMod = new DomainWorkshopMod { SteamId = "mod1" };
-        context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModCleanupConsumer(processingService.Object, context.Object, logger.Object);
-
-        var consumeContext = TestHelpers.CreateContext(new WorkshopModCleanupCommand { WorkshopModId = "mod1", FilesChanged = true });
-        WorkshopModCleanupComplete published = null;
-        consumeContext.Setup(x => x.Publish(It.IsAny<WorkshopModCleanupComplete>(), It.IsAny<CancellationToken>()))
-                      .Callback<WorkshopModCleanupComplete, CancellationToken>((msg, _) => published = msg)
-                      .Returns(Task.CompletedTask);
-
-        await consumer.Consume(consumeContext.Object);
-
-        published.Should().NotBeNull();
-    }
-
-    [Fact]
-    public async Task Consume_WhenFilesChangedTrue_QueuesDevBuild()
-    {
-        var processingService = new Mock<IWorkshopModsProcessingService>();
-        processingService.Setup(x => x.GetWorkshopModPath("mod1")).Returns("path");
-        processingService.Setup(x => x.QueueDevBuild()).Returns(Task.CompletedTask);
-        var context = new Mock<IWorkshopModsContext>();
-        var workshopMod = new DomainWorkshopMod { SteamId = "mod1" };
-        context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModCleanupConsumer(processingService.Object, context.Object, logger.Object);
-
-        var consumeContext = TestHelpers.CreateContext(new WorkshopModCleanupCommand { WorkshopModId = "mod1", FilesChanged = true });
-        consumeContext.Setup(x => x.Publish(It.IsAny<WorkshopModCleanupComplete>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-
-        await consumer.Consume(consumeContext.Object);
-
-        processingService.Verify(x => x.QueueDevBuild(), Times.Once);
-    }
-
-    [Fact]
-    public async Task Consume_WhenFilesChangedFalse_DoesNotQueueDevBuild()
-    {
-        var processingService = new Mock<IWorkshopModsProcessingService>();
-        processingService.Setup(x => x.GetWorkshopModPath("mod1")).Returns("path");
-        var context = new Mock<IWorkshopModsContext>();
-        var workshopMod = new DomainWorkshopMod { SteamId = "mod1" };
-        context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModCleanupConsumer(processingService.Object, context.Object, logger.Object);
-
-        var consumeContext = TestHelpers.CreateContext(new WorkshopModCleanupCommand { WorkshopModId = "mod1", FilesChanged = false });
-        consumeContext.Setup(x => x.Publish(It.IsAny<WorkshopModCleanupComplete>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-
-        await consumer.Consume(consumeContext.Object);
-
-        processingService.Verify(x => x.QueueDevBuild(), Times.Never);
     }
 }

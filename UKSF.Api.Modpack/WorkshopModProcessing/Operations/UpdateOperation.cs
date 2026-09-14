@@ -4,8 +4,13 @@ using UKSF.Api.Modpack.Services;
 
 namespace UKSF.Api.Modpack.WorkshopModProcessing.Operations;
 
-public sealed class UpdateOperation(IWorkshopModsContext workshopModsContext, IWorkshopModsProcessingService workshopModsProcessingService)
-    : WorkshopModOperationBase(workshopModsContext, workshopModsProcessingService), IUpdateOperation
+public sealed class UpdateOperation(
+    IWorkshopModsContext workshopModsContext,
+    IWorkshopModsProcessingService workshopModsProcessingService,
+    IWorkshopModDependencyFilesService workshopModDependencyFilesService,
+    IWorkshopModRootFilesService workshopModRootFilesService
+) : WorkshopModOperationBase(workshopModsContext, workshopModsProcessingService, workshopModDependencyFilesService, workshopModRootFilesService),
+    IUpdateOperation
 {
     protected override WorkshopModStatus ActiveStatus => WorkshopModStatus.Updating;
     protected override string CancelPrefix => "Update";
@@ -13,25 +18,39 @@ public sealed class UpdateOperation(IWorkshopModsContext workshopModsContext, IW
     protected override string CompletedMessage => "Updated pending next modpack release";
     protected override string ActiveStatusMessage => "Updating...";
 
-    protected override async Task ExecuteCoreAsync(DomainWorkshopMod workshopMod, List<string> selectedPbos, CancellationToken cancellationToken)
+    protected override Task ExecuteCoreAsync(
+        DomainWorkshopMod workshopMod,
+        List<string> selectedPbos,
+        List<string> selectedExtensions,
+        CancellationToken cancellationToken
+    )
     {
         if (workshopMod.RootMod)
         {
-            ExecutionFilesChanged = WorkshopModsProcessingService.SyncRootModToRepos(workshopMod);
+            ExecutionFilesChanged = WorkshopModRootFilesService.SyncRootModToRepos(workshopMod);
+            return Task.CompletedTask;
         }
-        else
+
+        WorkshopModDependencyFilesService.CopyPbosToDependencies(workshopMod, selectedPbos, cancellationToken);
+        WorkshopModDependencyFilesService.CopyExtensionsToDependencies(workshopMod, selectedExtensions, cancellationToken);
+
+        var pbosToDelete = (workshopMod.Pbos ?? []).Except(selectedPbos, StringComparer.OrdinalIgnoreCase).ToList();
+        if (pbosToDelete.Count > 0)
         {
-            await WorkshopModsProcessingService.CopyPbosToDependencies(workshopMod, selectedPbos, cancellationToken);
-
-            var oldPbos = workshopMod.Pbos ?? [];
-            var pbosToDelete = oldPbos.Except(selectedPbos, StringComparer.OrdinalIgnoreCase).ToList();
-            if (pbosToDelete.Count > 0)
-            {
-                WorkshopModsProcessingService.DeletePbosFromDependencies(pbosToDelete);
-            }
-
-            workshopMod.Pbos = selectedPbos;
-            workshopMod.AvailablePbos = [];
+            WorkshopModDependencyFilesService.DeletePbosFromDependencies(pbosToDelete);
         }
+
+        var filesToDelete = (workshopMod.Extensions ?? []).Except(selectedExtensions, StringComparer.OrdinalIgnoreCase).ToList();
+        if (filesToDelete.Count > 0)
+        {
+            WorkshopModDependencyFilesService.DeleteExtensionsFromDependencies(filesToDelete);
+        }
+
+        workshopMod.Pbos = selectedPbos;
+        workshopMod.Extensions = selectedExtensions;
+        workshopMod.AvailablePbos = [];
+        workshopMod.AvailableExtensions = [];
+
+        return Task.CompletedTask;
     }
 }

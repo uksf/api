@@ -166,23 +166,24 @@ public class DevRunService : IDevRunService
     public async Task FinishAsync(string runId)
     {
         var record = _context.GetSingle(x => x.RunId == runId);
-        if (record is null)
-        {
-            return;
-        }
-
-        if (record.Status == DevRunStatus.Running)
+        if (record is not null && record.Status == DevRunStatus.Running)
         {
             await _context.Update(record.Id, x => x.Status, DevRunStatus.Success);
             await _context.Update(record.Id, x => x.CompletedAt, (DateTime?)DateTime.UtcNow);
         }
 
         // Kill the spawned process so the watcher's IsProcessAlive check exits the
-        // poll loop and releases the launch gate. Without this the gate is held
-        // until wall-clock timeout even after a successful finish.
+        // poll loop and releases the launch gate via RunWatcherAsync finally.
         if (_activePids.TryRemove(runId, out var pid))
         {
             KillProcess(pid);
+            return;
+        }
+
+        // No tracked process: orphaned gate hold (record gone after API hiccup).
+        if (_gate.CurrentRunId == runId)
+        {
+            _gate.Release();
         }
     }
 

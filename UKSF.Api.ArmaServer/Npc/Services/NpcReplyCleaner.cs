@@ -28,9 +28,8 @@ public static partial class NpcReplyCleaner
             return (MoodScripts.Neutral, raw.Trim());
         }
 
-        var mood = match.Groups[1].Value.ToLowerInvariant();
         var rest = raw[match.Length..].Trim();
-        return MoodScripts.IsValid(mood) ? (mood, rest) : (MoodScripts.Neutral, rest);
+        return (MoodScripts.Normalise(match.Groups[1].Value), rest);
     }
 
     [GeneratedRegex(@"^\s*you said:\s*", RegexOptions.IgnoreCase)]
@@ -39,6 +38,8 @@ public static partial class NpcReplyCleaner
     [GeneratedRegex("[*\\[\\]()\"]")]
     private static partial Regex TtsUnsafe();
 
-    [GeneratedRegex(@"^\s*\[mood:\s*([a-zA-Z]+)\s*\]\s*", RegexOptions.IgnoreCase)]
+    // The prefix is optional because the model drops it one reply in five: [mood:angry]
+    // and [angry] are the same tag, and an unmatched one is read aloud as a word.
+    [GeneratedRegex(@"^\s*\[(?:mood:)?\s*([a-zA-Z]+)\s*\]\s*", RegexOptions.IgnoreCase)]
     private static partial Regex MoodTag();
 }

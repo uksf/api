@@ -81,6 +81,7 @@ public partial class GameServerProcessManager
             gameServer.Status.StopRequestedAt ??= now; // in-game trigger: API never set it on a stop press
             gameServer.Status.StopPhase = phase;
             gameServer.Status.StopPhaseEnteredAt = now; // arms the per-stage watchdog
+            gameServer.Status.KillAllowedAt = StopPhaseWatchdog.KillOfferAt(gameServer.Status);
             await gameServersContext.Replace(gameServer);
             await PushServerUpdateAsync(gameServer);
         }
@@ -211,7 +212,7 @@ public partial class GameServerProcessManager
         client.Timeout = TimeSpan.FromSeconds(5);
         try
         {
-            var response = await client.GetAsync($"http://localhost:{gameServer.ApiPort}/server");
+            var response = await client.GetAsync($"http://127.0.0.1:{gameServer.ApiPort}/server");
             if (!response.IsSuccessStatusCode)
             {
                 var statusCode = (int)response.StatusCode;

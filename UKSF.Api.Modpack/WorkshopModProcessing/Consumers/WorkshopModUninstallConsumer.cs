@@ -19,7 +19,7 @@ public class WorkshopModUninstallConsumer(
             context,
             context.Message.WorkshopModId,
             "Uninstalling",
-            () => uninstallOperation.ExecuteAsync(context.Message.WorkshopModId, [], context.CancellationToken),
+            () => uninstallOperation.ExecuteAsync(context.Message.WorkshopModId, [], [], context.CancellationToken),
             result => context.Publish(new WorkshopModUninstallComplete { WorkshopModId = context.Message.WorkshopModId, FilesChanged = result.FilesChanged }),
             processingService,
             workshopModsContext,

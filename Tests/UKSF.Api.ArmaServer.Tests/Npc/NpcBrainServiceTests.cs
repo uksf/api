@@ -312,7 +312,7 @@ public class NpcBrainServiceTests
     }
 
     [Fact]
-    public async Task Neutral_mood_speaks_the_base_voice_without_a_registry_lookup()
+    public async Task Neutral_mood_speaks_its_generated_variant_when_one_is_registered()
     {
         var clacks = new Mock<IClacksClient>();
         var voices = new Mock<INpcVoicesContext>();
@@ -327,7 +327,9 @@ public class NpcBrainServiceTests
                       Model = "qwen3.5-9b"
                   }
               );
-        clacks.Setup(x => x.SpeakAsync("npc-voice", "Move along.", "smuggler")).ReturnsAsync(new ClacksSpeakResult { AudioBase64 = "AA==", DurationMs = 300 });
+        clacks.Setup(x => x.SpeakAsync("npc-voice", "Move along.", "smuggler_neutral"))
+              .ReturnsAsync(new ClacksSpeakResult { AudioBase64 = "AA==", DurationMs = 300 });
+        voices.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcVoice, bool>>())).Returns(new DomainNpcVoice { VoiceId = "smuggler_neutral" });
 
         var service = new NpcBrainService(clacks.Object, voices.Object, logger.Object);
         var result = await service.RespondAsync(
@@ -340,7 +342,6 @@ public class NpcBrainServiceTests
         );
 
         result.Mood.Should().Be("neutral");
-        clacks.Verify(x => x.SpeakAsync("npc-voice", "Move along.", "smuggler"), Times.Once);
-        voices.Verify(x => x.GetSingle(It.IsAny<Func<DomainNpcVoice, bool>>()), Times.Never);
+        clacks.Verify(x => x.SpeakAsync("npc-voice", "Move along.", "smuggler_neutral"), Times.Once);
     }
 }

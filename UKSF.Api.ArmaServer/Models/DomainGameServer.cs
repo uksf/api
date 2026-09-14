@@ -35,6 +35,15 @@ public class DomainGameServer : MongoObject
     public int Port { get; set; }
     public int? ProcessId { get; set; }
     public string ProfileName { get; set; }
+
+    /// Arma verifySignatures level. Null means 2 (full verification). Dev servers set 0 so
+    /// unsigned dev-build PBOs (hemtt dev junctions) can connect without a signed release mirror.
+    public int? VerifySignatures { get; set; }
+
+    /// Arma allowedFilePatching level. Null means 1 (server only). Dev servers set 2 so
+    /// filepatching clients (dev junction workflows) are not kicked.
+    public int? AllowedFilePatching { get; set; }
+
     public List<GameServerMod> ServerMods { get; set; } = [];
     public GameServerOption ServerOption { get; set; }
 
@@ -64,6 +73,7 @@ public class GameServerStatus
     public StopPhase StopPhase { get; set; }
     public DateTime? StopPhaseEnteredAt { get; set; }
     public DateTime? StopRequestedAt { get; set; }
+    public DateTime? KillAllowedAt { get; set; }
     public float Uptime { get; set; }
     public int EntityCount { get; set; }
     public int AiCount { get; set; }

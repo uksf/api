@@ -31,7 +31,7 @@ public class NpcVoicesControllerTests
     public NpcVoicesControllerTests()
     {
         _httpContext.Setup(x => x.GetUserId()).Returns("user-1");
-        _store.Setup(x => x.SaveAsync(It.IsAny<string>(), It.IsAny<byte[]>())).ReturnsAsync("smuggler.wav");
+        _store.Setup(x => x.SaveBaseAsync(It.IsAny<string>(), It.IsAny<byte[]>())).ReturnsAsync("smuggler.wav");
         _context.Setup(x => x.Add(It.IsAny<DomainNpcVoice>())).Returns(Task.CompletedTask);
         // Dup-slug check (predicate overload) defaults to "not found".
         _context.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcVoice, bool>>())).Returns((DomainNpcVoice)null);
@@ -81,7 +81,7 @@ public class NpcVoicesControllerTests
         var result = await _sut.Upload(WavFile(24000 * 2 * 5), "Smuggler", null, null); // 5s clip
         result.VoiceId.Should().Be("smuggler");
         result.OwnerId.Should().Be("user-1");
-        _store.Verify(x => x.SaveAsync("smuggler", It.IsAny<byte[]>()), Times.Once);
+        _store.Verify(x => x.SaveBaseAsync("smuggler", It.IsAny<byte[]>()), Times.Once);
         _clacks.Verify(x => x.PutVoiceAsync("smuggler", It.IsAny<byte[]>()), Times.Once);
         _context.Verify(x => x.Add(It.Is<DomainNpcVoice>(v => v.VoiceId == "smuggler")), Times.Once);
     }
@@ -91,7 +91,7 @@ public class NpcVoicesControllerTests
     {
         var act = () => _sut.Upload(WavFile(24000 * 2 * 1), "Smuggler", null, null); // 1s
         await act.Should().ThrowAsync<Exception>();
-        _store.Verify(x => x.SaveAsync(It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
+        _store.Verify(x => x.SaveBaseAsync(It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
     }
 
     [Fact]
@@ -119,7 +119,7 @@ public class NpcVoicesControllerTests
         // Default GetSingle(predicate) returns null → parent not found.
         var act = () => _sut.Upload(WavFile(24000 * 2 * 5), "ignored", "ghost", "Angry");
         await act.Should().ThrowAsync<Exception>();
-        _store.Verify(x => x.SaveAsync(It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
+        _store.Verify(x => x.SaveBaseAsync(It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
     }
 
     [Fact]

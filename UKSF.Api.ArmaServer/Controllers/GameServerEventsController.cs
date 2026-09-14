@@ -1,5 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Parsing;
 using UKSF.Api.ArmaServer.Services;
@@ -11,7 +16,7 @@ namespace UKSF.Api.ArmaServer.Controllers;
 [Route("gameservers/events")]
 [AllowAnonymous]
 [LocalhostOnly]
-public class GameServerEventsController(IGameServerEventHandler eventHandler, IUksfLogger logger) : ControllerBase
+public class GameServerEventsController(IGameServerEventHandler eventHandler, IServiceScopeFactory scopeFactory, IUksfLogger logger) : ControllerBase
 {
     // Loopback-only endpoint receiving SQF event bodies from the extension.
     // persistence_save payloads can grow into the tens-of-MB range for large
@@ -71,14 +76,38 @@ public class GameServerEventsController(IGameServerEventHandler eventHandler, IU
             data["enqueueAt"] = enqueueAt;
         }
 
-        await eventHandler.HandleEventAsync(
-            new GameServerEvent
+        var gameServerEvent = new GameServerEvent
+        {
+            Type = type,
+            ApiPort = apiPort,
+            Data = data
+        };
+
+        // persistence_save must finish before the ack so a failed write is retried by the
+        // extension. Everything else (npc_turn included) acks immediately — the extension's
+        // HTTP client times out at 5s, and a brain+TTS turn routinely exceeds that, which
+        // caused retries, connection storms, and silent drops.
+        if (type == "persistence_save")
+        {
+            await eventHandler.HandleEventAsync(gameServerEvent);
+            return Ok();
+        }
+
+        _ = Task.Run(async () =>
             {
-                Type = type,
-                ApiPort = apiPort,
-                Data = data
+                try
+                {
+                    await using var scope = scopeFactory.CreateAsyncScope();
+                    var handler = scope.ServiceProvider.GetRequiredService<IGameServerEventHandler>();
+                    await handler.HandleEventAsync(gameServerEvent);
+                }
+                catch (Exception exception)
+                {
+                    logger.LogError($"Background handling of game server event '{type}' failed", exception);
+                }
             }
         );
-        return Ok();
+
+        return Accepted();
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace UKSF.Api.ArmaServer.Npc.Services;
@@ -8,6 +9,7 @@ public static class NpcAudioEnvelopeBuilder
     // Whole command must stay < 64 KB (listener.rs rejects > 65536). 48 KB of base64
     // leaves generous headroom for the SQF wrapper, ids, and any quote-doubling.
     private const int DefaultChunkSize = 49152;
+    private const int GuardedFreeTextMax = 240;
 
     public static List<string> BuildAudio(string npcId, string turnId, string audioBase64, long durationMs, int chunkSize = DefaultChunkSize) =>
         BuildChunked("npc_audio", [Quote(npcId), Quote(turnId)], audioBase64, durationMs, chunkSize);
@@ -15,6 +17,80 @@ public static class NpcAudioEnvelopeBuilder
     public static List<string>
         BuildFiller(string npcId, string voiceId, string fillerId, string audioBase64, long durationMs, int chunkSize = DefaultChunkSize) =>
         BuildChunked("npc_filler", [Quote(npcId), Quote(voiceId), Quote(fillerId)], audioBase64, durationMs, chunkSize);
+
+    /// One streamed PCM frame for a dynamic turn. Unlike npc_audio there is no fixed
+    /// total — the client appends frames to an open clip until npc_audio_end. `seq`
+    /// orders frames; `pcm` is base64 raw i16 LE at 24 kHz mono (~750 ms per frame).
+    public static string BuildAudioFrame(string npcId, string turnId, int seq, string pcm) =>
+        $"[\"npc_audio_frame\",{Quote(npcId)},{Quote(turnId)},{seq},\"{pcm}\"]";
+
+    /// Close a streamed turn. The client stops expecting frames and lets the clip
+    /// finish naturally once its queue drains.
+    public static string BuildAudioEnd(string npcId, string turnId) => $"[\"npc_audio_end\",{Quote(npcId)},{Quote(turnId)}]";
+
+    /// The turn is dead — dropped as addressed to someone else, or declined by the brain.
+    /// The client stops the filler loop instead of padding a silence that will never fill.
+    public static string BuildTurnCancel(string npcId, string turnId) => $"[\"npc_turn_cancel\",{Quote(npcId)},{Quote(turnId ?? "")}]";
+
+    /// Bounded guarded-state/emote command. No canonical fact text. Free text truncated.
+    public static string BuildGuardedState(
+        string npcId,
+        string turnId,
+        string cooperationBand,
+        bool pendingWarning,
+        bool burned,
+        IReadOnlyList<string> disclosedFactIds,
+        string eligibleFactId,
+        string mood,
+        string emote,
+        string reason,
+        string evidence,
+        long classifyMs,
+        long replyMs
+    )
+    {
+        // Join raw IDs; Quote escapes once. Do not Escape before Quote.
+        var disclosed = string.Join(",", (disclosedFactIds ?? []).Select(id => id ?? ""));
+        return $"[\"npc_guarded_state\",{Quote(npcId)},{Quote(turnId ?? "")},{Quote(cooperationBand ?? "")}," +
+               $"{(pendingWarning ? "true" : "false")},{(burned ? "true" : "false")}," +
+               $"{Quote(disclosed)},{Quote(eligibleFactId ?? "")},{Quote(mood ?? "")}," +
+               $"{Quote(Truncate(emote))},{Quote(Truncate(reason))},{Quote(Truncate(evidence))}," +
+               $"{classifyMs},{replyMs}]";
+    }
+
+    /// Per-turn pipeline telemetry for the admin console. Decisions and IDs only — never
+    /// fact text. Free text truncated like guarded state.
+    public static string BuildDebugState(
+        string npcId,
+        string provider,
+        string addressDecision,
+        string tag,
+        int? topicSlot,
+        bool addressesConcern,
+        bool ambiguous,
+        string reason,
+        string evidence,
+        long classifyMs,
+        long replyMs,
+        string eligibleFactId,
+        IReadOnlyList<string> disclosedFactIds,
+        string spoken = null
+    )
+    {
+        var disclosed = string.Join(",", (disclosedFactIds ?? []).Select(id => id ?? ""));
+        return $"[\"npc_debug_state\",{Quote(npcId)},{Quote(provider ?? "")},{Quote(addressDecision ?? "")}," +
+               $"{Quote(tag ?? "")},{Quote(topicSlot?.ToString() ?? "")}," +
+               $"{(addressesConcern ? "true" : "false")},{(ambiguous ? "true" : "false")}," +
+               $"{Quote(Truncate(reason))},{Quote(Truncate(evidence))}," +
+               $"{classifyMs},{replyMs},{Quote(eligibleFactId ?? "")},{Quote(disclosed)},{Quote(Truncate(spoken))}]";
+    }
+
+    private static string Truncate(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return "";
+        var clean = value.Replace('\n', ' ').Replace('\r', ' ').Trim();
+        return clean.Length <= GuardedFreeTextMax ? clean : clean[..GuardedFreeTextMax];
+    }
 
     private static List<string> BuildChunked(string type, string[] leadingFields, string audioBase64, long durationMs, int chunkSize)
     {
@@ -48,7 +124,7 @@ public static class NpcAudioEnvelopeBuilder
 
     private static string Escape(string value)
     {
-        if (!value.Contains('"')) return value;
+        if (string.IsNullOrEmpty(value) || !value.Contains('"')) return value ?? "";
         var builder = new StringBuilder(value.Length + 8);
         foreach (var c in value) builder.Append(c == '"' ? "\"\"" : c.ToString());
         return builder.ToString();

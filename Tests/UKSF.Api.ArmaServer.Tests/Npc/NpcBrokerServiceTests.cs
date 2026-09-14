@@ -16,84 +16,8 @@ using Xunit;
 
 namespace UKSF.Api.ArmaServer.Tests.Npc;
 
-public class NpcBrokerServiceTests
+public partial class NpcBrokerServiceTests
 {
-    private readonly Mock<INpcSessionsContext> _sessionsContext = new();
-    private readonly Mock<INpcAudioClipsContext> _clipsContext = new();
-    private readonly Mock<INpcBrainClient> _brainClient = new();
-    private readonly Mock<IClacksClient> _clacks = new();
-    private readonly Mock<IGameServerCommandSender> _commandSender = new();
-    private readonly Mock<INpcAudioStore> _audioStore = new();
-    private readonly Mock<IVariablesService> _variablesService = new();
-    private readonly Mock<IUksfLogger> _logger = new();
-    private readonly NpcBrokerService _sut;
-
-    public NpcBrokerServiceTests()
-    {
-        _variablesService.Setup(x => x.GetFeatureState("NPC_BROKER")).Returns(true);
-        _sessionsContext.Setup(x => x.GetSingle(It.IsAny<System.Func<DomainNpcSession, bool>>())).Returns((DomainNpcSession)null);
-        _clipsContext.Setup(x => x.GetSingle(It.IsAny<System.Func<DomainNpcAudioClip, bool>>())).Returns((DomainNpcAudioClip)null);
-        _sessionsContext.Setup(x => x.Add(It.IsAny<DomainNpcSession>())).Returns(Task.CompletedTask);
-        _sessionsContext.Setup(x => x.Replace(It.IsAny<DomainNpcSession>())).Returns(Task.CompletedTask);
-        _sessionsContext.Setup(x => x.Update(It.IsAny<Expression<Func<DomainNpcSession, bool>>>(), It.IsAny<UpdateDefinition<DomainNpcSession>>()))
-                        .Returns(Task.CompletedTask);
-        _sessionsContext.Setup(x => x.DeleteMany(It.IsAny<Expression<Func<DomainNpcSession, bool>>>())).Returns(Task.CompletedTask);
-        _clipsContext.Setup(x => x.Add(It.IsAny<DomainNpcAudioClip>())).Returns(Task.CompletedTask);
-        _clipsContext.Setup(x => x.Replace(It.IsAny<DomainNpcAudioClip>())).Returns(Task.CompletedTask);
-        _clipsContext.Setup(x => x.DeleteMany(It.IsAny<Expression<Func<DomainNpcAudioClip, bool>>>())).Returns(Task.CompletedTask);
-        _commandSender.Setup(x => x.SendCommandAsync(It.IsAny<int>(), It.IsAny<string>())).Returns(Task.CompletedTask);
-        _audioStore.Setup(x => x.SaveAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<byte[]>()))
-                   .ReturnsAsync((string sessionId, string npcId, string clipId, byte[] _) => $"2026-06-07/{sessionId}_{npcId}_{clipId}.wav");
-        _audioStore.Setup(x => x.ReadAsync(It.IsAny<string>())).ReturnsAsync(Convert.FromBase64String("QUJD"));
-
-        _brainClient.Setup(x => x.PrerenderAsync(It.IsAny<PrerenderRequest>()))
-                    .ReturnsAsync(
-                        new PrerenderResult
-                        {
-                            Items =
-                            [
-                                new PrerenderResultItem
-                                {
-                                    Id = "f0",
-                                    AudioBase64 = "QQ==",
-                                    DurationMs = 100
-                                },
-                                new PrerenderResultItem
-                                {
-                                    Id = "f1",
-                                    AudioBase64 = "QQ==",
-                                    DurationMs = 100
-                                },
-                                new PrerenderResultItem
-                                {
-                                    Id = "f2",
-                                    AudioBase64 = "QQ==",
-                                    DurationMs = 100
-                                },
-                                new PrerenderResultItem
-                                {
-                                    Id = "f3",
-                                    AudioBase64 = "QQ==",
-                                    DurationMs = 100
-                                }
-                            ]
-                        }
-                    );
-
-        _clacks.Setup(x => x.WarmAsync(It.IsAny<IReadOnlyCollection<string>>(), It.IsAny<int>())).ReturnsAsync(true);
-
-        _sut = new NpcBrokerService(
-            _sessionsContext.Object,
-            _clipsContext.Object,
-            _brainClient.Object,
-            _clacks.Object,
-            _commandSender.Object,
-            _audioStore.Object,
-            _variablesService.Object,
-            _logger.Object
-        );
-    }
-
     private static Dictionary<string, object> MakeRegisterData(
         string npcId = "npc1",
         string sessionId = "session1",
@@ -165,73 +89,27 @@ public class NpcBrokerServiceTests
     {
         await _sut.HandleRegisterAsync(5006, MakeRegisterData());
 
-        _clacks.Verify(
-            x => x.WarmAsync(It.Is<IReadOnlyCollection<string>>(r => r.Contains("qwen3.5-9b") && r.Contains("pockettts")), NpcWarmKeeper.LeaseMs),
-            Times.Once
-        );
+        _clacks.Verify(x => x.WarmAsync(It.Is<IReadOnlyCollection<string>>(r => r.Contains("pockettts")), NpcWarmKeeper.LeaseMs), Times.Once);
     }
 
     [Fact]
-    public async Task RegisterDynamicNpc_UpsertsSession_AndPrerendersWith4Fillers_AndStores4Clips_AndPushes4FillerCommands()
+    public async Task RegisterDynamicNpc_UpsertsSession_AndPushesFillersFromDisk_WithoutPrerendering()
     {
-        PrerenderRequest capturedRequest = null;
-        _brainClient.Setup(x => x.PrerenderAsync(It.IsAny<PrerenderRequest>()))
-                    .Callback<PrerenderRequest>(r => capturedRequest = r)
-                    .ReturnsAsync(
-                        new PrerenderResult
-                        {
-                            Items =
-                            [
-                                new PrerenderResultItem
-                                {
-                                    Id = "f0",
-                                    AudioBase64 = "QQ==",
-                                    DurationMs = 100
-                                },
-                                new PrerenderResultItem
-                                {
-                                    Id = "f1",
-                                    AudioBase64 = "QQ==",
-                                    DurationMs = 100
-                                },
-                                new PrerenderResultItem
-                                {
-                                    Id = "f2",
-                                    AudioBase64 = "QQ==",
-                                    DurationMs = 100
-                                },
-                                new PrerenderResultItem
-                                {
-                                    Id = "f3",
-                                    AudioBase64 = "QQ==",
-                                    DurationMs = 100
-                                }
-                            ]
-                        }
-                    );
-
         await _sut.HandleRegisterAsync(5006, MakeRegisterData());
 
         // Session upserted via Add (no existing session)
         _sessionsContext.Verify(x => x.Add(It.Is<DomainNpcSession>(s => s.NpcId == "npc1" && s.Mode == "dynamic")), Times.Once);
         _sessionsContext.Verify(x => x.Replace(It.IsAny<DomainNpcSession>()), Times.Never);
 
-        // Prerender called with exactly 4 fillers (dynamic mode — no scripted lines)
-        capturedRequest.Should().NotBeNull();
-        capturedRequest!.VoiceId.Should().Be("bm_george");
-        capturedRequest.Items.Should().HaveCount(4);
-        capturedRequest.Items.Select(i => i.Id).Should().BeEquivalentTo(["f0", "f1", "f2", "f3"]);
-
-        // 4 clips stored as files, docs carry the path
-        _clipsContext.Verify(x => x.Add(It.Is<DomainNpcAudioClip>(c => c.FilePath.EndsWith(".wav") && c.FilePath.Contains(c.ClipId))), Times.Exactly(4));
-        _audioStore.Verify(x => x.SaveAsync("session1", "npc1", It.IsAny<string>(), It.IsAny<byte[]>()), Times.Exactly(4));
-
-        // At least 4 filler commands pushed (one per filler — single chunk each for small base64)
-        _commandSender.Verify(x => x.SendCommandAsync(5006, It.IsAny<string>()), Times.AtLeast(4));
+        // Dynamic mode prerenders nothing; fillers are voice assets read from disk
+        _brainClient.Verify(x => x.PrerenderAsync(It.IsAny<PrerenderRequest>()), Times.Never);
+        _clipsContext.Verify(x => x.Add(It.IsAny<DomainNpcAudioClip>()), Times.Never);
+        _voiceStore.Verify(x => x.ReadAsync(It.IsAny<string>()), Times.Exactly(FillerIds.Count));
+        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("npc_filler"))), Times.AtLeast(FillerIds.Count));
     }
 
     [Fact]
-    public async Task RegisterScriptedNpc_PrerenderIncludesLinesDeflectionAndFillers_AndStoresAllClips()
+    public async Task RegisterScriptedNpc_PrerendersLinesAndDeflection_AndPushesFillersFromDisk()
     {
         PrerenderRequest capturedRequest = null;
         _brainClient.Setup(x => x.PrerenderAsync(It.IsAny<PrerenderRequest>()))
@@ -245,35 +123,11 @@ public class NpcBrokerServiceTests
                                 {
                                     Id = "ammo",
                                     AudioBase64 = "QQ==",
-                                    DurationMs = 200
+                                    DurationMs = 100
                                 },
                                 new PrerenderResultItem
                                 {
                                     Id = "__deflection__",
-                                    AudioBase64 = "QQ==",
-                                    DurationMs = 150
-                                },
-                                new PrerenderResultItem
-                                {
-                                    Id = "f0",
-                                    AudioBase64 = "QQ==",
-                                    DurationMs = 100
-                                },
-                                new PrerenderResultItem
-                                {
-                                    Id = "f1",
-                                    AudioBase64 = "QQ==",
-                                    DurationMs = 100
-                                },
-                                new PrerenderResultItem
-                                {
-                                    Id = "f2",
-                                    AudioBase64 = "QQ==",
-                                    DurationMs = 100
-                                },
-                                new PrerenderResultItem
-                                {
-                                    Id = "f3",
                                     AudioBase64 = "QQ==",
                                     DurationMs = 100
                                 }
@@ -284,15 +138,14 @@ public class NpcBrokerServiceTests
         await _sut.HandleRegisterAsync(5006, MakeScriptedData());
 
         capturedRequest.Should().NotBeNull();
-        // 1 scripted line + deflection + 4 fillers = 6 items
-        capturedRequest!.Items.Should().HaveCount(6);
-        capturedRequest.Items.Select(i => i.Id).Should().BeEquivalentTo(["ammo", "__deflection__", "f0", "f1", "f2", "f3"]);
+        capturedRequest!.Items.Select(i => i.Id).Should().BeEquivalentTo("ammo", "__deflection__");
 
-        _clipsContext.Verify(x => x.Add(It.Is<DomainNpcAudioClip>(c => c.FilePath.EndsWith(".wav"))), Times.Exactly(6));
-        _audioStore.Verify(x => x.SaveAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<byte[]>()), Times.Exactly(6));
+        _clipsContext.Verify(x => x.Add(It.Is<DomainNpcAudioClip>(c => c.FilePath.EndsWith(".wav"))), Times.Exactly(2));
+        _audioStore.Verify(x => x.SaveAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<byte[]>()), Times.Exactly(2));
 
-        // Only filler clips (f0..f3) pushed — not scripted lines or deflection
-        _commandSender.Verify(x => x.SendCommandAsync(5006, It.IsAny<string>()), Times.AtLeast(4));
+        // Filler clips pushed from disk — not the scripted lines or the deflection
+        _voiceStore.Verify(x => x.ReadAsync(It.IsAny<string>()), Times.Exactly(FillerIds.Count));
+        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("npc_filler"))), Times.AtLeast(FillerIds.Count));
     }
 
     [Fact]
@@ -324,10 +177,10 @@ public class NpcBrokerServiceTests
     {
         _brainClient.Setup(x => x.PrerenderAsync(It.IsAny<PrerenderRequest>())).ReturnsAsync((PrerenderResult)null);
 
-        await _sut.HandleRegisterAsync(5006, MakeRegisterData());
+        await _sut.HandleRegisterAsync(5006, MakeScriptedData());
 
         _clipsContext.Verify(x => x.Add(It.IsAny<DomainNpcAudioClip>()), Times.Never);
-        _commandSender.Verify(x => x.SendCommandAsync(It.IsAny<int>(), It.IsAny<string>()), Times.Never);
+        _audioStore.Verify(x => x.SaveAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
         _logger.Verify(x => x.LogWarning(It.IsAny<string>()), Times.Once);
     }
 
@@ -344,10 +197,10 @@ public class NpcBrokerServiceTests
         // Each command should be a npc_filler envelope containing the filler id
         pushedCommands.Should().HaveCountGreaterThanOrEqualTo(4);
         pushedCommands.Should().Contain(c => c.Contains("\"npc_filler\""));
-        pushedCommands.Should().Contain(c => c.Contains("\"f0\""));
-        pushedCommands.Should().Contain(c => c.Contains("\"f1\""));
-        pushedCommands.Should().Contain(c => c.Contains("\"f2\""));
-        pushedCommands.Should().Contain(c => c.Contains("\"f3\""));
+        foreach (var fillerId in FillerIds)
+        {
+            pushedCommands.Should().Contain(c => c.Contains($"\"{fillerId}\""));
+        }
     }
 
     private static DomainNpcSession MakeDynamicSession(string npcId = "npc1", string sessionId = "session1", string voiceId = "bm_george") =>
@@ -413,6 +266,7 @@ public class NpcBrokerServiceTests
             ["npcId"] = npcId,
             ["sessionId"] = sessionId,
             ["turnId"] = turnId,
+            ["gazeAddressed"] = true,
             ["newTurns"] = newTurns ??
             [
                 new Dictionary<string, object>
@@ -433,18 +287,20 @@ public class NpcBrokerServiceTests
             new RespondResult
             {
                 Text = "go away",
-                LineId = null,
-                AudioBase64 = "QQ==",
-                DurationMs = 900
+                Mood = "neutral",
+                VoiceId = "bm_george"
             }
         );
+        _clacks.Setup(x => x.SpeakStreamAsync("npc-voice", "go away", "bm_george", It.IsAny<Func<string, Task>>()))
+               .Returns(async (string r, string t, string v, Func<string, Task> onFrame) => await onFrame("QQ=="));
 
         await _sut.HandleTurnAsync(5006, MakeTurnData());
 
-        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio") && s.Contains("turn7"))), Times.AtLeastOnce);
+        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio_frame") && s.Contains("turn7"))), Times.Once);
+        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio_end") && s.Contains("turn7"))), Times.Once);
         _sessionsContext.Verify(
             x => x.Update(It.IsAny<Expression<Func<DomainNpcSession, bool>>>(), It.IsAny<UpdateDefinition<DomainNpcSession>>()),
-            Times.Once
+            Times.Exactly(2) // own history + overheard write to the other sessions
         );
     }
 
@@ -478,7 +334,7 @@ public class NpcBrokerServiceTests
         _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio") && s.Contains("QUJD"))), Times.AtLeastOnce);
         _sessionsContext.Verify(
             x => x.Update(It.IsAny<Expression<Func<DomainNpcSession, bool>>>(), It.IsAny<UpdateDefinition<DomainNpcSession>>()),
-            Times.Once
+            Times.Exactly(2) // own history + overheard write to the other sessions
         );
     }
 
@@ -546,11 +402,27 @@ public class NpcBrokerServiceTests
 
         await _sut.HandleTurnAsync(5006, MakeTurnData());
 
-        _commandSender.Verify(x => x.SendCommandAsync(It.IsAny<int>(), It.IsAny<string>()), Times.Never);
+        // Only the turn-cancel goes out — the filler loop must stop, not pad a dead turn.
+        _commandSender.Verify(x => x.SendCommandAsync(It.IsAny<int>(), It.Is<string>(c => c.Contains("npc_turn_cancel") && c.Contains("turn7"))), Times.Once);
         _sessionsContext.Verify(
             x => x.Update(It.IsAny<Expression<Func<DomainNpcSession, bool>>>(), It.IsAny<UpdateDefinition<DomainNpcSession>>()),
             Times.Never
         );
+    }
+
+    [Fact]
+    public async Task HandleTurnAsync_UnnamedAndNotLookedAt_StaysSilent_AndCancelsTheFillerLoop()
+    {
+        _sessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcSession, bool>>())).Returns(MakeDynamicSession());
+        var data = MakeTurnData();
+        data["gazeAddressed"] = "false";
+
+        await _sut.HandleTurnAsync(5006, data);
+
+        // Every talkable NPC in earshot gets the utterance; an unnamed one belongs to
+        // whoever was being looked at, and the rest must stop their fillers.
+        _brainClient.Verify(x => x.RespondAsync(It.IsAny<RespondRequest>()), Times.Never);
+        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("npc_turn_cancel") && c.Contains("turn7"))), Times.Once);
     }
 
     [Fact]
@@ -599,30 +471,7 @@ public class NpcBrokerServiceTests
     }
 
     [Fact]
-    public async Task HandleTurnAsync_ScriptedTurn_MissingClipFile_StaysSilent()
-    {
-        _sessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcSession, bool>>())).Returns(MakeScriptedSession());
-        _brainClient.Setup(x => x.RespondAsync(It.IsAny<RespondRequest>()))
-                    .ReturnsAsync(new RespondResult { Text = "The ammo is in the basement.", LineId = "ammo" });
-        _clipsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcAudioClip, bool>>()))
-                     .Returns(
-                         new DomainNpcAudioClip
-                         {
-                             ClipId = "ammo",
-                             FilePath = "2026-06-07/gone.wav",
-                             DurationMs = 1200
-                         }
-                     );
-        _audioStore.Setup(x => x.ReadAsync("2026-06-07/gone.wav")).ReturnsAsync((byte[])null);
-
-        await _sut.HandleTurnAsync(5006, MakeTurnData());
-
-        _commandSender.Verify(x => x.SendCommandAsync(It.IsAny<int>(), It.IsAny<string>()), Times.Never);
-        _logger.Verify(x => x.LogWarning(It.IsAny<string>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task HandleTurnAsync_DynamicTurn_ArchivesTheClipByTurnId()
+    public async Task HandleTurnAsync_DynamicTurn_StreamsFramesThenEnd()
     {
         _sessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcSession, bool>>())).Returns(MakeDynamicSession());
         _brainClient.Setup(x => x.RespondAsync(It.IsAny<RespondRequest>()))
@@ -630,18 +479,27 @@ public class NpcBrokerServiceTests
             new RespondResult
             {
                 Text = "go away",
-                AudioBase64 = "QQ==",
-                DurationMs = 900
+                Mood = "neutral",
+                VoiceId = "bm_george"
             }
         );
+        _clacks.Setup(x => x.SpeakStreamAsync("npc-voice", "go away", "bm_george", It.IsAny<Func<string, Task>>()))
+               .Returns(async (string r, string t, string v, Func<string, Task> onFrame) =>
+                   {
+                       await onFrame("QQ==");
+                       await onFrame("Qg==");
+                   }
+               );
 
         await _sut.HandleTurnAsync(5006, MakeTurnData());
 
-        _audioStore.Verify(x => x.SaveAsync("session1", "npc1", "turn7", It.IsAny<byte[]>()), Times.Once);
+        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio_frame") && s.Contains("turn7"))), Times.Exactly(2));
+        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio_end") && s.Contains("turn7"))), Times.Once);
+        _audioStore.Verify(x => x.SaveAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
     }
 
     [Fact]
-    public async Task HandleTurnAsync_DynamicTurn_ArchiveFailureDoesNotBlockHistory()
+    public async Task HandleTurnAsync_DynamicTurn_StreamFailureCancelsWithoutHistory()
     {
         _sessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcSession, bool>>())).Returns(MakeDynamicSession());
         _brainClient.Setup(x => x.RespondAsync(It.IsAny<RespondRequest>()))
@@ -649,19 +507,20 @@ public class NpcBrokerServiceTests
             new RespondResult
             {
                 Text = "go away",
-                AudioBase64 = "QQ==",
-                DurationMs = 900
+                Mood = "neutral",
+                VoiceId = "bm_george"
             }
         );
-        _audioStore.Setup(x => x.SaveAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<byte[]>()))
-                   .ThrowsAsync(new IOException("disk full"));
+        _clacks.Setup(x => x.SpeakStreamAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Func<string, Task>>()))
+               .ThrowsAsync(new IOException("mesh down"));
 
         await _sut.HandleTurnAsync(5006, MakeTurnData());
 
-        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio"))), Times.AtLeastOnce);
+        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_turn_cancel") && s.Contains("turn7"))), Times.Once);
+        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio_end"))), Times.Never);
         _sessionsContext.Verify(
             x => x.Update(It.IsAny<Expression<Func<DomainNpcSession, bool>>>(), It.IsAny<UpdateDefinition<DomainNpcSession>>()),
-            Times.Once
+            Times.Never
         );
     }
 }

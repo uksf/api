@@ -8,11 +8,13 @@ namespace UKSF.Api.ArmaServer.Tests.Npc;
 public class MoodScriptsTests
 {
     [Fact]
-    public void All_moods_are_neutral_plus_the_four_generated()
+    public void Every_mood_including_neutral_is_generated()
     {
         MoodScripts.All.Should().BeEquivalentTo(["neutral", "angry", "afraid", "sad", "happy"]);
-        MoodScripts.Generated.Should().BeEquivalentTo(["angry", "afraid", "sad", "happy"]);
-        MoodScripts.Generated.Should().NotContain(MoodScripts.Neutral);
+
+        // neutral is rendered by the same engine as the moods, from the same seed, so a
+        // player never hears one engine for neutral and another the moment a mood turns.
+        MoodScripts.Generated.Should().Contain(MoodScripts.Neutral);
     }
 
     [Fact]
@@ -22,8 +24,15 @@ public class MoodScriptsTests
         {
             MoodScripts.Table.Should().ContainKey(mood);
             MoodScripts.Table[mood].EmoText.Should().NotBeNullOrWhiteSpace();
-            MoodScripts.Table[mood].Script.Should().NotBeNullOrWhiteSpace();
+            MoodScripts.Table[mood].Script.Should().Be(MoodScripts.Script);
         }
+    }
+
+    [Fact]
+    public void Every_mood_reads_the_same_script_so_only_delivery_differs()
+    {
+        MoodScripts.Table.Values.Select(x => x.Script).Distinct().Should().HaveCount(1);
+        MoodScripts.Table.Values.Select(x => x.EmoText).Distinct().Should().HaveCount(MoodScripts.Generated.Count);
     }
 
     [Theory]
@@ -35,5 +44,16 @@ public class MoodScriptsTests
     public void IsValid_accepts_only_known_moods(string mood, bool expected)
     {
         MoodScripts.IsValid(mood).Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData("afraid", "afraid")]
+    [InlineData(" ANGRY ", "angry")]
+    [InlineData("wary", "neutral")]
+    [InlineData("", "neutral")]
+    [InlineData(null, "neutral")]
+    public void Normalise_keeps_known_moods_and_falls_back_to_neutral(string mood, string expected)
+    {
+        MoodScripts.Normalise(mood).Should().Be(expected);
     }
 }

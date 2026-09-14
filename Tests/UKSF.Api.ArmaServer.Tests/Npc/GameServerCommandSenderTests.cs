@@ -14,7 +14,7 @@ namespace UKSF.Api.ArmaServer.Tests.Npc;
 public class GameServerCommandSenderTests
 {
     [Fact]
-    public async Task PostsSqfBodyToLocalhostCommandEndpoint()
+    public async Task PostsSqfBodyToLoopbackCommandEndpoint()
     {
         HttpRequestMessage captured = null;
         string capturedBody = null;
@@ -35,7 +35,7 @@ public class GameServerCommandSenderTests
         var sender = new GameServerCommandSender(factory.Object, Mock.Of<IUksfLogger>());
         await sender.SendCommandAsync(5006, "[\"npc_audio\",\"n\",\"t\",0,1,\"QQ==\",100]");
 
-        captured.RequestUri!.ToString().Should().Be("http://localhost:5006/command");
+        captured.RequestUri!.ToString().Should().Be("http://127.0.0.1:5006/command");
         capturedBody.Should().Be("[\"npc_audio\",\"n\",\"t\",0,1,\"QQ==\",100]");
     }
 }

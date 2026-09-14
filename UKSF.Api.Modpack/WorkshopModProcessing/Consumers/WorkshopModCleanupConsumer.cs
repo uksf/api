@@ -1,6 +1,7 @@
 using MassTransit;
 using UKSF.Api.Core;
 using UKSF.Api.Modpack.Context;
+using UKSF.Api.Modpack.Models;
 using UKSF.Api.Modpack.Services;
 
 namespace UKSF.Api.Modpack.WorkshopModProcessing.Consumers;
@@ -15,20 +16,17 @@ public class WorkshopModCleanupConsumer(
     {
         try
         {
+            // A mod uninstalled before it was ever released is deleted from the database, so the mod is only used for naming here.
             var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == context.Message.WorkshopModId);
-            if (workshopMod == null)
-            {
-                logger.LogWarning($"Workshop mod {context.Message.WorkshopModId} not found for cleanup");
-                await context.Publish(new WorkshopModCleanupComplete { WorkshopModId = context.Message.WorkshopModId });
-                return;
-            }
-
-            var workshopModPath = workshopModsProcessingService.GetWorkshopModPath(workshopMod.SteamId);
+            var workshopModPath = workshopModsProcessingService.GetWorkshopModPath(context.Message.WorkshopModId);
             workshopModsProcessingService.CleanupWorkshopModFiles(workshopModPath);
 
             if (context.Message.FilesChanged)
             {
-                await workshopModsProcessingService.QueueDevBuild();
+                await workshopModsProcessingService.QueueDevBuild(
+                    workshopMod?.Name ?? $"Workshop mod {context.Message.WorkshopModId}",
+                    workshopMod?.Status ?? WorkshopModStatus.Uninstalled
+                );
             }
 
             await context.Publish(new WorkshopModCleanupComplete { WorkshopModId = context.Message.WorkshopModId });

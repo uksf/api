@@ -3,4 +3,5 @@
 public class WorkshopModResolveInterventionRequest
 {
     public List<string> SelectedPbos { get; set; }
+    public List<string> SelectedExtensions { get; set; }
 }

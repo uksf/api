@@ -22,6 +22,11 @@ public static class VariablesExtensions
             return variable.AssertHasItem().Item.ToString();
         }
 
+        public string AsStringWithDefault(string defaultValue)
+        {
+            return variable?.Item == null ? defaultValue : variable.Item.ToString();
+        }
+
         public int AsInt()
         {
             var item = variable.AsString();
@@ -70,7 +75,7 @@ public static class VariablesExtensions
         {
             if (variable?.Item == null)
             {
-                return false;
+                return defaultState;
             }
 
             var item = variable.Item.ToString();
@@ -86,6 +91,16 @@ public static class VariablesExtensions
             }
 
             return output;
+        }
+
+        public ulong AsUlongWithDefault(ulong defaultValue)
+        {
+            if (variable?.Item == null)
+            {
+                return defaultValue;
+            }
+
+            return ulong.TryParse(variable.Item.ToString(), out var output) ? output : defaultValue;
         }
 
         public string[] AsArray(Func<string, string> predicate = null)
