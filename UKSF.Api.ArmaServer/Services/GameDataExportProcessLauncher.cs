@@ -99,10 +99,9 @@ public class GameDataExportProcessLauncher(ISyntheticServerLauncher syntheticLau
     // INSTANT silently if missing). A persistent mission requires either INSTANT or BASE
     // respawn AND server.cfg persistent = 1; for -autoInit to fire.
     //
-    // CfgFunctions postInit = 1 fires the registered function in NON-SCHEDULED context after
-    // mission init. initServer.sqf is scheduled (canSuspend=true per BI wiki "Available
-    // Scripts" table) so a configFile traversal called from there gets throttled to ~3ms/frame
-    // and takes 10x longer than the same work non-scheduled. postInit avoids that throttle.
+    // CfgFunctions postInit = 1 fires the registered function after mission init. On Arma 2.22
+    // postInit runs scheduled (canSuspend=true), so RunExportSqf wraps the export in isNil to
+    // force non-scheduled execution; see the comment there.
     private const string DescriptionExt = """
                                           onLoadName = "Game Data Export";
                                           briefingName = "Game Data Export";
@@ -209,9 +208,11 @@ public class GameDataExportProcessLauncher(ISyntheticServerLauncher syntheticLau
                                       """;
 
     // Registered as UKSF_Export_fnc_runExport via CfgFunctions postInit = 1 in description.ext.
-    // Runs non-scheduled so the configFile traversal isn't throttled.
+    // isNil forces non-scheduled execution. Scheduled, the traversal shares the scheduler with
+    // every CBA/ACE script: a 1.36M-entry walk took 122.8 s scheduled against 6.6 s in isNil.
     private const string RunExportSqf = """
-                                        private _result = [configFile, false] call uksf_common_fnc_gameDataExport;
+                                        private _result = "";
+                                        isNil { _result = [configFile, false] call uksf_common_fnc_gameDataExport; };
 
                                         if (_result isEqualTo "") then {
                                             diag_log text "GameDataExport.VR: uksf_common_fnc_gameDataExport returned empty string — export failed";

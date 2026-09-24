@@ -152,7 +152,7 @@ public class GameDataExportService : IGameDataExportService
 
         var specs = new[]
         {
-            new FileSpec(launch.ConfigGlob, configRoot, $"config_{modpackVersion}.cpp", FileSanityFloorBytes, ValidateJson: false),
+            new FileSpec(launch.ConfigGlob, configRoot, $"config_{modpackVersion}.cpp", FileSanityFloorBytes, ValidateJson: false, ValidateConfigEnd: true),
             new FileSpec(launch.CbaSettingsGlob, settingsRoot, $"cba_settings_{modpackVersion}.sqf", MinBytes: 1, ValidateJson: false),
             new FileSpec(launch.CbaSettingsReferenceGlob, settingsRoot, $"cba_settings_reference_{modpackVersion}.json", MinBytes: 16, ValidateJson: true)
         };
@@ -198,7 +198,7 @@ public class GameDataExportService : IGameDataExportService
         _logger.LogInfo($"GameDataExport run {_current?.RunId}: {status}{(failureDetail is null ? "" : " — " + failureDetail)}");
     }
 
-    private record FileSpec(string Glob, string DestRoot, string DestName, int MinBytes, bool ValidateJson);
+    private record FileSpec(string Glob, string DestRoot, string DestName, int MinBytes, bool ValidateJson, bool ValidateConfigEnd = false);
 
     private record CopyResult(bool Copied, bool Truncated, string GameVersion);
 
@@ -230,10 +230,28 @@ public class GameDataExportService : IGameDataExportService
             }
         }
 
+        // A complete dump ends with a top-level "};"; a killed run stops mid-class.
+        if (spec.ValidateConfigEnd && !EndsWithTopLevelClose(dest))
+        {
+            File.Delete(dest);
+            return new CopyResult(false, true, null);
+        }
+
         var name = Path.GetFileNameWithoutExtension(src);
         var parts = name.Split('_');
         var gameVersion = parts.Length >= 2 ? parts[1] : null;
 
         return new CopyResult(true, false, gameVersion);
+    }
+
+    private static bool EndsWithTopLevelClose(string path)
+    {
+        using var stream = File.OpenRead(path);
+        var length = (int)Math.Min(64, stream.Length);
+        stream.Seek(-length, SeekOrigin.End);
+        var buffer = new byte[length];
+        stream.ReadExactly(buffer);
+        var tail = System.Text.Encoding.UTF8.GetString(buffer).TrimEnd();
+        return tail[(tail.LastIndexOf('\n') + 1)..] == "};";
     }
 }

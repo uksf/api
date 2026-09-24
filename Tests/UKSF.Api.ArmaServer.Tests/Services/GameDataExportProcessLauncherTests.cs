@@ -140,7 +140,7 @@ public class GameDataExportProcessLauncherTests
         CreateSut().Launch("5.23.8");
 
         captured.FunctionFiles.Should().ContainKey("fn_runExport.sqf");
-        captured.FunctionFiles["fn_runExport.sqf"].Should().Contain("uksf_common_fnc_gameDataExport");
+        captured.FunctionFiles["fn_runExport.sqf"].Should().Contain("isNil { _result = [configFile, false] call uksf_common_fnc_gameDataExport; };");
         captured.FunctionFiles["fn_runExport.sqf"].Should().Contain("fileExportFinish");
     }
 
