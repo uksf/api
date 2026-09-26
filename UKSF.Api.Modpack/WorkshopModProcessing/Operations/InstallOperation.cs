@@ -33,6 +33,7 @@ public sealed class InstallOperation(
 
         WorkshopModDependencyFilesService.CopyPbosToDependencies(workshopMod, selectedPbos, cancellationToken);
         WorkshopModDependencyFilesService.CopyExtensionsToDependencies(workshopMod, selectedExtensions, cancellationToken);
+        DeleteUnselectedFiles(workshopMod, selectedPbos, selectedExtensions);
 
         workshopMod.Pbos = selectedPbos;
         workshopMod.Extensions = selectedExtensions;

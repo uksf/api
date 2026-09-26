@@ -34,17 +34,7 @@ public sealed class UpdateOperation(
         WorkshopModDependencyFilesService.CopyPbosToDependencies(workshopMod, selectedPbos, cancellationToken);
         WorkshopModDependencyFilesService.CopyExtensionsToDependencies(workshopMod, selectedExtensions, cancellationToken);
 
-        var pbosToDelete = (workshopMod.Pbos ?? []).Except(selectedPbos, StringComparer.OrdinalIgnoreCase).ToList();
-        if (pbosToDelete.Count > 0)
-        {
-            WorkshopModDependencyFilesService.DeletePbosFromDependencies(pbosToDelete);
-        }
-
-        var filesToDelete = (workshopMod.Extensions ?? []).Except(selectedExtensions, StringComparer.OrdinalIgnoreCase).ToList();
-        if (filesToDelete.Count > 0)
-        {
-            WorkshopModDependencyFilesService.DeleteExtensionsFromDependencies(filesToDelete);
-        }
+        DeleteUnselectedFiles(workshopMod, selectedPbos, selectedExtensions);
 
         workshopMod.Pbos = selectedPbos;
         workshopMod.Extensions = selectedExtensions;

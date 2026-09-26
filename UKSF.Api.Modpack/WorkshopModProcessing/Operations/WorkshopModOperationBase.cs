@@ -139,6 +139,45 @@ public abstract class WorkshopModOperationBase(
         }
     }
 
+    /// <summary>
+    ///     Removes every file of this mod that is not selected: its previous selection, and any file of the workshop item that the
+    ///     dependencies folder holds without a record, such as a copy made by hand before the mod was managed here. A file that any
+    ///     other mod lists as its own is never removed.
+    /// </summary>
+    protected void DeleteUnselectedFiles(DomainWorkshopMod workshopMod, List<string> selectedPbos, List<string> selectedExtensions)
+    {
+        var otherMods = WorkshopModsContext.Get(x => x.Id != workshopMod.Id).ToList();
+        var otherPbos = otherMods.SelectMany(x => (x.Pbos ?? []).Concat(x.AvailablePbos ?? [])).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var otherExtensions = otherMods.SelectMany(x => (x.Extensions ?? []).Concat(x.AvailableExtensions ?? [])).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var workshopModPath = WorkshopModsProcessingService.GetWorkshopModPath(workshopMod.SteamId);
+        var pbosToDelete = Unselected(workshopMod.Pbos, WorkshopModsProcessingService.GetPboFiles(workshopModPath), selectedPbos, otherPbos);
+        if (pbosToDelete.Count > 0)
+        {
+            WorkshopModDependencyFilesService.DeletePbosFromDependencies(pbosToDelete);
+        }
+
+        var extensionsToDelete = Unselected(
+            workshopMod.Extensions,
+            WorkshopModsProcessingService.GetExtensions(workshopModPath),
+            selectedExtensions,
+            otherExtensions
+        );
+        if (extensionsToDelete.Count > 0)
+        {
+            WorkshopModDependencyFilesService.DeleteExtensionsFromDependencies(extensionsToDelete);
+        }
+    }
+
+    private static List<string> Unselected(List<string> previous, List<string> itemFiles, List<string> selected, HashSet<string> ownedByOthers)
+    {
+        return (previous ?? []).Concat(itemFiles ?? [])
+                               .Distinct(StringComparer.OrdinalIgnoreCase)
+                               .Except(selected, StringComparer.OrdinalIgnoreCase)
+                               .Where(x => !ownedByOthers.Contains(x))
+                               .ToList();
+    }
+
     protected virtual void OnBeforeExecute(DomainWorkshopMod workshopMod) { }
 
     protected virtual OperationResult ShouldSkipExecution(DomainWorkshopMod workshopMod) => null;
