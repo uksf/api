@@ -78,7 +78,7 @@ public partial class NpcBrokerServiceGuardedTests
     }
 
     [Fact]
-    public async Task UnauthorisedFactId_StillSpeaksPermittedCanonical()
+    public async Task StrayClaimOfALaterFact_SpeaksButLeavesLedgerUnchanged()
     {
         _session = MakeGuardedSession();
         SetupClassify(Tag(NpcGuardedTags.RelevantQuestion, 1));
@@ -92,8 +92,26 @@ public partial class NpcBrokerServiceGuardedTests
         await _sut.HandleTurnAsync(5006, TurnData());
 
         spoken.Should().Be("secrets");
-        spoken.Should().NotBe(NpcGuardedProfile.SafeDeflection);
-        _updates.Should().BeGreaterThan(0);
+        _session.GuardedState.DisclosedFactIds.Should().NotContain(id => NpcGuardedFactIds.Same(id, "f2"));
+    }
+
+    [Fact]
+    public async Task ClaimOnNonUnlockingTurn_DeflectsAndLeavesLedgerUnchanged()
+    {
+        _session = MakeGuardedSession();
+        SetupClassify(Tag(NpcGuardedTags.Other, null));
+        SetupReply("Fine, the trucks.", "neutral", null, "f1");
+
+        string spoken = null;
+        _clacks.Setup(x => x.SpeakStreamAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Func<string, Task>>()))
+               .Callback<string, string, string, Func<string, Task>>((_, text, _, _) => spoken = text)
+               .Returns(async (string _, string _, string _, Func<string, Task> onFrame) => await onFrame("QQ=="));
+
+        await _sut.HandleTurnAsync(5006, TurnData());
+
+        spoken.Should().Be(NpcGuardedProfile.SafeDeflection);
+        _updates.Should().Be(0);
+        _session.GuardedState.DisclosedFactIds.Should().BeEmpty();
     }
 
     [Fact]

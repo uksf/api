@@ -115,6 +115,7 @@ public partial class NpcBrokerService
                     includedNext
                 )
                 : null;
+            validated = NpcGuardedReplyValidator.Guard(validated, modelReply?.DisclosedFactId, includedNext?.Id, session.Guarded, stateSnapshot.DisclosedFactIds, engine.PermittedFactId);
 
             if (modelReply is null || !modelReply.Ok) logger.LogWarning($"npc_turn guarded: reply failed for '{npcId}' — {modelReply?.Failure ?? "null"}");
             if (validated is { Ok: false }) logger.LogWarning($"npc_turn guarded: validation failed for '{npcId}' — {validated.Failure}");

@@ -102,4 +102,51 @@ public class NpcGuardedReplyValidatorTests
                              .Ok.Should()
                              .BeFalse();
     }
+
+    private static readonly NpcGuardedConfig Config = new()
+    {
+        Facts =
+        [
+            new NpcGuardedFact { Id = "1", Topic = "traffic", Text = "Trucks roll past after dark." },
+            new NpcGuardedFact { Id = "2", Topic = "mill", Text = "The mill hides fuel drums." },
+            new NpcGuardedFact { Id = "3", Topic = "names", Text = "Captain Rusk runs the convoys." }
+        ]
+    };
+
+    private static NpcGuardedValidatedReply Reply(string text, string told = null, string emote = null) =>
+        new() { Ok = true, SpokenText = text, Emote = emote, DisclosedFactId = told, Mood = "neutral" };
+
+    [Fact]
+    public void Guard_KeepsTheNextFactWhenTheEnginePermitsIt()
+    {
+        NpcGuardedReplyValidator.Guard(Reply("Trucks, most nights.", "1"), "1", "1", Config, [], "f1").Ok.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Guard_RejectsTheNextFactOnATurnTheEngineDidNotUnlock()
+    {
+        NpcGuardedReplyValidator.Guard(Reply("Trucks, most nights.", "1"), "1", "1", Config, [], null).Failure.Should().Be("disclosure not permitted");
+        // Validate already dropped the claim; the raw claim still counts.
+        NpcGuardedReplyValidator.Guard(Reply("Trucks, most nights."), "f1", "1", Config, [], null).Failure.Should().Be("disclosure not permitted");
+    }
+
+    [Fact]
+    public void Guard_IgnoresAStrayClaimOfAFactTheModelNeverSaw()
+    {
+        NpcGuardedReplyValidator.Guard(Reply("It didn't stop near my patch."), "2", "1", Config, [], null).Ok.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Guard_RejectsWithheldFactTextInSpeechOrEmote()
+    {
+        NpcGuardedReplyValidator.Guard(Reply("the mill hides fuel drums, you know"), null, "1", Config, [], "1").Failure.Should().Be("withheld fact text in reply");
+        NpcGuardedReplyValidator.Guard(Reply("Nothing.", emote: "Captain Rusk runs the convoys."), null, "1", Config, [], null).Ok.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Guard_AllowsFactsAlreadyToldOrPermitted()
+    {
+        NpcGuardedReplyValidator.Guard(Reply("Like I said, trucks roll past after dark."), null, "2", Config, ["1"], null).Ok.Should().BeTrue();
+        NpcGuardedReplyValidator.Guard(Reply("Trucks roll past after dark.", "1"), "1", "1", Config, [], "1").Ok.Should().BeTrue();
+    }
 }
