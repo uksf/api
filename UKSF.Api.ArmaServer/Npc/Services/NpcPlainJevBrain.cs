@@ -16,6 +16,9 @@ public class NpcPlainJevTurn
     public long WriteMs { get; init; }
     public string Failure { get; init; }
     public bool Rewritten { get; init; }
+
+    /// The speculative first write; equals WriteMs unless the turn was rewritten.
+    public long FirstWriteMs { get; init; }
 }
 
 /// Plain NPC turn. Jev decides mood, noise, whether the character knows the answer, and for a
@@ -46,7 +49,9 @@ public class NpcPlainJevBrain(INpcJevClient jev, IClacksClient clacks, IUksfLogg
         }
 
         var sameInstruction = Instruction(decision) == Instruction(guess);
-        var turn = await (sameInstruction ? writing : WriteAsync(req, decision));
+        var rewriting = sameInstruction ? writing : WriteAsync(req, decision);
+        var turn = await rewriting;
+        var first = sameInstruction ? turn : await writing; // already finished in practice; kept for timing
         return new NpcPlainJevTurn
         {
             Decision = decision,
@@ -54,7 +59,8 @@ public class NpcPlainJevBrain(INpcJevClient jev, IClacksClient clacks, IUksfLogg
             Emote = turn.Emote,
             WriteMs = turn.WriteMs,
             Failure = turn.Failure,
-            Rewritten = !sameInstruction
+            Rewritten = !sameInstruction,
+            FirstWriteMs = first.WriteMs
         };
     }
 

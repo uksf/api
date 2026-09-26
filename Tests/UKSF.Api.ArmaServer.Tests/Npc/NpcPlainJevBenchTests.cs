@@ -44,6 +44,8 @@ public class NpcPlainJevBenchTests
             if (!right) sb.AppendLine($"  MISS {key}: {detail}");
         }
 
+        var timings = new List<string>();
+        var split = new Dictionary<string, List<(long Current, long Total, long Jev, long Write1, long Write)>> { ["not rewritten"] = [], ["rewritten"] = [] };
         await brain.RespondAsync(Request(data, data.Dynamic[0], "dynamic"));
         await jevBrain.TurnAsync(Request(data, data.Dynamic[0], "dynamic"));
 
@@ -53,13 +55,16 @@ public class NpcPlainJevBenchTests
             {
                 var watch = Stopwatch.StartNew();
                 var current = await brain.RespondAsync(Request(data, c, "dynamic"));
-                Score("dynamic current mood", c.ExpectMood.Contains(current?.Mood), watch.ElapsedMilliseconds, $"{c.Id} mood {current?.Mood}");
+                var currentMs = watch.ElapsedMilliseconds;
+                Score("dynamic current mood", c.ExpectMood.Contains(current?.Mood), currentMs, $"{c.Id} mood {current?.Mood}");
                 watch.Restart();
                 var viaJev = await jevBrain.TurnAsync(Request(data, c, "dynamic"));
                 var ms = watch.ElapsedMilliseconds;
                 var d = viaJev.Decision;
                 var right = d is not null && c.ExpectMood.Contains(d.Mood) && (c.ExpectKnown is null || c.ExpectKnown == d.Known) && (c.ExpectNoise ?? false) == d.Noise;
                 Score("dynamic jev mood+known+noise", right, ms, $"{c.Id} mood {d?.Mood} known {d?.Known} noise {d?.Noise} {viaJev.Failure}");
+                timings.Add($"{c.Id,-20} rep {rep}  current {currentMs,5}  |  jev total {ms,5} = jev {d?.Ms,4} ; write1 {viaJev.FirstWriteMs,4}{(viaJev.Rewritten ? $" ; rewrite {viaJev.WriteMs,4}" : "")}");
+                split[viaJev.Rewritten ? "rewritten" : "not rewritten"].Add((currentMs, ms, d?.Ms ?? 0, viaJev.FirstWriteMs, viaJev.WriteMs));
                 if (rep == 0) sb.AppendLine($"{c.Id}\n  current [{current?.Mood}] {current?.Text}\n  jev     [{d?.Mood}{(d?.Known == false ? ", unknown" : "")}{(viaJev.Rewritten ? ", rewritten" : "")}] {viaJev.Text}");
             }
 
@@ -95,7 +100,17 @@ public class NpcPlainJevBenchTests
             head.AppendLine($"{key}: {right}/{total}, p50 {ms[ms.Count / 2]}ms, max {ms[^1]}ms");
         }
 
-        var report = head + "\n" + sb;
+        long P50(IEnumerable<long> xs)
+        {
+            var l = xs.OrderBy(x => x).ToList();
+            return l.Count == 0 ? 0 : l[l.Count / 2];
+        }
+
+        foreach (var (kind, xs) in split)
+            head.AppendLine(
+                $"dynamic {kind} ({xs.Count} turns): current p50 {P50(xs.Select(x => x.Current))} | jev total p50 {P50(xs.Select(x => x.Total))} = jev {P50(xs.Select(x => x.Jev))}, write1 {P50(xs.Select(x => x.Write1))}, final write {P50(xs.Select(x => x.Write))}"
+            );
+        var report = head + "\n" + string.Join("\n", timings) + "\n\n" + sb;
         Console.WriteLine(report);
         var outPath = Environment.GetEnvironmentVariable("NPC_JEV_BENCH_OUT");
         if (!string.IsNullOrEmpty(outPath)) await File.WriteAllTextAsync(outPath, report);
