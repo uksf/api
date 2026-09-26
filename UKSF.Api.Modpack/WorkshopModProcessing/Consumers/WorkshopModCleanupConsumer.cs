@@ -16,7 +16,7 @@ public class WorkshopModCleanupConsumer(
     {
         try
         {
-            // A mod uninstalled before it was ever released is deleted from the database, so the mod is only used for naming here.
+            // A mod uninstalled before it was ever released is already deleted from the database, so its name comes with the message.
             var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == context.Message.WorkshopModId);
             var workshopModPath = workshopModsProcessingService.GetWorkshopModPath(context.Message.WorkshopModId);
             workshopModsProcessingService.CleanupWorkshopModFiles(workshopModPath);
@@ -24,7 +24,7 @@ public class WorkshopModCleanupConsumer(
             if (context.Message.FilesChanged)
             {
                 await workshopModsProcessingService.QueueDevBuild(
-                    workshopMod?.Name ?? $"Workshop mod {context.Message.WorkshopModId}",
+                    context.Message.WorkshopModName ?? workshopMod?.Name ?? $"Workshop mod {context.Message.WorkshopModId}",
                     workshopMod?.Status ?? WorkshopModStatus.Uninstalled
                 );
             }

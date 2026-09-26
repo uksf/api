@@ -15,12 +15,20 @@ public class WorkshopModUninstallConsumer(
 {
     public async Task Consume(ConsumeContext<WorkshopModUninstallInternalCommand> context)
     {
+        var workshopModName = workshopModsContext.GetSingle(x => x.SteamId == context.Message.WorkshopModId)?.Name;
         await ConsumerHelper.RunOperationStep(
             context,
             context.Message.WorkshopModId,
             "Uninstalling",
             () => uninstallOperation.ExecuteAsync(context.Message.WorkshopModId, [], [], context.CancellationToken),
-            result => context.Publish(new WorkshopModUninstallComplete { WorkshopModId = context.Message.WorkshopModId, FilesChanged = result.FilesChanged }),
+            result => context.Publish(
+                new WorkshopModUninstallComplete
+                {
+                    WorkshopModId = context.Message.WorkshopModId,
+                    FilesChanged = result.FilesChanged,
+                    WorkshopModName = workshopModName
+                }
+            ),
             processingService,
             workshopModsContext,
             logger

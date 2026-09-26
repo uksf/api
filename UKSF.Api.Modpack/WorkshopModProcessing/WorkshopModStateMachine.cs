@@ -151,9 +151,20 @@ public class WorkshopModStateMachine : MassTransitStateMachine<WorkshopModInstan
         During(
             Uninstalling,
             When(UninstallComplete)
-                .Then(context => context.Saga.FilesChanged = context.Message.FilesChanged)
+                .Then(context =>
+                    {
+                        context.Saga.FilesChanged = context.Message.FilesChanged;
+                        context.Saga.WorkshopModName = context.Message.WorkshopModName;
+                    }
+                )
                 .TransitionTo(Cleanup)
-                .Publish(context => new WorkshopModCleanupCommand { WorkshopModId = context.Saga.WorkshopModId, FilesChanged = context.Saga.FilesChanged })
+                .Publish(context => new WorkshopModCleanupCommand
+                    {
+                        WorkshopModId = context.Saga.WorkshopModId,
+                        FilesChanged = context.Saga.FilesChanged,
+                        WorkshopModName = context.Saga.WorkshopModName
+                    }
+                )
         );
 
         During(Cleanup, When(CleanupComplete).Then(context => context.Saga.CompletedAt = DateTime.UtcNow).Finalize());

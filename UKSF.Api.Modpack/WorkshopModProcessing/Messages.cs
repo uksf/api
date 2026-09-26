@@ -65,6 +65,7 @@ public class WorkshopModCleanupCommand : IWorkshopModCommand
 {
     public string WorkshopModId { get; init; }
     public bool FilesChanged { get; init; }
+    public string WorkshopModName { get; init; }
 }
 
 // Unified Events (Completions)
@@ -91,6 +92,9 @@ public class WorkshopModUninstallComplete : IWorkshopModCommand
 {
     public string WorkshopModId { get; init; }
     public bool FilesChanged { get; init; }
+
+    /// <summary>Read before the uninstall, because a mod that was never released is deleted by it.</summary>
+    public string WorkshopModName { get; init; }
 }
 
 public class WorkshopModCleanupComplete : IWorkshopModCommand

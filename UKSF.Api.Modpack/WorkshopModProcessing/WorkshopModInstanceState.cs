@@ -19,6 +19,7 @@ public class WorkshopModInstanceState : SagaStateMachineInstance, ISagaVersion
     public List<string> SelectedPbos { get; set; } = [];
     public List<string> SelectedExtensions { get; set; } = [];
     public bool FilesChanged { get; set; } = true;
+    public string? WorkshopModName { get; set; }
 
     // Observability and fault tracking
     public DateTime StartedAt { get; set; }

@@ -35,10 +35,22 @@ public class WorkshopModCleanupConsumerTests
         return workshopMod;
     }
 
-    private static Mock<ConsumeContext<WorkshopModCleanupCommand>> CreateContext(bool filesChanged, out Func<WorkshopModCleanupComplete> published)
+    private static Mock<ConsumeContext<WorkshopModCleanupCommand>> CreateContext(
+        bool filesChanged,
+        out Func<WorkshopModCleanupComplete> published,
+        string workshopModName = null
+    )
     {
         var context = new Mock<ConsumeContext<WorkshopModCleanupCommand>>();
-        context.SetupGet(x => x.Message).Returns(new WorkshopModCleanupCommand { WorkshopModId = "mod1", FilesChanged = filesChanged });
+        context.SetupGet(x => x.Message)
+        .Returns(
+            new WorkshopModCleanupCommand
+            {
+                WorkshopModId = "mod1",
+                FilesChanged = filesChanged,
+                WorkshopModName = workshopModName
+            }
+        );
         context.SetupGet(x => x.CancellationToken).Returns(CancellationToken.None);
 
         WorkshopModCleanupComplete complete = null;
@@ -64,7 +76,18 @@ public class WorkshopModCleanupConsumerTests
     }
 
     [Fact]
-    public async Task Consume_WhenWorkshopModAlreadyDeleted_ShouldStillQueueBuildNamingTheSteamId()
+    public async Task Consume_WhenWorkshopModAlreadyDeleted_ShouldQueueBuildWithTheNameFromTheMessage()
+    {
+        _workshopModsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainWorkshopMod, bool>>())).Returns((DomainWorkshopMod)null);
+        var context = CreateContext(true, out _, "3CB BAF Weapons");
+
+        await _subject.Consume(context.Object);
+
+        _processingService.Verify(x => x.QueueDevBuild("3CB BAF Weapons", WorkshopModStatus.Uninstalled), Times.Once);
+    }
+
+    [Fact]
+    public async Task Consume_WhenWorkshopModAlreadyDeletedAndNoName_ShouldStillQueueBuildNamingTheSteamId()
     {
         _workshopModsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainWorkshopMod, bool>>())).Returns((DomainWorkshopMod)null);
         var context = CreateContext(true, out var published);
