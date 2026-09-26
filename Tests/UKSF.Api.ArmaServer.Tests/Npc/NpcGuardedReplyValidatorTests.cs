@@ -7,219 +7,99 @@ namespace UKSF.Api.ArmaServer.Tests.Npc;
 
 public class NpcGuardedReplyValidatorTests
 {
-    private static readonly NpcGuardedConfig Config = new()
+    private static readonly NpcGuardedFact Next = new()
     {
-        Concern = "family",
-        Facts =
-        [
-            new NpcGuardedFact
-            {
-                Id = "f1",
-                Topic = "traffic",
-                Text = "Trucks roll past after dark."
-            },
-            new NpcGuardedFact
-            {
-                Id = "f2",
-                Topic = "stop",
-                Text = "They stop at the old mill."
-            },
-            new NpcGuardedFact
-            {
-                Id = "f3",
-                Topic = "return",
-                Text = "They return near midnight."
-            }
-        ]
+        Id = "1",
+        Topic = "traffic",
+        Text = "Trucks roll past after dark."
     };
 
     [Fact]
-    public void ValidReply_WithMatchingId_ComposesCanonicalOnce()
+    public void MatchingId_KeepsModelText()
     {
         var result = NpcGuardedReplyValidator.Validate(
             new NpcGuardedReplyModelOutput
             {
-                Text = "I saw something.",
+                Text = "Grey pickup, three men, none of them local.",
                 Mood = "afraid",
                 Emote = "looks down",
-                DisclosedFactId = "f1"
+                DisclosedFactId = "1"
             },
-            Config,
-            "f1",
-            Config.Facts[0].Text
+            Next
         );
 
         result.Ok.Should().BeTrue();
-        result.DisclosedFactId.Should().Be("f1");
-        result.SpokenText.Should().Be("I saw something. Trucks roll past after dark.");
+        result.SpokenText.Should().Be("Grey pickup, three men, none of them local.");
+        result.DisclosedFactId.Should().Be("1");
         result.Mood.Should().Be("afraid");
-        result.Emote.Should().Be("looks down");
     }
 
-    [Fact]
-    public void CanonicalTextWithoutId_Rejected()
+    [Theory]
+    [InlineData("2", "g2")]
+    [InlineData("g2", "2")]
+    [InlineData("2", "f2")]
+    public void BareSlotNumber_MatchesPrefixedId(string claimed, string includedId)
     {
-        var result = NpcGuardedReplyValidator.Validate(
-            new NpcGuardedReplyModelOutput { Text = "Trucks roll past after dark.", Mood = "neutral" },
-            Config,
-            "f1",
-            Config.Facts[0].Text
-        );
-        result.Ok.Should().BeFalse();
-        result.Failure.Should().Contain("canonical");
-    }
-
-    [Fact]
-    public void UnauthorisedFactId_Rejected()
-    {
+        var next = new NpcGuardedFact { Id = includedId, Text = "They stop at the old mill." };
         var result = NpcGuardedReplyValidator.Validate(
             new NpcGuardedReplyModelOutput
             {
-                Text = "Maybe later.",
+                Text = "It sat at the grain store a long while.",
                 Mood = "neutral",
-                DisclosedFactId = "f2"
+                DisclosedFactId = claimed
             },
-            Config,
-            "f1",
-            Config.Facts[0].Text
+            next
         );
-        result.Ok.Should().BeFalse();
-        result.Failure.Should().Contain("unauthorised");
+
+        result.Ok.Should().BeTrue();
+        result.SpokenText.Should().Be("It sat at the grain store a long while.");
+        result.DisclosedFactId.Should().Be(includedId);
+    }
+
+    [Fact]
+    public void CanonicalSentenceInText_IsNotAFail()
+    {
+        var result = NpcGuardedReplyValidator.Validate(
+            new NpcGuardedReplyModelOutput { Text = "Trucks roll past after dark.", Mood = "neutral" },
+            Next
+        );
+        result.Ok.Should().BeTrue();
+        result.SpokenText.Should().Be("Trucks roll past after dark.");
+        result.DisclosedFactId.Should().Be("1");
     }
 
     [Fact]
     public void EmptyText_Rejected()
     {
-        NpcGuardedReplyValidator.Validate(new NpcGuardedReplyModelOutput { Text = "  ", Mood = "neutral" }, Config, null, null).Ok.Should().BeFalse();
+        NpcGuardedReplyValidator.Validate(new NpcGuardedReplyModelOutput { Text = "  ", Mood = "neutral" }, Next).Ok.Should().BeFalse();
     }
 
     [Fact]
     public void InvalidMood_FallsBackToNeutral_AndKeepsText()
     {
         var result = NpcGuardedReplyValidator.Validate(
-            new NpcGuardedReplyModelOutput { Text = "Only what I see from my fields.", Mood = "wary" },
-            Config,
-            null,
-            null
+            new NpcGuardedReplyModelOutput { Text = "I keep to myself.", Mood = "wary" },
+            includedNext: null
         );
         result.Ok.Should().BeTrue();
         result.Mood.Should().Be(MoodScripts.Neutral);
-        result.SpokenText.Should().Be("Only what I see from my fields.");
+        result.SpokenText.Should().Be("I keep to myself.");
+        result.DisclosedFactId.Should().BeNull();
     }
 
     [Fact]
     public void OverlongEmote_Rejected()
     {
         NpcGuardedReplyValidator.Validate(
-                                    new NpcGuardedReplyModelOutput
-                                    {
-                                        Text = "Hi",
-                                        Mood = "neutral",
-                                        Emote = new string('x', 50)
-                                    },
-                                    Config,
-                                    null,
-                                    null
-                                )
-                                .Ok.Should()
-                                .BeFalse();
-    }
-
-    [Fact]
-    public void CanonicalFactTextInEmote_Rejected()
-    {
-        var result = NpcGuardedReplyValidator.Validate(
-            new NpcGuardedReplyModelOutput
-            {
-                Text = "Hi",
-                Mood = "neutral",
-                Emote = "They stop at the old mill."
-            },
-            Config,
-            null,
-            null
-        );
-
-        result.Ok.Should().BeFalse();
-        result.Failure.Should().Contain("emote");
-    }
-
-    [Fact]
-    public void ConcernTextInEmote_Rejected()
-    {
-        var result = NpcGuardedReplyValidator.Validate(
-            new NpcGuardedReplyModelOutput
-            {
-                Text = "Hi",
-                Mood = "neutral",
-                Emote = "worries about family"
-            },
-            Config,
-            null,
-            null
-        );
-
-        result.Ok.Should().BeFalse();
-        result.Failure.Should().Contain("concern");
-    }
-
-    [Fact]
-    public void MatchingIdWithoutPermitText_Rejected()
-    {
-        NpcGuardedReplyValidator.Validate(
-                                    new NpcGuardedReplyModelOutput
-                                    {
-                                        Text = "Hi",
-                                        Mood = "neutral",
-                                        DisclosedFactId = "f1"
-                                    },
-                                    Config,
-                                    "f1",
-                                    null
-                                )
-                                .Ok.Should()
-                                .BeFalse();
-    }
-
-    [Fact]
-    public void ValidWithoutDisclosure_Passes()
-    {
-        var result = NpcGuardedReplyValidator.Validate(
-            new NpcGuardedReplyModelOutput { Text = "I keep to myself.", Mood = "neutral" },
-            Config,
-            "f1",
-            Config.Facts[0].Text
-        );
-        result.Ok.Should().BeTrue();
-        result.DisclosedFactId.Should().BeNull();
-        result.SpokenText.Should().Be("I keep to myself.");
-    }
-
-    [Fact]
-    public void DisclosedCanonicalText_AllowedWhenInLedger()
-    {
-        var result = NpcGuardedReplyValidator.Validate(
-            new NpcGuardedReplyModelOutput { Text = "As I said — Trucks roll past after dark.", Mood = "neutral" },
-            Config,
-            null,
-            null,
-            ["f1"]
-        );
-        result.Ok.Should().BeTrue();
-        result.SpokenText.Should().Contain("Trucks roll past after dark.");
-    }
-
-    [Fact]
-    public void UndisclosedCanonicalText_StillBlocked()
-    {
-        var result = NpcGuardedReplyValidator.Validate(
-            new NpcGuardedReplyModelOutput { Text = "They stop at the old mill.", Mood = "neutral" },
-            Config,
-            null,
-            null,
-            ["f1"]
-        );
-        result.Ok.Should().BeFalse();
-        result.Failure.Should().Contain("canonical");
+                                 new NpcGuardedReplyModelOutput
+                                 {
+                                     Text = "Hi",
+                                     Mood = "neutral",
+                                     Emote = new string('x', 50)
+                                 },
+                                 Next
+                             )
+                             .Ok.Should()
+                             .BeFalse();
     }
 }

@@ -63,6 +63,8 @@ public partial class NpcBrokerServiceTests
         _sessionsContext.Setup(x => x.Replace(It.IsAny<DomainNpcSession>())).Returns(Task.CompletedTask);
         _sessionsContext.Setup(x => x.Update(It.IsAny<Expression<Func<DomainNpcSession, bool>>>(), It.IsAny<UpdateDefinition<DomainNpcSession>>()))
                         .Returns(Task.CompletedTask);
+        _sessionsContext.Setup(x => x.UpdateMany(It.IsAny<Expression<Func<DomainNpcSession, bool>>>(), It.IsAny<UpdateDefinition<DomainNpcSession>>()))
+                        .Returns(Task.CompletedTask);
         _sessionsContext.Setup(x => x.DeleteMany(It.IsAny<Expression<Func<DomainNpcSession, bool>>>())).Returns(Task.CompletedTask);
         _clipsContext.Setup(x => x.Add(It.IsAny<DomainNpcAudioClip>())).Returns(Task.CompletedTask);
         _clipsContext.Setup(x => x.Replace(It.IsAny<DomainNpcAudioClip>())).Returns(Task.CompletedTask);

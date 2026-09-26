@@ -84,7 +84,7 @@ public partial class NpcBrokerService
         try
         {
             var overheardUpdate = Builders<DomainNpcSession>.Update.PushEach(x => x.History, overheard, slice: -HistoryLimit);
-            await sessionsContext.Update(x => x.NpcId != npcId && x.SessionId == sessionId, overheardUpdate);
+            await sessionsContext.UpdateMany(x => x.NpcId != npcId && x.SessionId == sessionId, overheardUpdate);
         }
         catch (Exception ex)
         {

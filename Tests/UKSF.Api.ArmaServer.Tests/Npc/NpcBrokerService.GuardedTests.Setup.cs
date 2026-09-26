@@ -37,6 +37,8 @@ public partial class NpcBrokerServiceGuardedTests
         _sessions.Setup(x => x.Update(It.IsAny<Expression<Func<DomainNpcSession, bool>>>(), It.IsAny<UpdateDefinition<DomainNpcSession>>()))
                  .Callback(() => _updates++)
                  .Returns(Task.CompletedTask);
+        _sessions.Setup(x => x.UpdateMany(It.IsAny<Expression<Func<DomainNpcSession, bool>>>(), It.IsAny<UpdateDefinition<DomainNpcSession>>()))
+                 .Returns(Task.CompletedTask);
         _commands.Setup(x => x.SendCommandAsync(It.IsAny<int>(), It.IsAny<string>())).Returns(Task.CompletedTask);
         _voices.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcVoice, bool>>())).Returns((DomainNpcVoice)null);
         _clacks.Setup(x => x.SpeakStreamAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Func<string, Task>>()))
@@ -62,8 +64,6 @@ public partial class NpcBrokerServiceGuardedTests
     private void SetupClassify(params NpcGuardedClassification[] classifications)
     {
         _lastClassify = classifications;
-        _brain.Setup(x => x.ClassifyGuardedAsync(It.IsAny<NpcGuardedClassifyRequest>()))
-              .ReturnsAsync(new NpcGuardedClassifyResult { Classifications = classifications.ToList(), Ms = 5 });
         WireTurn();
     }
 

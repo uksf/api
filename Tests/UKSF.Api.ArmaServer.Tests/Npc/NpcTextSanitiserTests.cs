@@ -27,4 +27,18 @@ public class NpcTextSanitiserTests
 
     [Fact]
     public void KeepsNormalPunctuation() => NpcTextSanitiser.Sanitise("Where's the cache, friend?").Should().Be("Where's the cache, friend?");
+
+    [Theory]
+    [InlineData("[BLANK_AUDIO]")]
+    [InlineData(" [blank_audio] ")]
+    [InlineData("[SILENCE]")]
+    [InlineData("(blank)")]
+    public void DropsWhisperNonSpeechTokens(string input) => NpcTextSanitiser.Sanitise(input).Should().BeEmpty();
+
+    [Fact]
+    public void StripsJunkTokenButKeepsRealWords() =>
+        NpcTextSanitiser.Sanitise("Yes. [BLANK_AUDIO]").Should().Be("Yes.");
+
+    [Fact]
+    public void KeepsShortAck() => NpcTextSanitiser.Sanitise("Yeah.").Should().Be("Yeah.");
 }

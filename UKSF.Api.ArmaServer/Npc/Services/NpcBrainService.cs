@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Npc.Models;
@@ -13,8 +12,6 @@ public interface INpcBrainClient
 {
     Task<RespondResult> RespondAsync(RespondRequest request);
     Task<PrerenderResult> PrerenderAsync(PrerenderRequest request);
-    Task<NpcGuardedClassifyResult> ClassifyGuardedAsync(NpcGuardedClassifyRequest request);
-    Task<NpcGuardedReplyResult> ReplyGuardedAsync(NpcGuardedReplyRequest request);
     Task<NpcGuardedTurnResult> TurnGuardedAsync(NpcGuardedTurnRequest request);
 }
 
@@ -102,106 +99,6 @@ public partial class NpcBrainService(IClacksClient clacksClient, INpcVoicesConte
         };
     }
 
-    public async Task<NpcGuardedClassifyResult> ClassifyGuardedAsync(NpcGuardedClassifyRequest request)
-    {
-        var system = NpcGuardedPromptBuilder.BuildClassifierSystemPrompt(request);
-        var user = NpcGuardedPromptBuilder.BuildClassifierUserPrompt(request);
-        var result = await clacksClient.ChatAsync(
-            "npc",
-            system,
-            user,
-            json: true,
-            maxTokens: 400,
-            temperature: 0,
-            meta: new { npcId = request.NpcId, kind = "guarded-classify" }
-        );
-        if (result is null) return null;
-
-        var provider = $"{result.Model}@{result.Node}";
-        logger.LogInfo($"NPC guarded classify npcId '{request.NpcId}' served by {provider} ({result.Ms}ms)");
-
-        try
-        {
-            var parsed = JsonSerializer.Deserialize<GuardedClassifyJson>(result.Text ?? "", NpcBrainJson.Options);
-            if (parsed?.Classifications is null) return null;
-
-            // Untrusted model output: exact count/order/t + known tags + evidence contract.
-            var cleaned = NpcGuardedClassificationValidator.Validate(parsed.Classifications, request.Utterances);
-            if (cleaned is null)
-            {
-                logger.LogWarning($"NPC guarded classify rejected for '{request.NpcId}' — contract mismatch");
-                return null;
-            }
-
-            return new NpcGuardedClassifyResult
-            {
-                Classifications = cleaned,
-                Provider = provider,
-                Ms = result.Ms
-            };
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning($"NPC guarded classify parse failed for '{request.NpcId}': {ex.Message}");
-            return null;
-        }
-    }
-
-    public async Task<NpcGuardedReplyResult> ReplyGuardedAsync(NpcGuardedReplyRequest request)
-    {
-        var system = NpcGuardedPromptBuilder.BuildReplySystemPrompt(request);
-        var user = NpcGuardedPromptBuilder.BuildReplyUserPrompt(request);
-        var result = await clacksClient.ChatAsync(
-            "npc",
-            system,
-            user,
-            json: true,
-            maxTokens: 160,
-            temperature: 0.4,
-            meta: new { npcId = request.NpcId, kind = "guarded-reply" }
-        );
-        if (result is null) return new NpcGuardedReplyResult { Ok = false, Failure = "null model" };
-
-        var provider = $"{result.Model}@{result.Node}";
-        logger.LogInfo($"NPC guarded reply npcId '{request.NpcId}' served by {provider} ({result.Ms}ms)");
-
-        try
-        {
-            var parsed = JsonSerializer.Deserialize<NpcGuardedReplyModelOutput>(result.Text ?? "", NpcBrainJson.Options);
-            if (parsed is null)
-                return new NpcGuardedReplyResult
-                {
-                    Ok = false,
-                    Failure = "null json",
-                    Provider = provider,
-                    Ms = result.Ms
-                };
-
-            var mood = MoodScripts.Normalise(parsed.Mood);
-            return new NpcGuardedReplyResult
-            {
-                Ok = true,
-                Text = parsed.Text ?? "",
-                Mood = mood,
-                Emote = parsed.Emote,
-                DisclosedFactId = parsed.DisclosedFactId,
-                Provider = provider,
-                VoiceId = ResolveVoiceId(request.VoiceId, mood),
-                Ms = result.Ms
-            };
-        }
-        catch (Exception ex)
-        {
-            return new NpcGuardedReplyResult
-            {
-                Ok = false,
-                Failure = $"parse: {ex.Message}",
-                Provider = provider,
-                Ms = result.Ms
-            };
-        }
-    }
-
     public async Task<PrerenderResult> PrerenderAsync(PrerenderRequest request)
     {
         var items = new List<PrerenderResultItem>();
@@ -231,10 +128,5 @@ public partial class NpcBrainService(IClacksClient clacksClient, INpcVoicesConte
     {
         var variant = $"{baseVoiceId}_{mood}";
         return voicesContext.GetSingle(x => x.VoiceId == variant) is not null ? variant : baseVoiceId;
-    }
-
-    private sealed class GuardedClassifyJson
-    {
-        public List<NpcGuardedClassification> Classifications { get; set; }
     }
 }

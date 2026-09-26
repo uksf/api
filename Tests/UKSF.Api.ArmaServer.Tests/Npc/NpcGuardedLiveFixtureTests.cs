@@ -131,8 +131,6 @@ public class NpcGuardedLiveFixtureTests
         if (!string.IsNullOrEmpty(validated.DisclosedFactId))
         {
             validated.DisclosedFactId.Should().Be(engine.PermittedFactId, cse.Id);
-            var fact = config.Facts.Single(f => f.Id == validated.DisclosedFactId);
-            validated.SpokenText.Should().Contain(fact.Text, cse.Id);
         }
 
         foreach (var fact in config.Facts.Where(f => !state.DisclosedFactIds.Contains(f.Id) && f.Id != validated.DisclosedFactId))

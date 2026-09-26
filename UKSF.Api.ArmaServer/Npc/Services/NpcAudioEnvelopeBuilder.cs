@@ -82,14 +82,20 @@ public static class NpcAudioEnvelopeBuilder
                $"{Quote(tag ?? "")},{Quote(topicSlot?.ToString() ?? "")}," +
                $"{(addressesConcern ? "true" : "false")},{(ambiguous ? "true" : "false")}," +
                $"{Quote(Truncate(reason))},{Quote(Truncate(evidence))}," +
-               $"{classifyMs},{replyMs},{Quote(eligibleFactId ?? "")},{Quote(disclosed)},{Quote(Truncate(spoken))}]";
+               $"{classifyMs},{replyMs},{Quote(eligibleFactId ?? "")},{Quote(disclosed)},{Quote(WireText(spoken))}]";
     }
 
     private static string Truncate(string value)
     {
         if (string.IsNullOrEmpty(value)) return "";
-        var clean = value.Replace('\n', ' ').Replace('\r', ' ').Trim();
+        var clean = WireText(value);
         return clean.Length <= GuardedFreeTextMax ? clean : clean[..GuardedFreeTextMax];
+    }
+
+    private static string WireText(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return "";
+        return value.Replace('\n', ' ').Replace('\r', ' ').Trim();
     }
 
     private static List<string> BuildChunked(string type, string[] leadingFields, string audioBase64, long durationMs, int chunkSize)

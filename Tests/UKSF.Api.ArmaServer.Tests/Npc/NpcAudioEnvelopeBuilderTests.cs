@@ -123,6 +123,31 @@ public class NpcAudioEnvelopeBuilderTests
     }
 
     [Fact]
+    public void DebugState_SpokenIsNotTruncated()
+    {
+        var spoken = new string('a', 900);
+        var cmd = NpcAudioEnvelopeBuilder.BuildDebugState(
+            "npc1",
+            "luna",
+            "answer",
+            "other",
+            null,
+            false,
+            false,
+            "r",
+            "e",
+            1,
+            2,
+            null,
+            null,
+            spoken
+        );
+
+        cmd.Should().Contain(spoken);
+        cmd.Should().Contain($"\"{spoken}\"]");
+    }
+
+    [Fact]
     public void DebugState_NullOptionals_RenderEmptyQuotedStrings()
     {
         var cmd = NpcAudioEnvelopeBuilder.BuildDebugState("npc1", null, "stay_silent", null, null, false, false, null, null, 0, 0, null, null);

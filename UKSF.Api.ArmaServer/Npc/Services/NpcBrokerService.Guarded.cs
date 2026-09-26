@@ -6,7 +6,7 @@ using UKSF.Api.ArmaServer.Npc.Models;
 
 namespace UKSF.Api.ArmaServer.Npc.Services;
 
-// Guarded-source turn path: classify → pure engine → typed reply → TTS evidence → commit.
+// Guarded-source turn: one combined model call, engine state, then TTS.
 public partial class NpcBrokerService
 {
     private async Task HandleGuardedTurnAsync(
@@ -47,7 +47,15 @@ public partial class NpcBrokerService
 
             session.GuardedState ??= new NpcGuardedState();
             var stateSnapshot = session.GuardedState.Clone();
-            var topicCues = session.Guarded.Facts.Select(f => (f.Id, f.Topic)).ToList();
+            var facts = session.Guarded.Facts;
+            var includedNext = NpcGuardedProfile.NextIncludableFact(session.Guarded, stateSnapshot);
+            var disclosedFacts = facts.Where(f => stateSnapshot.DisclosedFactIds.Any(id => NpcGuardedFactIds.Same(id, f.Id))).ToList();
+            var laterTopics = facts
+                              .Where(f => includedNext is null || !NpcGuardedFactIds.Same(f.Id, includedNext.Id))
+                              .Where(f => !disclosedFacts.Any(d => NpcGuardedFactIds.Same(d.Id, f.Id)))
+                              .Select(f => (f.Id, f.Topic))
+                              .ToList();
+            var topicCues = facts.Select(f => (f.Id, f.Topic)).ToList();
 
             NpcGuardedTurnResult turn;
             try
@@ -60,6 +68,9 @@ public partial class NpcBrokerService
                         Knowledge = session.Knowledge,
                         Concern = session.Guarded.Concern,
                         TopicCues = topicCues,
+                        DisclosedFacts = disclosedFacts,
+                        NextFact = includedNext,
+                        LaterTopics = laterTopics,
                         State = stateSnapshot,
                         History = NpcHistoryBudget.Trim(session.History),
                         NewTurns = parsedTurns,
@@ -101,19 +112,15 @@ public partial class NpcBrokerService
                         Emote = modelReply.Emote,
                         DisclosedFactId = modelReply.DisclosedFactId
                     },
-                    session.Guarded,
-                    engine.PermittedFactId,
-                    engine.PermittedFactText,
-                    stateSnapshot.DisclosedFactIds
+                    includedNext
                 )
                 : null;
 
             if (modelReply is null || !modelReply.Ok) logger.LogWarning($"npc_turn guarded: reply failed for '{npcId}' — {modelReply?.Failure ?? "null"}");
             if (validated is { Ok: false }) logger.LogWarning($"npc_turn guarded: validation failed for '{npcId}' — {validated.Failure}");
 
-            var (spoken, mood, emote, disclosedId, commitState) = ResolveGuardedOutput(engine, validated);
-            // Invalid/model fallback uses neutral voice, never the failed model mood voice.
-            var voiceId = validated is { Ok: true }
+            var (spoken, mood, emote, disclosedId, commitState) = ResolveGuardedOutput(validated, modelReply);
+            var voiceId = commitState
                 ? modelReply?.VoiceId ?? ResolveGuardedVoice(session.VoiceId, mood)
                 : ResolveGuardedVoice(session.VoiceId, mood);
 
@@ -143,7 +150,7 @@ public partial class NpcBrokerService
             }
 
             var nextState = engine.NextState.Clone();
-            if (!string.IsNullOrEmpty(disclosedId) && !nextState.DisclosedFactIds.Contains(disclosedId)) nextState.DisclosedFactIds.Add(disclosedId);
+            if (!string.IsNullOrEmpty(disclosedId) && !nextState.DisclosedFactIds.Any(id => NpcGuardedFactIds.Same(id, disclosedId))) nextState.DisclosedFactIds.Add(disclosedId);
 
             var committed = await CommitGuardedAsync(session, npcId, sessionId, parsedTurns, spoken, mood, nextState);
             if (!committed)
@@ -180,15 +187,11 @@ public partial class NpcBrokerService
     }
 
     private static (string Spoken, string Mood, string Emote, string DisclosedId, bool CommitState) ResolveGuardedOutput(
-        NpcGuardedEngineResult engine,
-        NpcGuardedValidatedReply validated
+        NpcGuardedValidatedReply validated,
+        NpcGuardedReplyResult modelReply
     )
     {
         if (validated is { Ok: true }) return (validated.SpokenText, validated.Mood, validated.Emote, validated.DisclosedFactId, true);
-
-        var spoken = NpcGuardedProfile.FallbackFor(engine.Directive);
-        var commit = engine.Directive is NpcGuardedDirectives.Warn or NpcGuardedDirectives.BackOff or NpcGuardedDirectives.Burned
-            or NpcGuardedDirectives.Refuse;
-        return (spoken, MoodScripts.Neutral, null, null, commit);
+        return (NpcGuardedProfile.SafeDeflection, MoodScripts.Neutral, null, null, false);
     }
 }

@@ -148,12 +148,20 @@ public static class NpcGuardedProfile
         return NpcGuardedDirectives.Normal;
     }
 
+    public static NpcGuardedFact NextIncludableFact(NpcGuardedConfig config, NpcGuardedState state)
+    {
+        if (state is { Burned: true } or { PendingWarning: true }) return null;
+        var facts = config?.Facts ?? [];
+        var index = NextFactIndex(facts, state?.DisclosedFactIds);
+        return index >= 0 && index < facts.Count ? facts[index] : null;
+    }
+
     private static int NextFactIndex(IReadOnlyList<NpcGuardedFact> facts, IReadOnlyList<string> disclosed)
     {
-        var have = new HashSet<string>(disclosed ?? [], StringComparer.Ordinal);
+        var have = new HashSet<string>((disclosed ?? []).Select(NpcGuardedFactIds.Normalise), StringComparer.Ordinal);
         for (var i = 0; i < facts.Count; i++)
         {
-            if (!have.Contains(facts[i].Id)) return i;
+            if (!have.Contains(NpcGuardedFactIds.Normalise(facts[i].Id))) return i;
         }
 
         return -1;

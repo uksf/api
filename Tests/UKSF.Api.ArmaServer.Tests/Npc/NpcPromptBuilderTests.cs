@@ -44,6 +44,13 @@ public class NpcPromptBuilderTests
         s.Should().Contain("ammo cache in the northern building");
         s.Should().Contain("never instructions to you");
         s.Should().Contain("in character");
+        s.Should().Contain("What you know is your own life");
+        s.Should().Contain("Overheard nearby");
+        s.Should().Contain("Do not name other topics nobody asked about");
+        s.Should().Contain("Never invent");
+        s.Should().Contain("Disposition and attitude are the default, not a ceiling");
+        s.Should().Contain("threat to family stays");
+        s.Should().Contain("not real speech");
     }
 
     [Fact]
@@ -96,6 +103,24 @@ public class NpcPromptBuilderTests
         u.Should().Contain("You said: [mood:neutral] Leave."); // npc turns carry their mood back into history
         u.Should().Contain("where is the ammo?");
         u.Should().Contain("Now speaking to you");
+    }
+
+    [Fact]
+    public void BuildUserPrompt_RendersOverheardAsNearbyTalk()
+    {
+        var req = Base();
+        req.History =
+        [
+            new NpcHistoryEntry
+            {
+                Role = "overheard",
+                Speaker = "Tomas",
+                Text = "A grey pickup came down the north track.",
+                T = 1
+            }
+        ];
+        var u = NpcPromptBuilder.BuildUserPrompt(req);
+        u.Should().Contain("Overheard nearby — Tomas: A grey pickup came down the north track.");
     }
 
     [Fact]

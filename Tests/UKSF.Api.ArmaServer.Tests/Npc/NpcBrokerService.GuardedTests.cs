@@ -21,8 +21,6 @@ public partial class NpcBrokerServiceGuardedTests
         await _sut.HandleTurnAsync(5006, TurnData());
 
         _brain.Verify(x => x.TurnGuardedAsync(It.IsAny<NpcGuardedTurnRequest>()), Times.Once);
-        _brain.Verify(x => x.ClassifyGuardedAsync(It.IsAny<NpcGuardedClassifyRequest>()), Times.Never);
-        _brain.Verify(x => x.ReplyGuardedAsync(It.IsAny<NpcGuardedReplyRequest>()), Times.Never);
         _brain.Verify(x => x.RespondAsync(It.IsAny<RespondRequest>()), Times.Never);
         _commands.Verify(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("npc_audio_frame"))), Times.AtLeastOnce);
         _commands.Verify(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("npc_guarded_state"))), Times.Once);
@@ -77,23 +75,20 @@ public partial class NpcBrokerServiceGuardedTests
     }
 
     [Fact]
-    public async Task CanonicalTextWithoutId_Rejected_UsesFallback()
+    public async Task CanonicalTextWithoutId_StillSpeaksEngineFact()
     {
         _session = MakeGuardedSession();
         SetupClassify(Tag(NpcGuardedTags.RelevantQuestion, 1));
         SetupReply("Trucks have been rolling past the farm after dark.", "neutral", null, null);
+        string spoken = null;
+        _clacks.Setup(x => x.SpeakStreamAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Func<string, Task>>()))
+               .Callback<string, string, string, Func<string, Task>>((_, text, _, _) => spoken = text)
+               .Returns(async (string _, string _, string _, Func<string, Task> onFrame) => await onFrame("QQ=="));
 
         await _sut.HandleTurnAsync(5006, TurnData());
 
-        _clacks.Verify(
-            x => x.SpeakStreamAsync(
-                It.IsAny<string>(),
-                It.Is<string>(t => t.Contains("Trucks have been rolling")),
-                It.IsAny<string>(),
-                It.IsAny<Func<string, Task>>()
-            ),
-            Times.Never
-        );
+        spoken.Should().Be("Trucks have been rolling past the farm after dark.");
+        _updates.Should().BeGreaterThan(0);
     }
 
     [Fact]
@@ -109,8 +104,24 @@ public partial class NpcBrokerServiceGuardedTests
 
         await _sut.HandleTurnAsync(5006, TurnData());
 
-        spoken.Should().Contain("Listen carefully.");
-        spoken.Should().Contain("Trucks have been rolling past the farm after dark.");
+        spoken.Should().Be("Listen carefully.");
+    }
+
+    [Fact]
+    public async Task WrongSlotId_SpeaksRefuseNotSafeDeflection()
+    {
+        _session = MakeGuardedSession();
+        SetupClassify(Tag(NpcGuardedTags.RelevantQuestion, 2));
+        SetupReply("It didn't stop near my patch.", "neutral", null, "2");
+        string spoken = null;
+        _clacks.Setup(x => x.SpeakStreamAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Func<string, Task>>()))
+               .Callback<string, string, string, Func<string, Task>>((_, text, _, _) => spoken = text)
+               .Returns(async (string _, string _, string _, Func<string, Task> onFrame) => await onFrame("QQ=="));
+
+        await _sut.HandleTurnAsync(5006, TurnData());
+
+        spoken.Should().Be("It didn't stop near my patch.");
+        spoken.Should().NotBe(NpcGuardedProfile.SafeDeflection);
     }
 
     [Fact]

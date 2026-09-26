@@ -78,7 +78,7 @@ public class NpcGuardedFact
     [JsonPropertyName("topic")]
     public string Topic { get; set; } = string.Empty;
 
-    /// Canonical speakable sentence. Engine-owned; never enters model prompts.
+    /// Canonical speakable sentence. Disclosed and next-includable facts may enter the combined prompt.
     [JsonPropertyName("text")]
     public string Text { get; set; } = string.Empty;
 }
@@ -152,34 +152,11 @@ public class NpcGuardedEngineResult
     public List<NpcGuardedClassification> Classifications { get; set; } = [];
 }
 
-public class NpcGuardedClassifyRequest
-{
-    public string NpcId { get; set; } = string.Empty;
-    public NpcPersona Persona { get; set; } = new();
-    public string Concern { get; set; } = string.Empty;
-    public List<(string Id, string Topic)> TopicCues { get; set; } = [];
-    public NpcGuardedState State { get; set; } = new();
-    public List<NpcTurnDto> Utterances { get; set; } = [];
-}
-
 public class NpcGuardedClassifyResult
 {
     public List<NpcGuardedClassification> Classifications { get; set; } = [];
     public string Provider { get; set; } = string.Empty;
     public long Ms { get; set; }
-}
-
-public class NpcGuardedReplyRequest
-{
-    public string NpcId { get; set; } = string.Empty;
-    public NpcPersona Persona { get; set; } = new();
-    public string Knowledge { get; set; } = string.Empty;
-    public List<NpcHistoryEntry> History { get; set; } = [];
-    public List<NpcTurnDto> NewTurns { get; set; } = [];
-    public string Directive { get; set; } = NpcGuardedDirectives.Normal;
-    public string PermittedFactId { get; set; }
-    public string PermittedFactTopic { get; set; }
-    public string VoiceId { get; set; } = string.Empty;
 }
 
 public class NpcGuardedReplyModelOutput
@@ -229,6 +206,9 @@ public class NpcGuardedTurnRequest
     public string Knowledge { get; set; } = string.Empty;
     public string Concern { get; set; } = string.Empty;
     public List<(string Id, string Topic)> TopicCues { get; set; } = [];
+    public List<NpcGuardedFact> DisclosedFacts { get; set; } = [];
+    public NpcGuardedFact NextFact { get; set; }
+    public List<(string Id, string Topic)> LaterTopics { get; set; } = [];
     public NpcGuardedState State { get; set; } = new();
     public List<NpcHistoryEntry> History { get; set; } = [];
     public List<NpcTurnDto> NewTurns { get; set; } = [];

@@ -50,13 +50,17 @@ public class NpcNameMatcherTests
         NpcNameMatcher.Classify("Marl, open up", "Merl", ["Merl", "Marl"]).Should().Be(NpcNameMatcher.Match.Borderline);
     }
 
-    [Theory]
-    [InlineData("Parval is your family safe?")] // the exact STT slip that failed in testing
-    [InlineData("Parvel, over here")]
-    public void A_Two_Edit_Accent_Slip_Still_Resolves_To_The_Only_Plausible_Name(string text)
+    [Fact]
+    public void A_Two_Edit_Slip_Is_Borderline_So_Gaze_Owns_The_Turn()
     {
-        NpcNameMatcher.Classify(text, "Pavel", TwoGuardsPavel).Should().Be(NpcNameMatcher.Match.This);
-        NpcNameMatcher.Classify(text, "Tomas", TwoGuardsPavel).Should().Be(NpcNameMatcher.Match.Other);
+        NpcNameMatcher.Classify("Parval is your family safe?", "Pavel", TwoGuardsPavel).Should().Be(NpcNameMatcher.Match.Borderline);
+        NpcNameMatcher.Classify("Parval is your family safe?", "Tomas", TwoGuardsPavel).Should().NotBe(NpcNameMatcher.Match.This);
+    }
+
+    [Fact]
+    public void A_One_Edit_Name_Is_Still_This()
+    {
+        NpcNameMatcher.Classify("Parvel, over here", "Pavel", TwoGuardsPavel).Should().Be(NpcNameMatcher.Match.This);
     }
 
     private static readonly string[] TwoGuardsPavel = ["Tomas", "Pavel"];
@@ -65,6 +69,31 @@ public class NpcNameMatcherTests
     public void An_Unrelated_Word_Does_Not_Trip_The_Matcher()
     {
         NpcNameMatcher.Classify("the password is swordfish", "Merl", TwoGuards).Should().Be(NpcNameMatcher.Match.None);
+    }
+
+    [Theory]
+    [InlineData("what do people around here think")]
+    [InlineData("available now or later")]
+    public void A_Common_Word_That_Sounds_Like_Pavel_Is_Not_A_Name(string text)
+    {
+        NpcNameMatcher.Classify(text, "Pavel", TwoGuardsPavel).Should().NotBe(NpcNameMatcher.Match.This);
+        NpcNameMatcher.Classify(text, "Tomas", TwoGuardsPavel).Should().NotBe(NpcNameMatcher.Match.This);
+    }
+
+    [Fact]
+    public void Gaze_Target_Answers_Unless_Another_Npc_Is_Named()
+    {
+        NpcBrokerService.DecideAddress(NpcNameMatcher.Match.None, true).Should().Be(NpcBrokerService.AddressDecision.Answer);
+        NpcBrokerService.DecideAddress(NpcNameMatcher.Match.Borderline, true).Should().Be(NpcBrokerService.AddressDecision.Answer);
+        NpcBrokerService.DecideAddress(NpcNameMatcher.Match.Other, true).Should().Be(NpcBrokerService.AddressDecision.StaySilent);
+    }
+
+    [Fact]
+    public void Non_Gaze_Npc_Answers_Only_On_A_Solid_Name()
+    {
+        NpcBrokerService.DecideAddress(NpcNameMatcher.Match.This, false).Should().Be(NpcBrokerService.AddressDecision.Answer);
+        NpcBrokerService.DecideAddress(NpcNameMatcher.Match.Borderline, false).Should().Be(NpcBrokerService.AddressDecision.StaySilent);
+        NpcBrokerService.DecideAddress(NpcNameMatcher.Match.None, false).Should().Be(NpcBrokerService.AddressDecision.StaySilent);
     }
 
     [Fact]

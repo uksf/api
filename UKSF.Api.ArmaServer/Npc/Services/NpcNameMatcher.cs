@@ -51,11 +51,12 @@ public static class NpcNameMatcher
         if (ownScore >= 2 && otherBest < 2) return Match.This;
         if (otherBest >= 2 && ownScore < 2) return Match.Other;
 
-        // A loose hit that only one side shows still resolves. STT through an accent can
-        // cost two edits on a short name ("Parval" for Pavel), and treating that as unnamed
-        // silently hands the turn to whoever is being looked at instead.
-        if (ownScore >= 1 && otherBest == 0) return Match.This;
-        if (otherBest >= 1 && ownScore == 0) return Match.Other;
+        // A unique loose hit is not a name. "people" sounds like Pavel once vowels
+        // collapse, and treating that as This makes Pavel answer while the player
+        // looks at Tomas. Solid hits (exact / one edit) stay This/Other. Loose
+        // unique hits stay Borderline so the gaze gate can own the turn.
+        if (ownScore >= 1 && otherBest == 0) return Match.Borderline;
+        if (otherBest >= 1 && ownScore == 0) return Match.Borderline;
 
         // Anything else with any signal at all is close enough to be worth a second opinion.
         return Match.Borderline;

@@ -28,8 +28,8 @@ public partial class NpcBrokerServiceGuardedTests
         debug.Should().Contain("\"relevant_question\"");
         debug.Should().Contain("\"f1\"");
         LastQuotedField(debug).Should().Contain("I noticed some traffic.");
-        LastQuotedField(debug).Should().Contain("Trucks have been rolling past the farm after dark.");
-        StripLastQuotedField(debug).Should().NotContain("Trucks have been rolling");
+        // The model tells the fact in its own words; the engine no longer appends canonical text.
+        debug.Should().NotContain("Trucks have been rolling");
     }
 
     [Fact]
@@ -89,8 +89,7 @@ public partial class NpcBrokerServiceGuardedTests
         debugCommands.Should().HaveCount(1);
         debugCommands[0].Should().Contain("[redacted]");
         LastQuotedField(debugCommands[0]).Should().Contain("I noticed some traffic.");
-        LastQuotedField(debugCommands[0]).Should().Contain("Trucks have been rolling past the farm after dark.");
-        StripLastQuotedField(debugCommands[0]).Should().NotContain("Trucks have been rolling");
+        debugCommands[0].Should().NotContain("Trucks have been rolling");
     }
 
     [Fact]
@@ -164,12 +163,5 @@ public partial class NpcBrokerServiceGuardedTests
         var lastComma = cmd.LastIndexOf(',');
         lastComma.Should().BeGreaterThan(0);
         return cmd[(lastComma + 1)..];
-    }
-
-    private static string StripLastQuotedField(string cmd)
-    {
-        var lastComma = cmd.LastIndexOf(',');
-        lastComma.Should().BeGreaterThan(0);
-        return cmd[..lastComma];
     }
 }

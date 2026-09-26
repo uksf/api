@@ -15,7 +15,7 @@ namespace UKSF.Api.ArmaServer.Npc.Services;
 // filler loop, or the player waits out a chorus of noises for a reply nobody will give.
 public partial class NpcBrokerService
 {
-    private enum AddressDecision
+    internal enum AddressDecision
     {
         Answer,
         StaySilent,
@@ -30,13 +30,24 @@ public partial class NpcBrokerService
                                       .ToList();
 
         var match = NpcNameMatcher.Classify(latestText, session.Persona?.Name ?? string.Empty, allNames);
-        return match switch
+        var decision = DecideAddress(match, gazeAddressed);
+        var preview = latestText.Length <= 80 ? latestText : latestText[..80];
+        logger.LogInfo($"npc_turn: '{session.NpcId}' name='{session.Persona?.Name}' match={match} gaze={gazeAddressed} decision={decision} text='{preview}'");
+        return decision;
+    }
+
+    /// Gaze owns the turn unless the player clearly named someone else.
+    /// A non-gazed NPC answers only on a solid name hit — not a loose
+    /// phonetic slip, and not AskTheBrain. Conversation + AskTheBrain was
+    /// letting Pavel reply while Tomas (the look target) was still waiting.
+    internal static AddressDecision DecideAddress(NpcNameMatcher.Match match, bool gazeAddressed)
+    {
+        if (gazeAddressed)
         {
-            NpcNameMatcher.Match.Other      => AddressDecision.StaySilent,
-            NpcNameMatcher.Match.This       => AddressDecision.Answer,
-            NpcNameMatcher.Match.Borderline => AddressDecision.AskTheBrain,
-            _                               => gazeAddressed ? AddressDecision.Answer : AddressDecision.StaySilent
-        };
+            return match == NpcNameMatcher.Match.Other ? AddressDecision.StaySilent : AddressDecision.Answer;
+        }
+
+        return match == NpcNameMatcher.Match.This ? AddressDecision.Answer : AddressDecision.StaySilent;
     }
 
     private static bool ParseGazeAddressed(object raw) =>

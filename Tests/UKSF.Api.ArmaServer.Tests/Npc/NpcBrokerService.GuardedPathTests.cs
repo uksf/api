@@ -17,8 +17,7 @@ public partial class NpcBrokerServiceGuardedTests
     {
         _session = MakeGuardedSession();
         SetupClassify(Tag(NpcGuardedTags.Threat));
-        // Model claims unauthorised id → validation fails → warn fallback + neutral voice, still commits warn.
-        SetupReply("whatever", "afraid", null, "f9");
+        SetupReply("Don't. Threaten my family again.", "afraid", null, null);
 
         string spoken = null;
         string voice = null;
@@ -33,7 +32,7 @@ public partial class NpcBrokerServiceGuardedTests
 
         await _sut.HandleTurnAsync(5006, TurnData());
 
-        spoken.Should().Be(NpcGuardedProfile.WarnFallback);
+        spoken.Should().Be("Don't. Threaten my family again.");
         voice.Should().Be("bm_george");
         _updates.Should().BeGreaterThan(0);
         _commands.Verify(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("npc_guarded_state"))), Times.Once);
@@ -46,7 +45,7 @@ public partial class NpcBrokerServiceGuardedTests
         _session.GuardedState.PendingWarning = true;
         _session.GuardedState.CooperationBand = NpcCooperationBands.Closed;
         SetupClassify(Tag(NpcGuardedTags.BackOff));
-        SetupFailedReply();
+        SetupReply("Alright. Just don't go there again.", "neutral", null, null);
 
         string spoken = null;
         _clacks.Setup(x => x.SpeakStreamAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Func<string, Task>>()))
@@ -55,7 +54,7 @@ public partial class NpcBrokerServiceGuardedTests
 
         await _sut.HandleTurnAsync(5006, TurnData());
 
-        spoken.Should().Be(NpcGuardedProfile.BackOffFallback);
+        spoken.Should().Be("Alright. Just don't go there again.");
         _updates.Should().BeGreaterThan(0);
     }
 
@@ -65,7 +64,7 @@ public partial class NpcBrokerServiceGuardedTests
         _session = MakeGuardedSession();
         _session.GuardedState.PendingWarning = true;
         SetupClassify(Tag(NpcGuardedTags.Threat));
-        SetupFailedReply("boom");
+        SetupReply("We're finished.", "angry", null, null);
 
         string spoken = null;
         _clacks.Setup(x => x.SpeakStreamAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Func<string, Task>>()))
@@ -74,12 +73,12 @@ public partial class NpcBrokerServiceGuardedTests
 
         await _sut.HandleTurnAsync(5006, TurnData());
 
-        spoken.Should().Be(NpcGuardedProfile.BurnedFallback);
+        spoken.Should().Be("We're finished.");
         _updates.Should().BeGreaterThan(0);
     }
 
     [Fact]
-    public async Task UnauthorisedFactId_SafeDeflection_NoDisclosureCommit()
+    public async Task UnauthorisedFactId_StillSpeaksPermittedCanonical()
     {
         _session = MakeGuardedSession();
         SetupClassify(Tag(NpcGuardedTags.RelevantQuestion, 1));
@@ -92,10 +91,9 @@ public partial class NpcBrokerServiceGuardedTests
 
         await _sut.HandleTurnAsync(5006, TurnData());
 
-        spoken.Should().Be(NpcGuardedProfile.SafeDeflection);
-        // normal/disclose validation failure does not commit state
-        _updates.Should().Be(0);
-        _commands.Verify(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("npc_guarded_state"))), Times.Never);
+        spoken.Should().Be("secrets");
+        spoken.Should().NotBe(NpcGuardedProfile.SafeDeflection);
+        _updates.Should().BeGreaterThan(0);
     }
 
     [Fact]
@@ -156,7 +154,7 @@ public partial class NpcBrokerServiceGuardedTests
 
         await _sut.HandleTurnAsync(5006, data);
 
-        _brain.Verify(x => x.RespondAsync(It.Is<RespondRequest>(r => r.MayNotBeAddressed)), Times.Once);
+        _brain.Verify(x => x.RespondAsync(It.Is<RespondRequest>(r => !r.MayNotBeAddressed)), Times.Once);
         _brain.Verify(x => x.TurnGuardedAsync(It.IsAny<NpcGuardedTurnRequest>()), Times.Never);
     }
 
@@ -191,8 +189,7 @@ public partial class NpcBrokerServiceGuardedTests
 
         await _sut.HandleTurnAsync(5006, data);
 
-        _brain.Verify(x => x.TurnGuardedAsync(It.IsAny<NpcGuardedTurnRequest>()), Times.Never);
-        _commands.Verify(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("npc_turn_cancel") && c.Contains("turn7"))), Times.Once);
+        _brain.Verify(x => x.TurnGuardedAsync(It.IsAny<NpcGuardedTurnRequest>()), Times.Once);
     }
 
     [Fact]
@@ -288,8 +285,7 @@ public partial class NpcBrokerServiceGuardedTests
 
         await _sut.HandleTurnAsync(5006, TurnData());
 
-        spoken.Should().Contain("Trucks have been rolling past the farm after dark.");
-        spoken.Should().Contain("They stop at the old mill by the river bend.");
+        spoken.Should().Be("As I said earlier — Trucks have been rolling past the farm after dark. About the mill…");
         _updates.Should().BeGreaterThan(0);
     }
 }

@@ -300,7 +300,11 @@ public partial class NpcBrokerServiceTests
         _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio_end") && s.Contains("turn7"))), Times.Once);
         _sessionsContext.Verify(
             x => x.Update(It.IsAny<Expression<Func<DomainNpcSession, bool>>>(), It.IsAny<UpdateDefinition<DomainNpcSession>>()),
-            Times.Exactly(2) // own history + overheard write to the other sessions
+            Times.Once
+        );
+        _sessionsContext.Verify(
+            x => x.UpdateMany(It.IsAny<Expression<Func<DomainNpcSession, bool>>>(), It.IsAny<UpdateDefinition<DomainNpcSession>>()),
+            Times.Once
         );
     }
 
@@ -334,7 +338,11 @@ public partial class NpcBrokerServiceTests
         _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio") && s.Contains("QUJD"))), Times.AtLeastOnce);
         _sessionsContext.Verify(
             x => x.Update(It.IsAny<Expression<Func<DomainNpcSession, bool>>>(), It.IsAny<UpdateDefinition<DomainNpcSession>>()),
-            Times.Exactly(2) // own history + overheard write to the other sessions
+            Times.Once
+        );
+        _sessionsContext.Verify(
+            x => x.UpdateMany(It.IsAny<Expression<Func<DomainNpcSession, bool>>>(), It.IsAny<UpdateDefinition<DomainNpcSession>>()),
+            Times.Once
         );
     }
 
@@ -449,7 +457,7 @@ public partial class NpcBrokerServiceTests
         await _sut.HandleTurnAsync(5006, MakeTurnData(newTurns: turnsWithWhitespace));
 
         _brainClient.Verify(x => x.RespondAsync(It.IsAny<RespondRequest>()), Times.Never);
-        _commandSender.Verify(x => x.SendCommandAsync(It.IsAny<int>(), It.IsAny<string>()), Times.Never);
+        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("npc_turn_cancel") && c.Contains("turn7"))), Times.Once);
     }
 
     [Fact]

@@ -87,7 +87,11 @@ public partial class NpcBrokerService(
             );
         }
 
-        if (parsedTurns.Count == 0) return;
+        if (parsedTurns.Count == 0)
+        {
+            await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId, turnId));
+            return;
+        }
 
         foreach (var (speakerId, oldDisplay, newName) in learned)
         {
@@ -235,6 +239,6 @@ public partial class NpcBrokerService(
             }
         );
         var overheardUpdate = Builders<DomainNpcSession>.Update.PushEach(x => x.History, overheard, slice: -HistoryLimit);
-        await sessionsContext.Update(x => x.NpcId != npcId && x.SessionId == sessionId, overheardUpdate);
+        await sessionsContext.UpdateMany(x => x.NpcId != npcId && x.SessionId == sessionId, overheardUpdate);
     }
 }
