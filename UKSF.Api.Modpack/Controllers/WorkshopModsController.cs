@@ -100,6 +100,7 @@ public class WorkshopModsController(IWorkshopModsService workshopModsService, IW
             Pbos = mod.Pbos,
             Extensions = mod.Extensions,
             AvailablePbos = mod.AvailablePbos,
+            AvailablePboFolders = mod.AvailablePboFolders ?? [],
             AvailableExtensions = mod.AvailableExtensions
         };
     }

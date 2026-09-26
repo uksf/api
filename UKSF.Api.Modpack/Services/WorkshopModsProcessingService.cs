@@ -11,11 +11,12 @@ public interface IWorkshopModsProcessingService
     Task DownloadWithRetries(string workshopModId, int maxRetries = 2, CancellationToken cancellationToken = default);
     string GetWorkshopModPath(string workshopModId);
     List<string> GetPboFiles(string workshopModPath);
+    List<WorkshopModPbo> GetPboFolders(string workshopModPath);
     List<string> GetExtensions(string workshopModPath);
     void CleanupWorkshopModFiles(string workshopModPath);
     Task QueueDevBuild(string workshopModName, WorkshopModStatus workshopModStatus);
     Task UpdateModStatus(DomainWorkshopMod workshopMod, WorkshopModStatus status, string message);
-    Task SetAvailable(DomainWorkshopMod workshopMod, List<string> pbos, List<string> extensions);
+    Task SetAvailable(DomainWorkshopMod workshopMod, List<string> pbos, List<WorkshopModPbo> pboFolders, List<string> extensions);
 }
 
 public class WorkshopModsProcessingService(
@@ -27,8 +28,6 @@ public class WorkshopModsProcessingService(
     IUksfLogger logger
 ) : IWorkshopModsProcessingService
 {
-    private const string AddonsFolderName = "addons";
-
     public async Task DownloadWithRetries(string workshopModId, int maxRetries = 2, CancellationToken cancellationToken = default)
     {
         var retryDelay = TimeSpan.FromSeconds(5);
@@ -130,25 +129,18 @@ public class WorkshopModsProcessingService(
         return WorkshopModPaths.WorkshopMod(variablesService, workshopModId);
     }
 
-    /// <summary>PBOs are always in the mod's addons directory, so nothing outside it can be mistaken for one.</summary>
     public List<string> GetPboFiles(string workshopModPath)
     {
-        var addonsPath = Path.Combine(workshopModPath, AddonsFolderName);
-        if (!fileSystemService.DirectoryExists(addonsPath))
-        {
-            return [];
-        }
+        return WorkshopModPboDiscovery.Find(fileSystemService, workshopModPath).Select(x => x.Name).ToList();
+    }
 
-        var pboFiles = fileSystemService.EnumerateFiles(addonsPath, "*.pbo", SearchOption.AllDirectories).Select(x => Path.GetFileName(x)!).ToList();
-
-        var duplicates = pboFiles.GroupBy(f => f, StringComparer.OrdinalIgnoreCase).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
-
-        if (duplicates.Count != 0)
-        {
-            throw new InvalidOperationException($"Duplicate PBO names found: {string.Join(", ", duplicates)}. Manual investigation required.");
-        }
-
-        return pboFiles;
+    /// <summary>The PBOs found outside the addons folder, with the folder each came from.</summary>
+    public List<WorkshopModPbo> GetPboFolders(string workshopModPath)
+    {
+        return WorkshopModPboDiscovery.Find(fileSystemService, workshopModPath)
+                                      .Where(x => !x.InAddons)
+                                      .Select(x => new WorkshopModPbo { Name = x.Name, Folder = x.Folder })
+                                      .ToList();
     }
 
     /// <summary>
@@ -226,9 +218,10 @@ public class WorkshopModsProcessingService(
         await workshopModsContext.Replace(workshopMod);
     }
 
-    public async Task SetAvailable(DomainWorkshopMod workshopMod, List<string> pbos, List<string> extensions)
+    public async Task SetAvailable(DomainWorkshopMod workshopMod, List<string> pbos, List<WorkshopModPbo> pboFolders, List<string> extensions)
     {
         workshopMod.AvailablePbos = pbos;
+        workshopMod.AvailablePboFolders = pboFolders;
         workshopMod.AvailableExtensions = extensions;
         await workshopModsContext.Replace(workshopMod);
     }

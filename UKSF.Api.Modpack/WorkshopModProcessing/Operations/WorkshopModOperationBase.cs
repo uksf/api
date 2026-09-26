@@ -68,6 +68,7 @@ public abstract class WorkshopModOperationBase(
 
             var workshopModPath = WorkshopModsProcessingService.GetWorkshopModPath(workshopMod.SteamId);
             var pbos = WorkshopModsProcessingService.GetPboFiles(workshopModPath);
+            var pboFolders = WorkshopModsProcessingService.GetPboFolders(workshopModPath);
             var extensions = WorkshopModsProcessingService.GetExtensions(workshopModPath);
             if (pbos.Count == 0 && extensions.Count == 0)
             {
@@ -81,7 +82,7 @@ public abstract class WorkshopModOperationBase(
                 await WorkshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.InterventionRequired, "Select files to install");
             }
 
-            await WorkshopModsProcessingService.SetAvailable(workshopMod, pbos, extensions);
+            await WorkshopModsProcessingService.SetAvailable(workshopMod, pbos, pboFolders, extensions);
             return OperationResult.Successful(interventionRequired: contentChanged, availablePbos: pbos, availableExtensions: extensions);
         }
         catch (Exception exception)

@@ -38,6 +38,7 @@ public sealed class InstallOperation(
         workshopMod.Pbos = selectedPbos;
         workshopMod.Extensions = selectedExtensions;
         workshopMod.AvailablePbos = [];
+        workshopMod.AvailablePboFolders = [];
         workshopMod.AvailableExtensions = [];
 
         return Task.CompletedTask;

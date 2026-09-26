@@ -54,7 +54,20 @@ public class InstallOperationCheckTests
         result.AvailablePbos.Should().BeEquivalentTo(pbos);
         _mockProcessingService.Verify(x => x.UpdateModStatus(workshopMod, WorkshopModStatus.Installing, "Checking..."), Times.Once);
         _mockProcessingService.Verify(x => x.UpdateModStatus(workshopMod, WorkshopModStatus.InterventionRequired, "Select files to install"), Times.Once);
-        _mockProcessingService.Verify(x => x.SetAvailable(workshopMod, pbos, It.IsAny<List<string>>()), Times.Once);
+        _mockProcessingService.Verify(x => x.SetAvailable(workshopMod, pbos, It.IsAny<List<WorkshopModPbo>>(), It.IsAny<List<string>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CheckAsync_ShouldStoreTheFolderOfPbosFoundOutsideAddons()
+    {
+        var workshopMod = SetupWorkshopMod();
+        var folders = new List<WorkshopModPbo> { new() { Name = "mod_ace.pbo", Folder = "optionals/Addons" } };
+        _mockProcessingService.Setup(x => x.GetPboFiles("/path/to/mod")).Returns(["mod.pbo", "mod_ace.pbo"]);
+        _mockProcessingService.Setup(x => x.GetPboFolders("/path/to/mod")).Returns(folders);
+
+        await _operation.CheckAsync("test-mod-123");
+
+        _mockProcessingService.Verify(x => x.SetAvailable(workshopMod, It.IsAny<List<string>>(), folders, It.IsAny<List<string>>()), Times.Once);
     }
 
     [Fact]
@@ -73,7 +86,10 @@ public class InstallOperationCheckTests
             x => x.UpdateModStatus(It.IsAny<DomainWorkshopMod>(), WorkshopModStatus.InterventionRequired, It.IsAny<string>()),
             Times.Never
         );
-        _mockProcessingService.Verify(x => x.SetAvailable(It.IsAny<DomainWorkshopMod>(), pbos, It.IsAny<List<string>>()), Times.Once);
+        _mockProcessingService.Verify(
+            x => x.SetAvailable(It.IsAny<DomainWorkshopMod>(), pbos, It.IsAny<List<WorkshopModPbo>>(), It.IsAny<List<string>>()),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -90,7 +106,12 @@ public class InstallOperationCheckTests
         result.AvailablePbos.Should().BeEmpty();
         result.AvailableExtensions.Should().BeEquivalentTo("ctab_connect.dll");
         _mockProcessingService.Verify(
-            x => x.SetAvailable(workshopMod, It.IsAny<List<string>>(), It.Is<List<string>>(files => files.Single() == "ctab_connect.dll")),
+            x => x.SetAvailable(
+                workshopMod,
+                It.IsAny<List<string>>(),
+                It.IsAny<List<WorkshopModPbo>>(),
+                It.Is<List<string>>(files => files.Single() == "ctab_connect.dll")
+            ),
             Times.Once
         );
     }
@@ -144,7 +165,10 @@ public class InstallOperationCheckTests
         result.InterventionRequired.Should().BeFalse();
         result.AvailablePbos.Should().BeNull();
         _mockProcessingService.Verify(x => x.GetPboFiles(It.IsAny<string>()), Times.Never);
-        _mockProcessingService.Verify(x => x.SetAvailable(It.IsAny<DomainWorkshopMod>(), It.IsAny<List<string>>(), It.IsAny<List<string>>()), Times.Never);
+        _mockProcessingService.Verify(
+            x => x.SetAvailable(It.IsAny<DomainWorkshopMod>(), It.IsAny<List<string>>(), It.IsAny<List<WorkshopModPbo>>(), It.IsAny<List<string>>()),
+            Times.Never
+        );
     }
 
     [Fact]

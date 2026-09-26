@@ -10,6 +10,7 @@ public class WorkshopModResponse
     public string Status { get; set; }
     public List<string> Pbos { get; set; } = [];
     public List<string> AvailablePbos { get; set; } = [];
+    public List<WorkshopModPbo> AvailablePboFolders { get; set; } = [];
     public List<string> AvailableExtensions { get; set; } = [];
     public string LastUpdatedLocally { get; set; }
     public string ModpackVersionFirstAdded { get; set; }

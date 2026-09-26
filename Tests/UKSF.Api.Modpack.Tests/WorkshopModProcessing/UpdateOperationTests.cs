@@ -79,7 +79,7 @@ public class UpdateOperationTests
         workshopMod.Pbos.Should().BeEquivalentTo(installed);
         _mockProcessingService.Verify(x => x.UpdateModStatus(workshopMod, WorkshopModStatus.Updating, "Checking..."), Times.Once);
         _mockProcessingService.Verify(x => x.UpdateModStatus(workshopMod, WorkshopModStatus.InterventionRequired, "Select files to install"), Times.Once);
-        _mockProcessingService.Verify(x => x.SetAvailable(workshopMod, candidate, It.IsAny<List<string>>()), Times.Once);
+        _mockProcessingService.Verify(x => x.SetAvailable(workshopMod, candidate, It.IsAny<List<WorkshopModPbo>>(), It.IsAny<List<string>>()), Times.Once);
     }
 
     [Fact]

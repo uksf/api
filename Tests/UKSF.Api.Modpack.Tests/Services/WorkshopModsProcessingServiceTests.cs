@@ -46,8 +46,8 @@ public class WorkshopModsProcessingServiceTests
 
     private void SetupAddons(params string[] pboPaths)
     {
-        _fileSystemService.Setup(x => x.DirectoryExists(AddonsPath)).Returns(true);
-        _fileSystemService.Setup(x => x.EnumerateFiles(AddonsPath, "*.pbo", SearchOption.AllDirectories)).Returns(pboPaths);
+        _fileSystemService.Setup(x => x.DirectoryExists(ModPath)).Returns(true);
+        _fileSystemService.Setup(x => x.EnumerateFiles(ModPath, "*.pbo", SearchOption.AllDirectories)).Returns(pboPaths);
     }
 
     [Fact]
@@ -61,9 +61,9 @@ public class WorkshopModsProcessingServiceTests
     }
 
     [Fact]
-    public void GetPboFiles_WhenNoAddonsDirectory_ShouldReturnEmpty()
+    public void GetPboFiles_WhenNoModDirectory_ShouldReturnEmpty()
     {
-        _fileSystemService.Setup(x => x.DirectoryExists(AddonsPath)).Returns(false);
+        _fileSystemService.Setup(x => x.DirectoryExists(ModPath)).Returns(false);
 
         var result = _subject.GetPboFiles(ModPath);
 
@@ -79,6 +79,16 @@ public class WorkshopModsProcessingServiceTests
         var action = () => _subject.GetPboFiles(ModPath);
 
         action.Should().Throw<InvalidOperationException>().WithMessage("*Duplicate PBO names*");
+    }
+
+    [Fact]
+    public void GetPboFolders_ShouldReturnOnlyPbosOutsideAddonsWithTheirFolder()
+    {
+        SetupAddons(Path.Combine(AddonsPath, "a.pbo"), Path.Combine(ModPath, "optionals", "Addons", "b_ace.pbo"));
+
+        var result = _subject.GetPboFolders(ModPath);
+
+        result.Should().BeEquivalentTo([new WorkshopModPbo { Name = "b_ace.pbo", Folder = "optionals/Addons" }]);
     }
 
     [Fact]
@@ -215,7 +225,7 @@ public class WorkshopModsProcessingServiceTests
         var workshopMod = new DomainWorkshopMod { SteamId = "123", Pbos = [..existingInstalled] };
         _context.Setup(x => x.Replace(workshopMod)).Returns(Task.CompletedTask);
 
-        await _subject.SetAvailable(workshopMod, candidate, ["extension.dll"]);
+        await _subject.SetAvailable(workshopMod, candidate, [], ["extension.dll"]);
 
         workshopMod.AvailablePbos.Should().BeEquivalentTo(candidate);
         workshopMod.AvailableExtensions.Should().BeEquivalentTo("extension.dll");

@@ -74,6 +74,7 @@ public class WorkshopModsService(
             existingMod.Pbos = [];
             existingMod.Extensions = [];
             existingMod.AvailablePbos = [];
+            existingMod.AvailablePboFolders = [];
             existingMod.AvailableExtensions = [];
             existingMod.StatusMessage = null;
             existingMod.ErrorMessage = null;

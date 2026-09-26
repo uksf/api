@@ -37,14 +37,18 @@ public class WorkshopModDependencyFilesServiceTests
     {
         var addonsPath = Path.Combine(_workshopModPath, "addons");
         var sourcePbo = Path.Combine(addonsPath, "selected.pbo");
-        _fileSystemService.Setup(x => x.EnumerateFiles(addonsPath, "*.pbo", SearchOption.AllDirectories))
-                          .Returns([sourcePbo, Path.Combine(addonsPath, "optional", "other.pbo")]);
+        var optionalPbo = Path.Combine(_workshopModPath, "optionals", "Addons", "selected_ace.pbo");
+        _fileSystemService.Setup(x => x.DirectoryExists(_workshopModPath)).Returns(true);
+        _fileSystemService.Setup(x => x.EnumerateFiles(_workshopModPath, "*.pbo", SearchOption.AllDirectories))
+                          .Returns([sourcePbo, Path.Combine(addonsPath, "optional", "other.pbo"), optionalPbo]);
 
-        _subject.CopyPbosToDependencies(CreateWorkshopMod(), ["selected.pbo"]);
+        _subject.CopyPbosToDependencies(CreateWorkshopMod(), ["selected.pbo", "selected_ace.pbo"]);
 
         _fileSystemService.Verify(x => x.CopyFile(sourcePbo, Path.Combine(_devAddonsPath, "selected.pbo"), true), Times.Once);
         _fileSystemService.Verify(x => x.CopyFile(sourcePbo, Path.Combine(_rcAddonsPath, "selected.pbo"), true), Times.Once);
-        _fileSystemService.Verify(x => x.CopyFile(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Exactly(2));
+        _fileSystemService.Verify(x => x.CopyFile(optionalPbo, Path.Combine(_devAddonsPath, "selected_ace.pbo"), true), Times.Once);
+        _fileSystemService.Verify(x => x.CopyFile(optionalPbo, Path.Combine(_rcAddonsPath, "selected_ace.pbo"), true), Times.Once);
+        _fileSystemService.Verify(x => x.CopyFile(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Exactly(4));
     }
 
     [Fact]

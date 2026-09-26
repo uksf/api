@@ -31,6 +31,10 @@ public class DomainWorkshopMod : MongoObject
     public List<string> Extensions { get; set; } = [];
 
     public List<string> AvailablePbos { get; set; } = [];
+
+    /// <summary>The available PBOs found outside the addons folder, with their folder, so the selection can show where they came from.</summary>
+    public List<WorkshopModPbo> AvailablePboFolders { get; set; } = [];
+
     public List<string> AvailableExtensions { get; set; } = [];
     public DateTime LastUpdatedLocally { get; set; }
     public string ModpackVersionFirstAdded { get; set; }

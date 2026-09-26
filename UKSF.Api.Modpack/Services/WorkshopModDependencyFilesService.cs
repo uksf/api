@@ -18,8 +18,8 @@ public class WorkshopModDependencyFilesService(IVariablesService variablesServic
     public void CopyPbosToDependencies(DomainWorkshopMod workshopMod, List<string> pbos, CancellationToken cancellationToken = default)
     {
         var workshopModPath = WorkshopModPaths.WorkshopMod(variablesService, workshopMod.SteamId);
-        var pboPathsByName = fileSystemService.EnumerateFiles(Path.Combine(workshopModPath, "addons"), "*.pbo", SearchOption.AllDirectories)
-                                              .ToDictionary(path => Path.GetFileName(path)!, path => path, StringComparer.OrdinalIgnoreCase);
+        var pboPathsByName = WorkshopModPboDiscovery.Find(fileSystemService, workshopModPath)
+                                                    .ToDictionary(x => x.Name, x => x.FullPath, StringComparer.OrdinalIgnoreCase);
 
         CopyToRepos(pbos, name => pboPathsByName[name], WorkshopModPaths.DependenciesAddons, cancellationToken);
     }

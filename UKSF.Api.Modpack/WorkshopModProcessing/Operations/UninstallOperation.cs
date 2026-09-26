@@ -89,6 +89,7 @@ public sealed class UninstallOperation(
         workshopMod.Pbos = [];
         workshopMod.Extensions = [];
         workshopMod.AvailablePbos = [];
+        workshopMod.AvailablePboFolders = [];
         workshopMod.AvailableExtensions = [];
     }
 }
