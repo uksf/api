@@ -60,7 +60,7 @@ public class NpcPlainJevBenchTests
                 var d = viaJev.Decision;
                 var right = d is not null && c.ExpectMood.Contains(d.Mood) && (c.ExpectKnown is null || c.ExpectKnown == d.Known) && (c.ExpectNoise ?? false) == d.Noise;
                 Score("dynamic jev mood+known+noise", right, ms, $"{c.Id} mood {d?.Mood} known {d?.Known} noise {d?.Noise} {viaJev.Failure}");
-                if (rep == 0) sb.AppendLine($"{c.Id}\n  current [{current?.Mood}] {current?.Text}\n  jev     [{d?.Mood}{(d?.Known == false ? ", unknown" : "")}] {viaJev.Text}");
+                if (rep == 0) sb.AppendLine($"{c.Id}\n  current [{current?.Mood}] {current?.Text}\n  jev     [{d?.Mood}{(d?.Known == false ? ", unknown" : "")}{(viaJev.Rewritten ? ", rewritten" : "")}] {viaJev.Text}");
             }
 
             foreach (var c in data.ScriptedCases)
