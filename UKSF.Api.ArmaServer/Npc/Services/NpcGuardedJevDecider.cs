@@ -25,17 +25,6 @@ public static class NpcGuardedJevDecider
         [NpcGuardedTags.Other] = "Anything else, including general questions such as 'what do you know' that name no listed topic."
     };
 
-    // Jev reads these literally, so each names the situation that earns it. The TTS styling for
-    // each mood lives in MoodScripts.Table; this is only when to use it.
-    private static readonly Dictionary<string, string> MoodCriteria = new()
-    {
-        [MoodScripts.Neutral] = "The default: ordinary talk, questions, small talk, thanks, or not understanding what was said.",
-        ["afraid"] = "The current words threaten him or his family, or put them in danger right now.",
-        ["angry"] = "The current words insult, bully or pressure him, and he pushes back.",
-        ["sad"] = "The current words are about loss, grief or hardship.",
-        ["happy"] = "He is plainly pleased or relieved by the current words, such as good news or real help."
-    };
-
     public static string BuildState(NpcGuardedTurnRequest req, NpcGuardedConfig config)
     {
         var p = req.Persona ?? new NpcPersona();
@@ -79,11 +68,7 @@ public static class NpcGuardedJevDecider
             );
         }
 
-        // "Not his general worries": without it the concern line alone tips thanks and small talk to afraid.
-        q["mood"] = JevQuestion.Choice(
-            $"Judge only the current words, not his general worries. Which mood fits {name}'s reply to them? Choose neutral unless the current words clearly meet another mood's description.",
-            MoodCriteria.Where(kv => MoodScripts.IsValid(kv.Key)).ToDictionary(kv => kv.Key, kv => kv.Value)
-        );
+        q["mood"] = NpcJevMood.Question(name);
         return q;
     }
 
