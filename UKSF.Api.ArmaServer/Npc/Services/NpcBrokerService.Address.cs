@@ -22,7 +22,10 @@ public partial class NpcBrokerService
         AskTheBrain // borderline name match; the brain may decline with [none]
     }
 
-    private AddressDecision DecideAddress(DomainNpcSession session, string sessionId, string latestText, bool gazeAddressed)
+    /// A line with any name hit in it goes to Jev: a misheard name ("Parval") or a name used as a
+    /// topic ("Pavel says...") fools the matcher. With no name, or no answer from Jev, gaze and
+    /// the matcher decide.
+    private async Task<AddressDecision> DecideAddressAsync(DomainNpcSession session, string sessionId, string latestText, bool gazeAddressed)
     {
         var allNames = sessionsContext.Get(x => x.SessionId == sessionId)
                                       .Select(s => s.Persona?.Name ?? string.Empty)
@@ -31,6 +34,16 @@ public partial class NpcBrokerService
 
         var match = NpcNameMatcher.Classify(latestText, session.Persona?.Name ?? string.Empty, allNames);
         var decision = DecideAddress(match, gazeAddressed);
+        if (match != NpcNameMatcher.Match.None)
+        {
+            var addressed = await brainClient.IsAddressedAsync(allNames, session.Persona?.Name ?? string.Empty, gazeAddressed, latestText, session.NpcId);
+            if (addressed is { } yes)
+            {
+                logger.LogInfo($"npc_turn: '{session.NpcId}' jev address={yes} (matcher said {decision})");
+                decision = yes ? AddressDecision.Answer : AddressDecision.StaySilent;
+            }
+        }
+
         var preview = latestText.Length <= 80 ? latestText : latestText[..80];
         logger.LogInfo($"npc_turn: '{session.NpcId}' name='{session.Persona?.Name}' match={match} gaze={gazeAddressed} decision={decision} text='{preview}'");
         return decision;

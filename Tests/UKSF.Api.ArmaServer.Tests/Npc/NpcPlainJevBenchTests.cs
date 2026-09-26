@@ -90,6 +90,13 @@ public class NpcPlainJevBenchTests
                 var watch = Stopwatch.StartNew();
                 var to = (await jev.AskAsync(state, questions, "bench"))?.Pick("to");
                 Score("address jev", to == c.Expect, watch.ElapsedMilliseconds, $"{c.Id} to {to}");
+                foreach (var me in c.Names)
+                {
+                    var (s, q) = NpcPlainJevDecider.BuildAddressFor(c.Names, me, me == c.Facing, c.Utterance);
+                    watch.Restart();
+                    var p = (await jev.AskAsync(s, q, "bench"))?.P("to_me") ?? 0;
+                    Score("address jev per-npc", (p >= 0.5) == (me == c.Expect), watch.ElapsedMilliseconds, $"{c.Id} {me} p={p:0.00}");
+                }
             }
         }
 

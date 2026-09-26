@@ -13,6 +13,10 @@ public interface INpcBrainClient
     Task<RespondResult> RespondAsync(RespondRequest request);
     Task<PrerenderResult> PrerenderAsync(PrerenderRequest request);
     Task<NpcGuardedTurnResult> TurnGuardedAsync(NpcGuardedTurnRequest request);
+
+    /// Whether the words are spoken to this NPC, judged from its own side. Null means no judgement;
+    /// the caller keeps the name-and-gaze rule.
+    Task<bool?> IsAddressedAsync(IReadOnlyList<string> names, string me, bool lookedAt, string text, string npcId);
 }
 
 /// <summary>
@@ -99,6 +103,8 @@ public partial class NpcBrainService(IClacksClient clacksClient, INpcVoicesConte
         };
     }
 
+    public Task<bool?> IsAddressedAsync(IReadOnlyList<string> names, string me, bool lookedAt, string text, string npcId) => Task.FromResult<bool?>(null);
+
     public async Task<PrerenderResult> PrerenderAsync(PrerenderRequest request)
     {
         var items = new List<PrerenderResultItem>();
@@ -124,7 +130,7 @@ public partial class NpcBrainService(IClacksClient clacksClient, INpcVoicesConte
         return new PrerenderResult { Items = items };
     }
 
-    private string ResolveVoiceId(string baseVoiceId, string mood)
+    internal string ResolveVoiceId(string baseVoiceId, string mood)
     {
         var variant = $"{baseVoiceId}_{mood}";
         return voicesContext.GetSingle(x => x.VoiceId == variant) is not null ? variant : baseVoiceId;

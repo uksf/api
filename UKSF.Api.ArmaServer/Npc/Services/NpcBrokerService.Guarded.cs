@@ -6,7 +6,7 @@ using UKSF.Api.ArmaServer.Npc.Models;
 
 namespace UKSF.Api.ArmaServer.Npc.Services;
 
-// Guarded-source turn: one combined model call, engine state, then TTS.
+// Guarded-source turn: Jev decides, the engine permits, the writer phrases, then TTS.
 public partial class NpcBrokerService
 {
     private async Task HandleGuardedTurnAsync(
@@ -67,6 +67,7 @@ public partial class NpcBrokerService
                         Persona = session.Persona,
                         Knowledge = session.Knowledge,
                         Concern = session.Guarded.Concern,
+                        Config = session.Guarded,
                         TopicCues = topicCues,
                         DisclosedFacts = disclosedFacts,
                         NextFact = includedNext,

@@ -208,6 +208,7 @@ public class NpcGuardedTurnRequest
     public List<(string Id, string Topic)> TopicCues { get; set; } = [];
     public List<NpcGuardedFact> DisclosedFacts { get; set; } = [];
     public NpcGuardedFact NextFact { get; set; }
+    public NpcGuardedConfig Config { get; set; }
     public List<(string Id, string Topic)> LaterTopics { get; set; } = [];
     public NpcGuardedState State { get; set; } = new();
     public List<NpcHistoryEntry> History { get; set; } = [];

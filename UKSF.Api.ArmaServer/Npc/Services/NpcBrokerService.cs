@@ -100,7 +100,7 @@ public partial class NpcBrokerService(
         }
 
         var gazeAddressed = ParseGazeAddressed(data.GetValueOrDefault("gazeAddressed"));
-        var decision = DecideAddress(session, sessionId, parsedTurns[^1].Text, gazeAddressed);
+        var decision = await DecideAddressAsync(session, sessionId, parsedTurns[^1].Text, gazeAddressed);
         if (decision == AddressDecision.StaySilent)
         {
             await CancelTurnAsync(apiPort, npcId, turnId, gazeAddressed ? "names another NPC" : "not addressed");

@@ -88,6 +88,18 @@ public static class NpcPlainJevDecider
             Ms = answers.Ms
         };
 
+    /// Addressing from one NPC's side, which is all the game tells it: the names nearby and
+    /// whether the soldier is looking at this NPC. Asked only when the words contain a name.
+    public static (string State, Dictionary<string, JevQuestion> Questions) BuildAddressFor(IReadOnlyList<string> names, string me, bool facingMe, string text)
+    {
+        var state = $"Nearby people: {string.Join(", ", names)}. The soldier is {(facingMe ? "" : "not ")}looking at {me}.\n" +
+                    $"Speech is transcribed by machine, so a name may be misspelled or sound slightly different.\n\nThe soldier says: \"{text}\"";
+        var question = JevQuestion.Noul(
+            $"Is the soldier speaking to {me}? Someone called by name, even misspelled, is spoken to. A name only mentioned as a topic, as in 'tell X' or 'X says', is not the person spoken to. If no one is called by name, the soldier is speaking to the person they are looking at."
+        );
+        return (state, new Dictionary<string, JevQuestion> { ["to_me"] = question });
+    }
+
     /// Addressing for an unclear name match: the words and who the soldier is facing.
     public static (string State, Dictionary<string, JevQuestion> Questions) BuildAddress(IReadOnlyList<string> names, string facing, string text)
     {
