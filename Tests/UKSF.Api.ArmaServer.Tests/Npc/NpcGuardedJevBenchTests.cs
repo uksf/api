@@ -119,6 +119,9 @@ public class NpcGuardedJevBenchTests
                 sb.AppendLine($"  jev decide p50 {d[d.Count / 2]}ms, writer p50 {w[w.Count / 2]}ms");
             }
 
+            sb.AppendLine("  moods " + string.Join(", ", mine.GroupBy(x => x.Mood ?? "?").OrderByDescending(g => g.Count()).Select(g => $"{g.Key} {g.Count()}")));
+            var facts = new[] { "Trucks have been rolling past the farm after dark", "They stop at the old mill by the river bend", "They come back every third night near midnight" };
+            sb.AppendLine($"  fact said word for word {mine.Count(x => facts.Any(f => (x.Text ?? "").Contains(f, StringComparison.OrdinalIgnoreCase)))}");
             foreach (var miss in mine.Where(x => x.Misses.Count > 0)) sb.AppendLine($"  MISS {miss.Case}: {string.Join("; ", miss.Misses)}");
         }
 

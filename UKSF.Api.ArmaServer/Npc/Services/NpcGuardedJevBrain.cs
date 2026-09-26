@@ -56,7 +56,11 @@ public class NpcGuardedJevBrain(INpcJevClient jev, IClacksClient clacks, IUksfLo
 
         try
         {
-            var reply = JsonSerializer.Deserialize<WriterJson>(written.Text ?? "", NpcBrainJson.Options);
+            var raw = written.Text ?? "";
+            // Tolerate a fenced or prefixed reply: parse from the first brace to the last.
+            var start = raw.IndexOf('{');
+            var end = raw.LastIndexOf('}');
+            var reply = start >= 0 && end > start ? JsonSerializer.Deserialize<WriterJson>(raw[start..(end + 1)], NpcBrainJson.Options) : null;
             var text = reply?.Text?.Trim();
             if (string.IsNullOrEmpty(text)) return Failed(turn, "empty text");
             return new NpcGuardedJevTurn
@@ -72,7 +76,7 @@ public class NpcGuardedJevBrain(INpcJevClient jev, IClacksClient clacks, IUksfLo
         }
         catch (JsonException ex)
         {
-            logger.LogWarning($"npc guarded writer returned bad json for '{req.NpcId}': {ex.Message}");
+            logger.LogWarning($"npc guarded writer returned bad json for '{req.NpcId}': {ex.Message} — {written.Text}");
             return Failed(turn, "writer json");
         }
     }
@@ -85,6 +89,7 @@ public class NpcGuardedJevBrain(INpcJevClient jev, IClacksClient clacks, IUksfLo
         sb.AppendLine($"Brief: {req.Knowledge}");
         var told = req.DisclosedFacts ?? [];
         sb.AppendLine(told.Count == 0 ? "You have told them nothing yet." : "You have already told them: " + string.Join(" ", told.Select(f => f.Text)));
+        sb.AppendLine("Speak like this person, not like a report: plain, spoken, your own turn of phrase. Never repeat a sentence from this prompt word for word.");
         sb.AppendLine($"You feel {mood}.");
         sb.AppendLine("This turn: " + Instruction(engine));
         sb.AppendLine("You know nothing beyond the brief and what this prompt gives you. Do not invent events, places, vehicles, times or people. Do not confirm a guess.");
@@ -97,7 +102,7 @@ public class NpcGuardedJevBrain(INpcJevClient jev, IClacksClient clacks, IUksfLo
     private static string Instruction(NpcGuardedEngineResult engine) =>
         engine.Directive switch
         {
-            NpcGuardedDirectives.Disclose => $"Tell them this, in your own words, reluctantly: {engine.PermittedFactText}",
+            NpcGuardedDirectives.Disclose => $"Give up one thing you know, reluctantly, as you would say it aloud (a short hedge or aside is fine, new facts are not). What you know: {engine.PermittedFactText}",
             NpcGuardedDirectives.Warn     => "They threatened you. Warn them: one more threat and you are done talking. Tell them nothing new.",
             NpcGuardedDirectives.BackOff  => "They took back their threat. Accept it coldly; you do not trust them yet. Tell them nothing new.",
             NpcGuardedDirectives.Burned   => "They threatened you again. You are finished with them. Refuse to say anything more.",

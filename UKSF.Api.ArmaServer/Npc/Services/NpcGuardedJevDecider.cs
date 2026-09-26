@@ -25,6 +25,17 @@ public static class NpcGuardedJevDecider
         [NpcGuardedTags.Other] = "Anything else, including general questions such as 'what do you know' that name no listed topic."
     };
 
+    // Jev reads these literally, so each names the situation that earns it. The TTS styling for
+    // each mood lives in MoodScripts.Table; this is only when to use it.
+    private static readonly Dictionary<string, string> MoodCriteria = new()
+    {
+        [MoodScripts.Neutral] = "The default: ordinary talk, questions, small talk, thanks, or not understanding what was said.",
+        ["afraid"] = "The current words threaten him or his family, or put them in danger right now.",
+        ["angry"] = "The current words insult, bully or pressure him, and he pushes back.",
+        ["sad"] = "The current words are about loss, grief or hardship.",
+        ["happy"] = "He is plainly pleased or relieved by the current words, such as good news or real help."
+    };
+
     public static string BuildState(NpcGuardedTurnRequest req, NpcGuardedConfig config)
     {
         var p = req.Persona ?? new NpcPersona();
@@ -68,9 +79,10 @@ public static class NpcGuardedJevDecider
             );
         }
 
+        // "Not his general worries": without it the concern line alone tips thanks and small talk to afraid.
         q["mood"] = JevQuestion.Choice(
-            $"Which mood fits how {name} feels answering the current words, given their disposition and what has been said?",
-            MoodScripts.Table.ToDictionary(kv => kv.Key, kv => kv.Value.EmoText)
+            $"Judge only the current words, not his general worries. Which mood fits {name}'s reply to them? Choose neutral unless the current words clearly meet another mood's description.",
+            MoodCriteria.Where(kv => MoodScripts.IsValid(kv.Key)).ToDictionary(kv => kv.Key, kv => kv.Value)
         );
         return q;
     }
@@ -97,11 +109,16 @@ public static class NpcGuardedJevDecider
                     .ToList();
     }
 
-    /// Jev's mood, held to the rules' stance: a threat turn is never happy or calm.
+    /// Jev's mood, held to the rules' stance: a threat turn is angry or afraid, and a withdrawn
+    /// threat or a finished source is never happy.
     public static string ReadMood(JevResult answers, string directive)
     {
-        var mood = MoodScripts.Normalise(answers.Pick("mood"));
-        var hostile = directive is NpcGuardedDirectives.Warn or NpcGuardedDirectives.Burned;
-        return hostile && mood is MoodScripts.Neutral or "happy" ? "angry" : mood;
+        var mood = MoodScripts.Normalise(answers?.Pick("mood"));
+        return directive switch
+        {
+            NpcGuardedDirectives.Warn or NpcGuardedDirectives.Burned when mood is not ("angry" or "afraid") => "angry",
+            NpcGuardedDirectives.BackOff or NpcGuardedDirectives.Refuse when mood == "happy" => MoodScripts.Neutral,
+            _ => mood
+        };
     }
 }
