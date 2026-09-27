@@ -202,4 +202,24 @@ public partial class NpcBrokerServiceTests
         ack.Data["reason"].AsString.Should().Be("terminal");
         ack.Data["ok"].AsBoolean.Should().BeFalse();
     }
+
+    [Fact]
+    public async Task HandleTurnAsync_EmoteSendStalls_TurnStillFinishes()
+    {
+        SetupSpokenReply("shrugs");
+        _commandSender.Setup(x => x.SendCommandAsync(5006, It.Is<string>(c => c.Contains("npc_emote")))).Returns(new TaskCompletionSource().Task);
+
+        var turn = _sut.HandleTurnAsync(5006, MakeTracedTurnData());
+
+        (await Task.WhenAny(turn, Task.Delay(2000))).Should().BeSameAs(turn);
+        _trace.Single("turn.finished").Data["outcome"].AsString.Should().Be("spoke");
+    }
+
+    [Fact]
+    public async Task HandleTurnAsync_NoNewTurns_FinishesTraceAsEmpty()
+    {
+        await _sut.HandleTurnAsync(5006, MakeTurnData(newTurns: []));
+
+        _trace.Single("turn.finished").Data["outcome"].AsString.Should().Be("empty");
+    }
 }

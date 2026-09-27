@@ -11,7 +11,7 @@ using UKSF.Api.ArmaServer.Npc.Models;
 namespace UKSF.Api.ArmaServer.Npc.Observability;
 
 /// One captured event, already serialised so the writer does no work per field.
-public sealed record NpcTraceQueued(string Session, long Seq, byte[] Bson);
+public sealed record NpcTraceQueued(string Session, long Seq, byte[] Bson, bool IsGap = false);
 
 public interface INpcTraceRecorder
 {
@@ -49,16 +49,17 @@ public sealed class NpcTraceRecorder : INpcTraceRecorder
     {
         if (string.IsNullOrEmpty(session)) return;
         var seq = Interlocked.Increment(ref _seq.GetOrAdd(session, _ => new StrongBox<long>()).Value);
+        if (QueuedBytes >= _maxQueueBytes)
+        {
+            MarkGap(session, seq, seq, 1);
+            return;
+        }
+
         try
         {
+            // Admitted while under the cap, so the queue can overshoot by at most one event per caller.
             var bytes = Build(type, session, seq, data, npc, turn, utt);
-            if (Interlocked.Add(ref _queuedBytes, bytes.Length) > _maxQueueBytes)
-            {
-                Interlocked.Add(ref _queuedBytes, -bytes.Length);
-                MarkGap(session, seq, seq, 1);
-                return;
-            }
-
+            Interlocked.Add(ref _queuedBytes, bytes.Length);
             _channel.Writer.TryWrite(new NpcTraceQueued(session, seq, bytes));
         }
         catch
@@ -94,7 +95,7 @@ public sealed class NpcTraceRecorder : INpcTraceRecorder
                 null
             );
             Interlocked.Add(ref _queuedBytes, bytes.Length);
-            _channel.Writer.TryWrite(new NpcTraceQueued(session, seq, bytes));
+            _channel.Writer.TryWrite(new NpcTraceQueued(session, seq, bytes, IsGap: true));
         }
     }
 

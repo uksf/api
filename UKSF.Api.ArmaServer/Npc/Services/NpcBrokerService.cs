@@ -51,9 +51,9 @@ public partial class NpcBrokerService(
         var turnId = ToSafeString(data.GetValueOrDefault("turnId"));
         var rawTurns = ToList(data.GetValueOrDefault("newTurns"));
 
-        if (string.IsNullOrEmpty(npcId) || string.IsNullOrEmpty(turnId) || rawTurns.Count == 0)
+        if (string.IsNullOrEmpty(npcId) || string.IsNullOrEmpty(turnId))
         {
-            logger.LogWarning($"npc_turn received with missing npcId, turnId, or newTurns — npcId='{npcId}', turnId='{turnId}', turns={rawTurns.Count}");
+            logger.LogWarning($"npc_turn received with missing npcId or turnId — npcId='{npcId}', turnId='{turnId}'");
             return;
         }
 
@@ -61,6 +61,13 @@ public partial class NpcBrokerService(
         using var scope = NpcTraceScope.Begin(turnTrace);
         try
         {
+            if (rawTurns.Count == 0)
+            {
+                turnTrace.Outcome = "empty";
+                logger.LogWarning($"npc_turn received with no newTurns — npcId='{npcId}', turnId='{turnId}'");
+                return;
+            }
+
             await HandleTurnCoreAsync(apiPort, data, npcId, sessionId, turnId, rawTurns, turnTrace);
         }
         finally
@@ -219,7 +226,7 @@ public partial class NpcBrokerService(
             return;
         }
 
-        turnTrace.EmoteSent = await SendEmoteAsync(apiPort, npcId, turnId, result.Emote);
+        turnTrace.EmoteSent = SendEmote(apiPort, npcId, turnId, result.Emote);
         await CommitConversationHistoryAsync(session, npcId, sessionId, parsedTurns, result.Text, result.Mood);
         turnTrace.Committed = true;
         turnTrace.Outcome = "spoke";
@@ -234,65 +241,5 @@ public partial class NpcBrokerService(
         await sessionsContext.DeleteMany(x => x.SessionId == sessionId);
         await clipsContext.DeleteMany(x => x.SessionId == sessionId);
         NpcPlayerRoster.Reset(sessionId);
-    }
-
-    private async Task CommitConversationHistoryAsync(
-        DomainNpcSession session,
-        string npcId,
-        string sessionId,
-        List<NpcTurnDto> parsedTurns,
-        string replyText,
-        string mood
-    )
-    {
-        var newEntries = new List<NpcHistoryEntry>();
-        foreach (var turn in parsedTurns)
-        {
-            newEntries.Add(
-                new NpcHistoryEntry
-                {
-                    Role = "player",
-                    Speaker = string.IsNullOrEmpty(turn.SpeakerName) ? turn.SpeakerId : turn.SpeakerName,
-                    Text = turn.Text,
-                    T = turn.T
-                }
-            );
-        }
-
-        newEntries.Add(
-            new NpcHistoryEntry
-            {
-                Role = "npc",
-                Speaker = string.Empty,
-                Text = replyText,
-                Mood = mood,
-                T = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-            }
-        );
-
-        var update = Builders<DomainNpcSession>.Update.PushEach(x => x.History, newEntries, slice: -HistoryLimit);
-        await sessionsContext.Update(x => x.NpcId == npcId && x.SessionId == sessionId, update);
-
-        var overheard = parsedTurns.Select(turn => new NpcHistoryEntry
-                                       {
-                                           Role = "overheard",
-                                           Speaker = string.IsNullOrEmpty(turn.SpeakerName) ? turn.SpeakerId : turn.SpeakerName,
-                                           Text = turn.Text,
-                                           T = turn.T
-                                       }
-                                   )
-                                   .ToList();
-        overheard.Add(
-            new NpcHistoryEntry
-            {
-                Role = "overheard",
-                Speaker = session.Persona?.Name ?? npcId,
-                Text = replyText,
-                Mood = mood,
-                T = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-            }
-        );
-        var overheardUpdate = Builders<DomainNpcSession>.Update.PushEach(x => x.History, overheard, slice: -HistoryLimit);
-        await sessionsContext.UpdateMany(x => x.NpcId != npcId && x.SessionId == sessionId, overheardUpdate);
     }
 }

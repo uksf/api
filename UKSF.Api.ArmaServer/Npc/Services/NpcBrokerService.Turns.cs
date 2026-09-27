@@ -48,11 +48,15 @@ public partial class NpcBrokerService
         return tts.Delivered;
     }
 
-    /// Send a plain turn's emote after its speech is out. Never waits on Arma.
-    private async Task<bool?> SendEmoteAsync(int apiPort, string npcId, string turnId, string emote)
+    /// Dispatch a plain turn's emote after its speech is out. The turn does not wait for the send.
+    private bool? SendEmote(int apiPort, string npcId, string turnId, string emote)
     {
         if (string.IsNullOrWhiteSpace(emote)) return null;
-        await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildEmote(npcId, turnId, emote.Trim()));
+        _ = commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildEmote(npcId, turnId, emote.Trim()))
+                         .ContinueWith(
+                             t => logger.LogError($"npc_turn: emote send failed for '{npcId}' turn '{turnId}'", t.Exception),
+                             TaskContinuationOptions.OnlyOnFaulted
+                         );
         return true;
     }
 

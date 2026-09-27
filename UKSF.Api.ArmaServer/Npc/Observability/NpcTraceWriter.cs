@@ -28,7 +28,7 @@ public sealed class MongoNpcTraceSink(IMongoDatabase database) : INpcTraceSink
             await _events.InsertManyAsync(batch.Select(x => new RawBsonDocument(x.Bson)), new InsertManyOptions { IsOrdered = false }, cancellationToken);
             return [];
         }
-        catch (MongoBulkWriteException<RawBsonDocument> exception)
+        catch (MongoBulkWriteException<RawBsonDocument> exception) when (exception.WriteConcernError is null)
         {
             // A duplicate key is a retried insert that already landed.
             return exception.WriteErrors.Where(e => e.Category != ServerErrorCategory.DuplicateKey).Select(e => batch[e.Index]).ToList();
@@ -105,7 +105,8 @@ public sealed class NpcTraceWriter(NpcTraceRecorder recorder, INpcTraceSink sink
     private void Gap(IReadOnlyList<NpcTraceQueued> items, string reason)
     {
         logger.LogWarning($"npc trace: {items.Count} events lost ({reason})");
-        foreach (var session in items.GroupBy(x => x.Session))
+        // A lost gap record is only logged; re-queuing it could loop forever.
+        foreach (var session in items.Where(x => !x.IsGap).GroupBy(x => x.Session))
         {
             recorder.MarkGap(session.Key, session.Min(x => x.Seq), session.Max(x => x.Seq), session.Count());
         }

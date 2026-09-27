@@ -81,32 +81,48 @@ public sealed class NpcTraceMaintenance(IMongoDatabase database, IGameServersCon
 
     /// Replaces each player's UID and name with a stable per-mission pseudonym in every string of
     /// every event of the mission. Exact roster names only; STT misspellings are not chased.
+    /// Utterances are rewritten last: they hold the roster, so an interrupted run can resume.
     internal async Task AnonymiseAsync(DateTime now, CancellationToken cancellationToken)
     {
-        var due = await Events
-                        .Find(
-                            Builders<BsonDocument>.Filter.Eq("type", "mission.started") &
-                            Builders<BsonDocument>.Filter.Lt("at", now - AnonymiseAfter) &
-                            Builders<BsonDocument>.Filter.Exists("anon", false)
-                        )
-                        .Limit(AnonymiseBatch)
-                        .ToListAsync(cancellationToken);
-        foreach (var session in due.Select(x => x["session"].AsString).Distinct())
+        var dueFilter = Builders<BsonDocument>.Filter.In("type", EventTypes) &
+                        Builders<BsonDocument>.Filter.Lt("at", now - AnonymiseAfter) &
+                        Builders<BsonDocument>.Filter.Exists("anon", false);
+        while (!cancellationToken.IsCancellationRequested)
         {
-            var events = await Events.Find(Builders<BsonDocument>.Filter.Eq("session", session)).ToListAsync(cancellationToken);
-            var replacements = Pseudonyms(events);
-            var writes = events.Select(e =>
-                                   {
-                                       var clean = (BsonDocument)Scrub(e, replacements);
-                                       clean["anon"] = true;
-                                       return new ReplaceOneModel<BsonDocument>(Builders<BsonDocument>.Filter.Eq("_id", e["_id"]), clean);
-                                   }
-                               )
-                               .ToList();
-            if (writes.Count > 0) await Events.BulkWriteAsync(writes, new BulkWriteOptions { IsOrdered = false }, cancellationToken);
-            logger.LogInfo($"npc trace: anonymised {writes.Count} events for session '{session}'");
+            var due = await Events.Find(dueFilter)
+                                  .Project(Builders<BsonDocument>.Projection.Include("session"))
+                                  .Limit(AnonymiseBatch)
+                                  .ToListAsync(cancellationToken);
+            if (due.Count == 0) return;
+
+            foreach (var session in due.Select(x => x["session"].AsString).Distinct())
+            {
+                var events = await Events.Find(Builders<BsonDocument>.Filter.Eq("session", session) & Builders<BsonDocument>.Filter.Exists("anon", false))
+                                         .ToListAsync(cancellationToken);
+                var replacements = Pseudonyms(events);
+                foreach (var phase in events.GroupBy(e => e["type"] == "utterance.received").OrderBy(g => g.Key))
+                {
+                    var writes = phase.Select(e =>
+                                          {
+                                              var clean = (BsonDocument)Scrub(e, replacements);
+                                              clean["anon"] = true;
+                                              return new ReplaceOneModel<BsonDocument>(Builders<BsonDocument>.Filter.Eq("_id", e["_id"]), clean);
+                                          }
+                                      )
+                                      .ToList();
+                    await Events.BulkWriteAsync(writes, new BulkWriteOptions { IsOrdered = false }, cancellationToken);
+                }
+
+                logger.LogInfo($"npc trace: anonymised {events.Count} events for session '{session}'");
+            }
         }
     }
+
+    private static readonly string[] EventTypes =
+    [
+        "mission.started", "npc.registered", "utterance.received", "turn.decided", "turn.replied", "turn.finished", "turn.acked", "mission.ended",
+        "telemetry.gap"
+    ];
 
     internal static List<(Regex Pattern, string Replacement)> Pseudonyms(IEnumerable<BsonDocument> events)
     {

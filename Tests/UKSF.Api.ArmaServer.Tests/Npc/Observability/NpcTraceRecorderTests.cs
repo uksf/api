@@ -108,4 +108,30 @@ public class NpcTraceRecorderTests
 
         Drain(recorder).Should().BeEmpty();
     }
+
+    [Fact]
+    public void Record_WhenQueueAlreadyFull_SkipsSerialisation()
+    {
+        var recorder = new NpcTraceRecorder(maxQueueBytes: 1);
+        recorder.Record("a", "s1", null);
+        var poison = new ThrowingOnSerialise();
+
+        recorder.Record("b", "s1", poison);
+
+        poison.Touched.Should().BeFalse();
+    }
+
+    private sealed class ThrowingOnSerialise
+    {
+        public bool Touched { get; private set; }
+
+        public string Value
+        {
+            get
+            {
+                Touched = true;
+                return "x";
+            }
+        }
+    }
 }
