@@ -2,10 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http;
-using System.Net.Http.Json;
+using System.Linq;
+using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using UKSF.Api.ArmaServer.Npc.Models;
+using UKSF.Api.ArmaServer.Npc.Observability;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Services;
 
@@ -26,7 +29,12 @@ public class JevQuestion
     public static JevQuestion Noul(string instructions) => new() { Type = "noul", Instructions = instructions };
 
     public static JevQuestion Choice(string instructions, Dictionary<string, string> criteria) =>
-        new() { Type = "choice", Instructions = instructions, Criteria = criteria };
+        new()
+        {
+            Type = "choice",
+            Instructions = instructions,
+            Criteria = criteria
+        };
 }
 
 public class JevAnswer
@@ -71,34 +79,50 @@ public class NpcJevClient(IHttpClientFactory httpClientFactory, IVariablesServic
         if (string.IsNullOrEmpty(baseUrl)) return null;
 
         var watch = Stopwatch.StartNew();
+        var request = JsonSerializer.Serialize(
+            new
+            {
+                model = "jev",
+                state,
+                questions
+            },
+            NpcBrainJson.Options
+        );
+        string raw = null;
+        var status = "ok";
         try
         {
             using var client = httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(10);
-            var response = await client.PostAsJsonAsync($"{baseUrl}/v1/systemone", new { model = "jev", state, questions }, NpcBrainJson.Options);
+            var response = await client.PostAsync($"{baseUrl}/v1/systemone", new StringContent(request, Encoding.UTF8, "application/json"));
+            raw = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
             {
+                status = $"http {(int)response.StatusCode}";
                 logger.LogWarning($"clacks /v1/systemone returned {(int)response.StatusCode} for npc '{npcId}'");
                 return null;
             }
 
-            var body = await response.Content.ReadFromJsonAsync<JevBody>(NpcBrainJson.Options);
-            var answers = body?.Answers ?? [];
-            foreach (var key in questions.Keys)
+            var answers = JsonSerializer.Deserialize<JevBody>(raw, NpcBrainJson.Options)?.Answers ?? [];
+            var missing = questions.Keys.FirstOrDefault(key => !answers.ContainsKey(key));
+            if (missing is not null)
             {
-                if (!answers.ContainsKey(key))
-                {
-                    logger.LogWarning($"jev answered without '{key}' for npc '{npcId}'");
-                    return null;
-                }
+                status = $"missing {missing}";
+                logger.LogWarning($"jev answered without '{missing}' for npc '{npcId}'");
+                return null;
             }
 
             return new JevResult { Answers = answers, Ms = watch.ElapsedMilliseconds };
         }
         catch (Exception exception)
         {
+            status = $"error {exception.GetType().Name}";
             logger.LogError($"clacks /v1/systemone call failed for npc '{npcId}'", exception);
             return null;
+        }
+        finally
+        {
+            NpcTraceScope.Add(new NpcModelCall("jev", request, raw, watch.ElapsedMilliseconds, status));
         }
     }
 

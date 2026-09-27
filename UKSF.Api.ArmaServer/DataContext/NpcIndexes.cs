@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Hosting;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using UKSF.Api.ArmaServer.Npc.Models;
+using UKSF.Api.ArmaServer.Npc.Observability;
 using UKSF.Api.Core;
 
 namespace UKSF.Api.ArmaServer.DataContext;
@@ -45,6 +47,29 @@ public class NpcIndexes(IMongoDatabase database, IUksfLogger logger) : IHostedSe
                     new CreateIndexOptions { Name = "ix_voiceId", Unique = true }
                 ),
                 cancellationToken: cancellationToken
+            );
+
+            var traces = database.GetCollection<BsonDocument>(MongoNpcTraceSink.Collection);
+            await traces.Indexes.CreateManyAsync(
+                [
+                    new CreateIndexModel<BsonDocument>(
+                        Builders<BsonDocument>.IndexKeys.Ascending("session").Ascending("proc").Ascending("seq"),
+                        new CreateIndexOptions { Name = "ix_session_proc_seq" }
+                    ),
+                    new CreateIndexModel<BsonDocument>(
+                        Builders<BsonDocument>.IndexKeys.Ascending("turn"),
+                        new CreateIndexOptions { Name = "ix_turn", Sparse = true }
+                    ),
+                    new CreateIndexModel<BsonDocument>(
+                        Builders<BsonDocument>.IndexKeys.Ascending("type").Ascending("at"),
+                        new CreateIndexOptions { Name = "ix_type_at" }
+                    ),
+                    new CreateIndexModel<BsonDocument>(
+                        Builders<BsonDocument>.IndexKeys.Ascending("data.uid").Ascending("at"),
+                        new CreateIndexOptions { Name = "ix_uid_at", Sparse = true }
+                    )
+                ],
+                cancellationToken
             );
 
             var jobs = database.GetCollection<DomainNpcVoiceJob>("npcVoiceJobs");

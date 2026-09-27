@@ -9,6 +9,8 @@ using MongoDB.Driver;
 using Moq;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Npc.Models;
+using UKSF.Api.ArmaServer.Npc.Observability;
+using UKSF.Api.ArmaServer.Tests.Npc.Observability;
 using UKSF.Api.ArmaServer.Npc.Services;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Services;
@@ -28,6 +30,7 @@ public partial class NpcBrokerServiceTests
     private readonly Mock<INpcVoicesContext> _voicesContext = new();
     private readonly Mock<INpcVoiceStore> _voiceStore = new();
     private readonly Mock<IUksfLogger> _logger = new();
+    private readonly CapturingTraceRecorder _trace = new();
     private readonly NpcBrokerService _sut;
 
     // Mirrors the filler set; asserting against it keeps the tests honest when the set
@@ -102,7 +105,9 @@ public partial class NpcBrokerServiceTests
             _voiceStore.Object,
             _voicesContext.Object,
             _variablesService.Object,
-            _logger.Object
+            _logger.Object,
+            _trace,
+            new NpcTraceMissions(_trace)
         );
     }
 }

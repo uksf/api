@@ -5,6 +5,7 @@ using MongoDB.Driver;
 using UKSF.Api.ArmaServer.Consumers;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.ArmaServer.Npc.Observability;
 using UKSF.Api.ArmaServer.Npc.Services;
 using UKSF.Api.Core;
 using static UKSF.Api.ArmaServer.Converters.PersistenceConversionHelpers;
@@ -25,7 +26,8 @@ public class GameServerEventHandler(
     IPersistenceSessionsService persistenceSessionsService,
     IUksfLogger logger,
     INpcBrokerService npcBrokerService,
-    IMissionSessionCaptureService missionSessionCaptureService
+    IMissionSessionCaptureService missionSessionCaptureService,
+    INpcTraceMissions npcTraceMissions = null
 ) : IGameServerEventHandler
 {
     public async Task HandleEventAsync(GameServerEvent gameServerEvent)
@@ -64,7 +66,9 @@ public class GameServerEventHandler(
                 case "persistence_save":    await HandlePersistenceSaveEvent(gameServerEvent.Data); break;
                 case "npc_register":        await npcBrokerService.HandleRegisterAsync(gameServerEvent.ApiPort, gameServerEvent.Data); break;
                 case "npc_turn":            await npcBrokerService.HandleTurnAsync(gameServerEvent.ApiPort, gameServerEvent.Data); break;
-                default:                    logger.LogWarning($"Unknown game server event type: {gameServerEvent.Type}"); break;
+                case "npc_utterance":
+                case "npc_ack": await npcBrokerService.HandleTraceEventAsync(gameServerEvent.Type, gameServerEvent.Data); break;
+                default: logger.LogWarning($"Unknown game server event type: {gameServerEvent.Type}"); break;
             }
         }
         catch (Exception ex)
@@ -162,6 +166,7 @@ public class GameServerEventHandler(
                 return;
             }
 
+            npcTraceMissions?.Started(sessionId, mission, map, gameServer?.Name);
             await missionStatsService.HandleMissionStartedAsync(sessionId, mission, map, now);
         }
         else

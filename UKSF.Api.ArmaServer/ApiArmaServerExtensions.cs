@@ -7,6 +7,7 @@ using UKSF.Api.ArmaServer.Models.Persistence;
 using UKSF.Api.ArmaServer.Queries;
 using UKSF.Api.ArmaServer.ScheduledActions;
 using UKSF.Api.ArmaServer.Services;
+using UKSF.Api.ArmaServer.Npc.Observability;
 using UKSF.Api.ArmaServer.Npc.Services;
 using UKSF.Api.ArmaServer.Services.StatsEventProcessors;
 using UKSF.Api.ArmaServer.Signalr.Hubs;
@@ -47,7 +48,9 @@ public static class ApiArmaServerExtensions
                            .AddHostedService<NpcIndexes>()
                            .AddHostedService<NpcVoiceReconciler>()
                            .AddHostedService<NpcMoodGenWorker>()
-                           .AddHostedService<NpcWarmKeeper>();
+                           .AddHostedService<NpcWarmKeeper>()
+                           .AddHostedService<NpcTraceWriter>()
+                           .AddHostedService<NpcTraceMaintenance>();
         }
 
         private IServiceCollection AddContexts()
@@ -110,6 +113,10 @@ public static class ApiArmaServerExtensions
                            .AddSingleton<IClacksClient, ClacksClient>()
                            .AddSingleton<NpcBrainService>()
                            .AddSingleton<INpcJevClient, NpcJevClient>()
+                           .AddSingleton<NpcTraceRecorder>()
+                           .AddSingleton<INpcTraceRecorder>(provider => provider.GetRequiredService<NpcTraceRecorder>())
+                           .AddSingleton<INpcTraceSink, MongoNpcTraceSink>()
+                           .AddSingleton<INpcTraceMissions, NpcTraceMissions>()
                            .AddSingleton<NpcGuardedJevBrain>()
                            .AddSingleton<NpcPlainJevBrain>()
                            .AddSingleton<INpcBrainClient, NpcJevBrainClient>()

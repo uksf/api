@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using MongoDB.Driver;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Npc.Models;
+using UKSF.Api.ArmaServer.Npc.Observability;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Services;
 using static UKSF.Api.ArmaServer.Converters.PersistenceConversionHelpers;
@@ -17,6 +18,7 @@ public interface INpcBrokerService
     Task HandleRegisterAsync(int apiPort, Dictionary<string, object> data);
     Task HandleTurnAsync(int apiPort, Dictionary<string, object> data);
     Task HandleMissionEndedAsync(string sessionId);
+    Task HandleTraceEventAsync(string type, Dictionary<string, object> data);
 }
 
 // Turn-serving helpers live in NpcBrokerService.Turns.cs; registration in .Registration.cs;
@@ -31,7 +33,9 @@ public partial class NpcBrokerService(
     INpcVoiceStore voiceStore,
     INpcVoicesContext voicesContext,
     IVariablesService variablesService,
-    IUksfLogger logger
+    IUksfLogger logger,
+    INpcTraceRecorder trace = null,
+    INpcTraceMissions traceMissions = null
 ) : INpcBrokerService
 {
     private const string DeflectionId = "__deflection__";
@@ -53,9 +57,32 @@ public partial class NpcBrokerService(
             return;
         }
 
+        var turnTrace = new NpcTurnTrace(_trace, sessionId, npcId, turnId, UtteranceIds(rawTurns));
+        using var scope = NpcTraceScope.Begin(turnTrace);
+        try
+        {
+            await HandleTurnCoreAsync(apiPort, data, npcId, sessionId, turnId, rawTurns, turnTrace);
+        }
+        finally
+        {
+            turnTrace.Finish();
+        }
+    }
+
+    private async Task HandleTurnCoreAsync(
+        int apiPort,
+        Dictionary<string, object> data,
+        string npcId,
+        string sessionId,
+        string turnId,
+        List<object> rawTurns,
+        NpcTurnTrace turnTrace
+    )
+    {
         var session = sessionsContext.GetSingle(x => x.NpcId == npcId && x.SessionId == sessionId);
         if (session is null)
         {
+            turnTrace.Outcome = "unregistered";
             logger.LogWarning($"npc_turn for unregistered npcId '{npcId}' (sessionId '{sessionId}') — register must precede turns");
             return;
         }
@@ -89,6 +116,7 @@ public partial class NpcBrokerService(
 
         if (parsedTurns.Count == 0)
         {
+            turnTrace.Outcome = "empty";
             await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId, turnId));
             return;
         }
@@ -103,6 +131,8 @@ public partial class NpcBrokerService(
         var decision = await DecideAddressAsync(session, sessionId, parsedTurns[^1].Text, gazeAddressed);
         if (decision == AddressDecision.StaySilent)
         {
+            turnTrace.Outcome = "not addressed";
+            turnTrace.Decided(AddressDecisionWire(decision), gazeAddressed);
             await CancelTurnAsync(apiPort, npcId, turnId, gazeAddressed ? "names another NPC" : "not addressed");
             return;
         }
@@ -111,6 +141,8 @@ public partial class NpcBrokerService(
         var isGuarded = string.Equals(session.InteractionProfile, NpcInteractionProfiles.Guarded, StringComparison.OrdinalIgnoreCase);
         if (isGuarded && decision == AddressDecision.AskTheBrain)
         {
+            turnTrace.Outcome = "guarded borderline";
+            turnTrace.Decided(AddressDecisionWire(decision), gazeAddressed);
             await CancelTurnAsync(apiPort, npcId, turnId, "guarded borderline address");
             return;
         }
@@ -119,7 +151,7 @@ public partial class NpcBrokerService(
 
         if (isGuarded)
         {
-            await HandleGuardedTurnAsync(apiPort, session, npcId, sessionId, turnId, parsedTurns);
+            await HandleGuardedTurnAsync(apiPort, session, npcId, sessionId, turnId, parsedTurns, AddressDecisionWire(decision), gazeAddressed);
             return;
         }
 
@@ -139,8 +171,23 @@ public partial class NpcBrokerService(
         };
 
         var result = await brainClient.RespondAsync(request);
+        turnTrace.Decided(AddressDecisionWire(decision), gazeAddressed, result?.Decision);
+        turnTrace.Replied(
+            result is null
+                ? null
+                : new
+                {
+                    text = result.Text,
+                    lineId = result.LineId,
+                    mood = result.Mood,
+                    emote = result.Emote,
+                    provider = result.Provider,
+                    voice = result.VoiceId
+                }
+        );
         if (result is null)
         {
+            turnTrace.Outcome = "brain failed";
             logger.LogWarning($"npc_turn: brain returned null for npcId '{npcId}' — NPC stays silent this turn");
             await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId, turnId));
             await SendDebugStateAsync(apiPort, npcId, "", AddressDecisionWire(decision));
@@ -149,6 +196,7 @@ public partial class NpcBrokerService(
 
         if (string.Equals(result.Text?.Trim(), "[none]", StringComparison.OrdinalIgnoreCase))
         {
+            turnTrace.Outcome = "declined";
             logger.LogInfo($"npc_turn: brain declined turn for '{npcId}' — not addressed");
             await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId, turnId));
             await SendDebugStateAsync(apiPort, npcId, result.Provider, "none");
@@ -159,17 +207,22 @@ public partial class NpcBrokerService(
         {
             if (!await SendScriptedClip(apiPort, session, npcId, turnId, result))
             {
+                turnTrace.Outcome = "clip failed";
                 await SendDebugStateAsync(apiPort, npcId, result.Provider, AddressDecisionWire(decision));
                 return;
             }
         }
         else if (!await StreamDynamicTurn(apiPort, npcId, turnId, result))
         {
+            turnTrace.Outcome = "speech failed";
             await SendDebugStateAsync(apiPort, npcId, result.Provider, AddressDecisionWire(decision));
             return;
         }
 
+        turnTrace.EmoteSent = await SendEmoteAsync(apiPort, npcId, turnId, result.Emote);
         await CommitConversationHistoryAsync(session, npcId, sessionId, parsedTurns, result.Text, result.Mood);
+        turnTrace.Committed = true;
+        turnTrace.Outcome = "spoke";
         await SendDebugStateAsync(apiPort, npcId, result.Provider, AddressDecisionWire(decision), spoken: result.Text);
     }
 
@@ -177,6 +230,7 @@ public partial class NpcBrokerService(
     {
         if (string.IsNullOrEmpty(sessionId)) return;
 
+        TraceMissionEnded(sessionId, sessionsContext.Get(x => x.SessionId == sessionId).ToList());
         await sessionsContext.DeleteMany(x => x.SessionId == sessionId);
         await clipsContext.DeleteMany(x => x.SessionId == sessionId);
         NpcPlayerRoster.Reset(sessionId);

@@ -32,6 +32,10 @@ public static class NpcAudioEnvelopeBuilder
     /// The client stops the filler loop instead of padding a silence that will never fill.
     public static string BuildTurnCancel(string npcId, string turnId) => $"[\"npc_turn_cancel\",{Quote(npcId)},{Quote(turnId ?? "")}]";
 
+    /// Floating emote for a plain NPC turn. Free text truncated like guarded state.
+    public static string BuildEmote(string npcId, string turnId, string emote) =>
+        $"[\"npc_emote\",{Quote(npcId)},{Quote(turnId ?? "")},{Quote(Truncate(emote))}]";
+
     /// Bounded guarded-state/emote command. No canonical fact text. Free text truncated.
     public static string BuildGuardedState(
         string npcId,

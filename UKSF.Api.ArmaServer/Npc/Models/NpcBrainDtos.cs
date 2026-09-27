@@ -83,6 +83,13 @@ public class RespondResult
     public string Provider { get; set; } = string.Empty;
     public string Mood { get; set; } = "neutral";
 
+    /// Optional silent action shown as floating text; never spoken.
+    public string Emote { get; set; }
+
+    /// Jev's decision for the turn, kept for the NPC trace only.
+    [JsonIgnore]
+    public object Decision { get; set; }
+
     /// Resolved voice for this turn ({base} or {base}_{mood}). Set when TextOnly
     /// asks the brain to skip synthesis so the caller can stream the line itself.
     public string VoiceId { get; set; }

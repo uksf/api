@@ -1,6 +1,8 @@
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using UKSF.Api.ArmaServer.Npc.Models;
+using UKSF.Api.ArmaServer.Npc.Observability;
 
 namespace UKSF.Api.ArmaServer.Npc.Services;
 
@@ -13,6 +15,7 @@ public partial class NpcBrokerService
     private async Task<bool> SendScriptedClip(int apiPort, DomainNpcSession session, string npcId, string turnId, RespondResult result)
     {
         var lineId = string.IsNullOrEmpty(result.LineId) ? DeflectionId : result.LineId;
+        if (NpcTraceScope.Current?.Turn is { } turnTrace) turnTrace.Clip = lineId;
         var clip = clipsContext.GetSingle(x => x.SessionId == session.SessionId && x.NpcId == npcId && x.ClipId == lineId);
         if (clip is null)
         {
@@ -40,13 +43,31 @@ public partial class NpcBrokerService
     /// Stream a dynamic line. Returns true when at least one TTS frame was emitted (delivery evidence).
     private async Task<bool> StreamDynamicTurn(int apiPort, string npcId, string turnId, RespondResult result)
     {
+        var tts = await StreamDynamicTurnCore(apiPort, npcId, turnId, result);
+        if (NpcTraceScope.Current?.Turn is { } turnTrace) turnTrace.Tts = tts;
+        return tts.Delivered;
+    }
+
+    /// Send a plain turn's emote after its speech is out. Never waits on Arma.
+    private async Task<bool?> SendEmoteAsync(int apiPort, string npcId, string turnId, string emote)
+    {
+        if (string.IsNullOrWhiteSpace(emote)) return null;
+        await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildEmote(npcId, turnId, emote.Trim()));
+        return true;
+    }
+
+    private async Task<NpcTtsOutcome> StreamDynamicTurnCore(int apiPort, string npcId, string turnId, RespondResult result)
+    {
         if (string.IsNullOrEmpty(result.Text))
         {
             logger.LogWarning($"npc_turn: dynamic response had no text for npcId '{npcId}'");
             await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId, turnId));
-            return false;
+            return NpcTtsOutcome.Skipped;
         }
 
+        var watch = Stopwatch.StartNew();
+        long firstFrameMs = 0;
+        string error = null;
         var voiceId = string.IsNullOrEmpty(result.VoiceId) ? "oracle" : result.VoiceId;
         var seq = 0;
         var failed = false;
@@ -58,6 +79,7 @@ public partial class NpcBrokerService
                 voiceId,
                 async frame =>
                 {
+                    if (seq == 0) firstFrameMs = watch.ElapsedMilliseconds;
                     await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildAudioFrame(npcId, turnId, seq, frame));
                     seq++;
                 }
@@ -66,16 +88,17 @@ public partial class NpcBrokerService
         catch (Exception exception)
         {
             failed = true;
+            error = exception.GetType().Name;
             logger.LogError($"npc_turn: dynamic stream failed for turnId '{turnId}'", exception);
         }
 
         if (seq == 0)
         {
             await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId, turnId));
-            return false;
+            return new NpcTtsOutcome(false, voiceId, result.Text, 0, 0, watch.ElapsedMilliseconds, error ?? "no frames");
         }
 
         await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildAudioEnd(npcId, turnId));
-        return !failed;
+        return new NpcTtsOutcome(!failed, voiceId, result.Text, seq, firstFrameMs, watch.ElapsedMilliseconds, error);
     }
 }

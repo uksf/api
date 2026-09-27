@@ -95,6 +95,7 @@ public partial class NpcBrokerService
                 // Warm only after duplicate-content rejection path is cleared.
                 _ = clacksClient.WarmAsync(NpcWarmKeeper.WarmRoles, NpcWarmKeeper.LeaseMs);
                 await sessionsContext.Replace(existing);
+                TraceRegistered(sessionId, npcId, existing);
                 await PrerenderClipsAsync(apiPort, npcId, sessionId, voiceId, mode, scripted);
                 return;
             }
@@ -160,6 +161,8 @@ public partial class NpcBrokerService
         {
             await sessionsContext.Add(session);
         }
+
+        TraceRegistered(sessionId, npcId, session);
 
         await PrerenderClipsAsync(apiPort, npcId, sessionId, voiceId, mode, scripted);
     }

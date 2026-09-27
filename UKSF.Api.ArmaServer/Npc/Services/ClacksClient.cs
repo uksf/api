@@ -83,63 +83,9 @@ public interface IClacksClient
 }
 
 // HTTP client for the local clacks daemon (the LLM mesh). clacks serves MODELS; the npc candidate
-// lists + placement live in ClacksCandidates. SpeakStreamAsync lives in ClacksClient.Streaming.cs.
+// lists + placement live in ClacksCandidates. ChatAsync lives in ClacksClient.Chat.cs, SpeakStreamAsync in ClacksClient.Streaming.cs.
 public partial class ClacksClient(IHttpClientFactory httpClientFactory, IVariablesService variablesService, IUksfLogger logger) : IClacksClient
 {
-    public async Task<ClacksChatResult> ChatAsync(string role, string system, string user, bool json, int maxTokens, double temperature, object meta = null)
-    {
-        // Non-throwing read: AsString() throws on a missing item, which would make this guard dead code
-        var baseUrl = variablesService.GetVariable("CLACKS_URL")?.Item?.ToString()?.TrimEnd('/');
-        if (string.IsNullOrEmpty(baseUrl))
-        {
-            logger.LogWarning("CLACKS_URL not configured — clacks call skipped");
-            return null;
-        }
-
-        try
-        {
-            using var client = httpClientFactory.CreateClient();
-            client.Timeout = TimeSpan.FromSeconds(60); // a fallback may need a cold model load
-            var response = await client.PostAsJsonAsync(
-                $"{baseUrl}/v1/chat/completions",
-                new
-                {
-                    model = ClacksCandidates.NpcChatModel,
-                    effort = ClacksCandidates.NpcChatEffort,
-                    fallbacks = ClacksCandidates.NpcChatFallbacks,
-                    // No service_tier: "fast" hangs the codex path (70s+ stall vs 1s without).
-                    messages = new[] { new { role = "system", content = system }, new { role = "user", content = user } },
-                    json,
-                    max_tokens = maxTokens,
-                    temperature,
-                    meta // null is omitted by WhenWritingNull; carries per-call context for the mesh dashboard
-                },
-                NpcBrainJson.Options
-            );
-            if (!response.IsSuccessStatusCode)
-            {
-                logger.LogWarning($"clacks /v1/chat/completions returned {(int)response.StatusCode} for role '{role}'");
-                return null;
-            }
-
-            var v1 = await response.Content.ReadFromJsonAsync<V1ChatResponse>(NpcBrainJson.Options);
-            if (v1 is null) return null;
-
-            return new ClacksChatResult
-            {
-                Text = v1.Choices?.Count > 0 ? v1.Choices[0].Message?.Content ?? string.Empty : string.Empty,
-                Model = v1.Model ?? string.Empty,
-                Node = v1.Clacks?.Node ?? string.Empty,
-                Ms = v1.Clacks?.Ms ?? 0
-            };
-        }
-        catch (Exception exception)
-        {
-            logger.LogError($"clacks /v1/chat/completions call failed for role '{role}'", exception);
-            return null;
-        }
-    }
-
     public async Task<ClacksSpeakResult> SpeakAsync(string role, string text, string voiceId)
     {
         var baseUrl = variablesService.GetVariable("CLACKS_URL")?.Item?.ToString()?.TrimEnd('/');

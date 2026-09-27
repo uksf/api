@@ -9,7 +9,8 @@ namespace UKSF.Api.ArmaServer.Npc.Services;
 /// The brain the broker talks to. Jev decides every turn and Gemini only writes; see
 /// NpcGuardedJevBrain and NpcPlainJevBrain. NpcBrainService keeps prerendering, and serves a
 /// plain turn when Jev is unreachable. A guarded turn never falls back: it fails closed.
-public class NpcJevBrainClient(NpcBrainService oneCall, NpcGuardedJevBrain guarded, NpcPlainJevBrain plain, INpcJevClient jev, IUksfLogger logger) : INpcBrainClient
+public class NpcJevBrainClient(NpcBrainService oneCall, NpcGuardedJevBrain guarded, NpcPlainJevBrain plain, INpcJevClient jev, IUksfLogger logger)
+    : INpcBrainClient
 {
     public Task<PrerenderResult> PrerenderAsync(PrerenderRequest request) => oneCall.PrerenderAsync(request);
 
@@ -33,7 +34,15 @@ public class NpcJevBrainClient(NpcBrainService oneCall, NpcGuardedJevBrain guard
         logger.LogInfo(
             $"NPC turn '{request.NpcId}' ({request.Mode}) via {provider}: mood={turn.Decision.Mood} known={turn.Decision.Known} noise={turn.Decision.Noise} rewritten={turn.Rewritten} jev={turn.Decision.Ms}ms write={turn.WriteMs}ms"
         );
-        if (request.Mode == "scripted") return new RespondResult { Text = turn.Text, LineId = turn.LineId, Provider = provider, Mood = turn.Decision.Mood };
+        if (request.Mode == "scripted")
+            return new RespondResult
+            {
+                Text = turn.Text,
+                LineId = turn.LineId,
+                Provider = provider,
+                Mood = turn.Decision.Mood,
+                Decision = turn.Decision
+            };
         if (turn.Text is null) return null;
 
         return new RespondResult
@@ -41,6 +50,8 @@ public class NpcJevBrainClient(NpcBrainService oneCall, NpcGuardedJevBrain guard
             Text = NpcReplyCleaner.Clean(turn.Text),
             Provider = provider,
             Mood = turn.Decision.Mood,
+            Emote = turn.Emote,
+            Decision = turn.Decision,
             VoiceId = oneCall.ResolveVoiceId(request.VoiceId, turn.Decision.Mood)
         };
     }
@@ -55,7 +66,12 @@ public class NpcJevBrainClient(NpcBrainService oneCall, NpcGuardedJevBrain guard
         );
         return new NpcGuardedTurnResult
         {
-            Classify = new NpcGuardedClassifyResult { Classifications = turn.Classifications, Provider = "jev", Ms = turn.DecideMs },
+            Classify = new NpcGuardedClassifyResult
+            {
+                Classifications = turn.Classifications,
+                Provider = "jev",
+                Ms = turn.DecideMs
+            },
             Reply = new NpcGuardedReplyResult
             {
                 Ok = turn.Failure is null,

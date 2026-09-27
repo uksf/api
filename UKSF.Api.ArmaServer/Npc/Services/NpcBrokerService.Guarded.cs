@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using UKSF.Api.ArmaServer.Npc.Models;
+using UKSF.Api.ArmaServer.Npc.Observability;
 
 namespace UKSF.Api.ArmaServer.Npc.Services;
 
@@ -15,15 +16,19 @@ public partial class NpcBrokerService
         string npcId,
         string sessionId,
         string turnId,
-        List<NpcTurnDto> parsedTurns
+        List<NpcTurnDto> parsedTurns,
+        string address,
+        bool gaze
     )
     {
+        var turnTrace = NpcTraceScope.Current?.Turn ?? new NpcTurnTrace(NullNpcTraceRecorder.Instance, sessionId, npcId, turnId, []);
         await GuardedTurnLock.WaitAsync();
         try
         {
             session = sessionsContext.GetSingle(x => x.NpcId == npcId && x.SessionId == sessionId);
             if (session is null)
             {
+                turnTrace.Outcome = "session vanished";
                 logger.LogWarning($"npc_turn guarded: session vanished for '{npcId}' before work");
                 await commandSender.SendCommandAsync(apiPort, NpcAudioEnvelopeBuilder.BuildTurnCancel(npcId, turnId));
                 await SendDebugStateAsync(apiPort, npcId, "", "stay_silent");
@@ -32,6 +37,7 @@ public partial class NpcBrokerService
 
             if (session.Guarded is null || session.Guarded.Facts.Count != 3)
             {
+                turnTrace.Outcome = "missing config";
                 logger.LogWarning($"npc_turn guarded: missing config for '{npcId}'");
                 await StreamSafeAndSkipCommit(apiPort, session, npcId, turnId, NpcGuardedProfile.SafeDeflection);
                 await SendDebugStateAsync(
@@ -50,11 +56,10 @@ public partial class NpcBrokerService
             var facts = session.Guarded.Facts;
             var includedNext = NpcGuardedProfile.NextIncludableFact(session.Guarded, stateSnapshot);
             var disclosedFacts = facts.Where(f => stateSnapshot.DisclosedFactIds.Any(id => NpcGuardedFactIds.Same(id, f.Id))).ToList();
-            var laterTopics = facts
-                              .Where(f => includedNext is null || !NpcGuardedFactIds.Same(f.Id, includedNext.Id))
-                              .Where(f => !disclosedFacts.Any(d => NpcGuardedFactIds.Same(d.Id, f.Id)))
-                              .Select(f => (f.Id, f.Topic))
-                              .ToList();
+            var laterTopics = facts.Where(f => includedNext is null || !NpcGuardedFactIds.Same(f.Id, includedNext.Id))
+                                   .Where(f => !disclosedFacts.Any(d => NpcGuardedFactIds.Same(d.Id, f.Id)))
+                                   .Select(f => (f.Id, f.Topic))
+                                   .ToList();
             var topicCues = facts.Select(f => (f.Id, f.Topic)).ToList();
 
             NpcGuardedTurnResult turn;
@@ -89,6 +94,8 @@ public partial class NpcBrokerService
             var modelReply = turn?.Reply;
             if (classify?.Classifications is null)
             {
+                turnTrace.Outcome = "decide failed";
+                turnTrace.Decided(address, gaze, new { before = stateSnapshot, failure = modelReply?.Failure });
                 await StreamSafeAndSkipCommit(apiPort, session, npcId, turnId, NpcGuardedProfile.SafeDeflection);
                 await SendDebugStateAsync(
                     apiPort,
@@ -103,6 +110,18 @@ public partial class NpcBrokerService
             }
 
             var engine = NpcGuardedProfile.Evaluate(stateSnapshot, session.Guarded, classify.Classifications);
+            turnTrace.Decided(
+                address,
+                gaze,
+                new
+                {
+                    before = stateSnapshot,
+                    classifications = classify.Classifications,
+                    directive = engine.Directive,
+                    permitted = engine.PermittedFactId,
+                    after = engine.NextState
+                }
+            );
 
             var validated = modelReply is { Ok: true }
                 ? NpcGuardedReplyValidator.Validate(
@@ -116,15 +135,33 @@ public partial class NpcBrokerService
                     includedNext
                 )
                 : null;
-            validated = NpcGuardedReplyValidator.Guard(validated, modelReply?.DisclosedFactId, includedNext?.Id, session.Guarded, stateSnapshot.DisclosedFactIds, engine.PermittedFactId);
+            validated = NpcGuardedReplyValidator.Guard(
+                validated,
+                modelReply?.DisclosedFactId,
+                includedNext?.Id,
+                session.Guarded,
+                stateSnapshot.DisclosedFactIds,
+                engine.PermittedFactId
+            );
 
             if (modelReply is null || !modelReply.Ok) logger.LogWarning($"npc_turn guarded: reply failed for '{npcId}' — {modelReply?.Failure ?? "null"}");
             if (validated is { Ok: false }) logger.LogWarning($"npc_turn guarded: validation failed for '{npcId}' — {validated.Failure}");
 
             var (spoken, mood, emote, disclosedId, commitState) = ResolveGuardedOutput(validated, modelReply);
-            var voiceId = commitState
-                ? modelReply?.VoiceId ?? ResolveGuardedVoice(session.VoiceId, mood)
-                : ResolveGuardedVoice(session.VoiceId, mood);
+            turnTrace.Replied(
+                new
+                {
+                    text = modelReply?.Text,
+                    mood = modelReply?.Mood,
+                    emote = modelReply?.Emote,
+                    provider = modelReply?.Provider,
+                    failure = modelReply?.Failure,
+                    rejected = validated?.Failure,
+                    spoken,
+                    disclosed = disclosedId
+                }
+            );
+            var voiceId = commitState ? modelReply?.VoiceId ?? ResolveGuardedVoice(session.VoiceId, mood) : ResolveGuardedVoice(session.VoiceId, mood);
 
             var delivered = await StreamDynamicTurn(
                 apiPort,
@@ -140,6 +177,7 @@ public partial class NpcBrokerService
 
             if (!delivered)
             {
+                turnTrace.Outcome = "speech failed";
                 logger.LogWarning($"npc_turn guarded: stream not delivered for '{npcId}' turn '{turnId}' — state/history unchanged");
                 await SendGuardedDebugStateAsync(apiPort, npcId, classify, session.Guarded, engine, modelReply, stateSnapshot.DisclosedFactIds);
                 return;
@@ -147,16 +185,20 @@ public partial class NpcBrokerService
 
             if (!commitState)
             {
+                turnTrace.Outcome = "safe deflection";
                 await SendGuardedDebugStateAsync(apiPort, npcId, classify, session.Guarded, engine, modelReply, stateSnapshot.DisclosedFactIds, spoken);
                 return;
             }
 
             var nextState = engine.NextState.Clone();
-            if (!string.IsNullOrEmpty(disclosedId) && !nextState.DisclosedFactIds.Any(id => NpcGuardedFactIds.Same(id, disclosedId))) nextState.DisclosedFactIds.Add(disclosedId);
+            if (!string.IsNullOrEmpty(disclosedId) && !nextState.DisclosedFactIds.Any(id => NpcGuardedFactIds.Same(id, disclosedId)))
+                nextState.DisclosedFactIds.Add(disclosedId);
 
             var committed = await CommitGuardedAsync(session, npcId, sessionId, parsedTurns, spoken, mood, nextState);
+            turnTrace.Committed = committed;
             if (!committed)
             {
+                turnTrace.Outcome = "commit failed";
                 await SendGuardedDebugStateAsync(apiPort, npcId, classify, session.Guarded, engine, modelReply, nextState.DisclosedFactIds, spoken);
                 return;
             }
@@ -180,6 +222,8 @@ public partial class NpcBrokerService
                 )
             );
 
+            turnTrace.EmoteSent = string.IsNullOrEmpty(emote) ? null : true;
+            turnTrace.Outcome = "spoke";
             await SendGuardedDebugStateAsync(apiPort, npcId, classify, session.Guarded, engine, modelReply, nextState.DisclosedFactIds, spoken);
         }
         finally
