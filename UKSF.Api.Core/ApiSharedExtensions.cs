@@ -80,6 +80,7 @@ public static class ApiSharedExtensions
                            .AddContext<IErrorLogContext, ErrorLogContext>()
                            .AddContext<ILauncherLogContext, LauncherLogContext>()
                            .AddContext<IMigrationContext, MigrationContext>()
+                           .AddContext<IPasskeyContext, PasskeyContext>()
                            .AddContext<ISchedulerContext, SchedulerContext>()
                            .AddCachedContext<IAccountContext, AccountContext>()
                            .AddCachedContext<IArtilleryContext, ArtilleryContext>()

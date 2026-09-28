@@ -16,6 +16,7 @@ public interface ILoginService
 {
     TokenResponse Login(string email, string password);
     TokenResponse LoginForPasswordReset(string email);
+    TokenResponse LoginForPasskey(string accountId);
     TokenResponse LoginForImpersonate(string accountId);
     TokenResponse RegenerateBearerToken();
 }
@@ -31,6 +32,12 @@ public class LoginService(IAccountContext accountContext, IPermissionsService pe
     public TokenResponse LoginForPasswordReset(string email)
     {
         var account = AuthenticateAccount(email, "", true);
+        return GenerateBearerToken(account);
+    }
+
+    public TokenResponse LoginForPasskey(string accountId)
+    {
+        var account = accountContext.GetSingle(accountId) ?? throw new BadRequestException("No user found for this passkey");
         return GenerateBearerToken(account);
     }
 
@@ -74,7 +81,7 @@ public class LoginService(IAccountContext accountContext, IPermissionsService pe
             return account;
         }
 
-        if (!BCrypt.Net.BCrypt.Verify(password, account.Password))
+        if (string.IsNullOrEmpty(account.Password) || !BCrypt.Net.BCrypt.Verify(password, account.Password))
         {
             throw new BadRequestException("Password or email did not match");
         }

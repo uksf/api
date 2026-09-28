@@ -1,6 +1,8 @@
 using System.Globalization;
+using Fido2NetLib;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using NameCase;
 using UKSF.Api.Core;
@@ -31,6 +33,8 @@ public class AccountsController(
     ISendTemplatedEmailCommand sendTemplatedEmailCommand,
     IAccountMapper accountMapper,
     ILoginService loginService,
+    IPasskeyService passkeyService,
+    IPasskeyContext passkeyContext,
     IUksfLogger logger
 ) : ControllerBase
 {
@@ -50,18 +54,33 @@ public class AccountsController(
         return accountMapper.MapToAccount(account);
     }
 
+    [HttpPost("create/passkey/options")]
+    public PasskeyOptionsResponse<CredentialCreateOptions> CreatePasskeyOptions([FromBody] CreateAccountPasskeyOptionsRequest request)
+    {
+        EnsureEmailAvailable(request.Email);
+
+        var displayName = $"{request.FirstName.Trim().ToTitleCase()} {request.LastName.Trim().ToNameCase()}";
+        return passkeyService.CreateRegistrationOptions(ObjectId.GenerateNewId().ToString(), request.Email, displayName);
+    }
+
     [HttpPost("create")]
     public async Task<TokenResponse> Create([FromBody] CreateAccount createAccount)
     {
-        if (accountContext.Get(x => string.Equals(x.Email, createAccount.Email, StringComparison.InvariantCultureIgnoreCase)).Any())
+        EnsureEmailAvailable(createAccount.Email);
+        if (string.IsNullOrEmpty(createAccount.Password) == (createAccount.Passkey == null))
         {
-            throw new AccountAlreadyExistsException();
+            throw new BadRequestException("Create the account with either a password or a passkey");
         }
+
+        var passkey = createAccount.Passkey == null
+            ? null
+            : await passkeyService.VerifyRegistration(createAccount.Passkey.FlowId, createAccount.Email, createAccount.Passkey.Credential);
 
         DomainAccount account = new()
         {
+            Id = passkey?.AccountId ?? ObjectId.GenerateNewId().ToString(),
             Email = createAccount.Email,
-            Password = BCrypt.Net.BCrypt.HashPassword(createAccount.Password),
+            Password = passkey == null ? BCrypt.Net.BCrypt.HashPassword(createAccount.Password) : null,
             Firstname = createAccount.FirstName.Trim().ToTitleCase(),
             Lastname = createAccount.LastName.Trim().ToNameCase(),
             Dob = DateTime.ParseExact($"{createAccount.DobYear}-{createAccount.DobMonth}-{createAccount.DobDay}", "yyyy-M-d", CultureInfo.InvariantCulture),
@@ -69,12 +88,24 @@ public class AccountsController(
             MembershipState = MembershipState.Unconfirmed
         };
         await accountContext.Add(account);
+        if (passkey != null)
+        {
+            await passkeyContext.Add(passkey);
+        }
+
         await SendConfirmationCode(account);
 
-        var createdAccount = accountContext.GetSingle(x => x.Email == account.Email);
-        logger.LogAudit($"New account created: '{account.Firstname} {account.Lastname}, {account.Email}'", createdAccount.Id);
+        logger.LogAudit($"New account created: '{account.Firstname} {account.Lastname}, {account.Email}'", account.Id);
 
-        return loginService.Login(createAccount.Email, createAccount.Password);
+        return passkey == null ? loginService.Login(createAccount.Email, createAccount.Password) : loginService.LoginForPasskey(account.Id);
+    }
+
+    private void EnsureEmailAvailable(string email)
+    {
+        if (accountContext.Get(x => string.Equals(x.Email, email, StringComparison.InvariantCultureIgnoreCase)).Any())
+        {
+            throw new AccountAlreadyExistsException();
+        }
     }
 
     [HttpPost("code")]

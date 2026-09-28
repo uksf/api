@@ -26,7 +26,8 @@ public class CreateAccount
     [Required]
     public string Nation { get; set; }
 
-    [Required]
     [MinLength(8)]
     public string Password { get; set; }
+
+    public PasskeyRegistrationRequest Passkey { get; set; }
 }

@@ -1,3 +1,4 @@
+using Fido2NetLib;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Commands;
@@ -14,6 +15,7 @@ namespace UKSF.Api.Controllers;
 [Route("auth")]
 public class AuthController(
     ILoginService loginService,
+    IPasskeyService passkeyService,
     IHttpContextService httpContextService,
     IRequestPasswordResetCommand requestPasswordResetCommand,
     IResetPasswordCommand resetPasswordCommand
@@ -42,6 +44,19 @@ public class AuthController(
     public TokenResponse Login([FromBody] LoginCredentials credentials)
     {
         return loginService.Login(credentials.Email, credentials.Password);
+    }
+
+    [HttpPost("passkey/options")]
+    public PasskeyOptionsResponse<AssertionOptions> PasskeyLoginOptions()
+    {
+        return passkeyService.CreateLoginOptions();
+    }
+
+    [HttpPost("passkey")]
+    public async Task<TokenResponse> PasskeyLogin([FromBody] PasskeyLoginRequest request)
+    {
+        var passkey = await passkeyService.VerifyLogin(request.FlowId, request.Credential);
+        return loginService.LoginForPasskey(passkey.AccountId);
     }
 
     [HttpPost("passwordReset")]

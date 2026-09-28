@@ -111,6 +111,38 @@ public class LoginServiceTests
     }
 
     [Fact]
+    public void Login_AccountWithoutPassword_ShouldThrowBadRequest()
+    {
+        var account = CreateTestAccount();
+        account.Password = null;
+        _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainAccount, bool>>())).Returns(account);
+
+        var act = () => _subject.Login(_testEmail, "any-password");
+
+        act.Should().Throw<BadRequestException>().WithMessage("Password or email did not match");
+    }
+
+    [Fact]
+    public void LoginForPasskey_ShouldReturnTokenForAccount()
+    {
+        var account = CreateTestAccount();
+        _mockAccountContext.Setup(x => x.GetSingle(_testUserId)).Returns(account);
+        _mockPermissionsService.Setup(x => x.GrantPermissions(account)).Returns([]);
+
+        var result = _subject.LoginForPasskey(_testUserId);
+
+        new JwtSecurityTokenHandler().ReadJwtToken(result.Token).Claims.Should().Contain(x => x.Type == ClaimTypes.Sid && x.Value == _testUserId);
+    }
+
+    [Fact]
+    public void LoginForPasskey_MissingAccount_ShouldThrowBadRequest()
+    {
+        var act = () => _subject.LoginForPasskey(_testUserId);
+
+        act.Should().Throw<BadRequestException>();
+    }
+
+    [Fact]
     public void LoginForPasswordReset_ShouldReturnTokenWithoutPasswordCheck()
     {
         var account = CreateTestAccount();

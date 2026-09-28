@@ -6,6 +6,7 @@ using Moq;
 using UKSF.Api.Commands;
 using UKSF.Api.Controllers;
 using UKSF.Api.Core.Exceptions;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Models.Request;
 using UKSF.Api.Models.Response;
@@ -19,6 +20,7 @@ public class AuthControllerTests
 {
     private readonly Mock<IHttpContextService> _mockHttpContextService;
     private readonly Mock<ILoginService> _mockLoginService;
+    private readonly Mock<IPasskeyService> _mockPasskeyService = new();
     private readonly Mock<IRequestPasswordResetCommand> _mockRequestPasswordResetCommand;
     private readonly Mock<IResetPasswordCommand> _mockResetPasswordCommand;
     private readonly AuthController _subject;
@@ -33,6 +35,7 @@ public class AuthControllerTests
 
         _subject = new AuthController(
             _mockLoginService.Object,
+            _mockPasskeyService.Object,
             _mockHttpContextService.Object,
             _mockRequestPasswordResetCommand.Object,
             _mockResetPasswordCommand.Object
@@ -47,6 +50,18 @@ public class AuthControllerTests
         var result = _subject.IsUserAuthenticated();
 
         result.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task When_logging_in_with_a_passkey()
+    {
+        var credential = new Fido2NetLib.AuthenticatorAssertionRawResponse();
+        _mockPasskeyService.Setup(x => x.VerifyLogin("flow", credential)).ReturnsAsync(new DomainPasskey { AccountId = _userId });
+        _mockLoginService.Setup(x => x.LoginForPasskey(_userId)).Returns(new TokenResponse { Token = "token" });
+
+        var result = await _subject.PasskeyLogin(new PasskeyLoginRequest { FlowId = "flow", Credential = credential });
+
+        result.Token.Should().Be("token");
     }
 
     [Fact]
