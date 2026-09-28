@@ -69,8 +69,8 @@ public static class ServiceExtensions
 
         private IServiceCollection AddServices()
         {
-            return services.AddMemoryCache()
-                           .AddSingleton<IBotDetectionService, BotDetectionService>()
+            return services.AddSingleton<IBotDetectionService, BotDetectionService>()
+                           .AddSingleton(new PasskeyFlowStore(TimeProvider.System))
                            .AddSingleton<IPasskeyService, PasskeyService>()
                            .AddSingleton<IAnalyticsRateLimiter, AnalyticsRateLimiter>()
                            .AddSingleton<IDataCacheService, DataCacheService>()

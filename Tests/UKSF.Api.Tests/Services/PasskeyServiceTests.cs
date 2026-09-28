@@ -6,7 +6,6 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Fido2NetLib;
 using FluentAssertions;
-using Microsoft.Extensions.Caching.Memory;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
@@ -47,7 +46,7 @@ public class PasskeyServiceTests
 
         _subject = new PasskeyService(
             mockPasskeyContext.Object,
-            new MemoryCache(new MemoryCacheOptions()),
+            new PasskeyFlowStore(TimeProvider.System),
             new AppSettings { WebUrl = "https://uk-sf.co.uk" }
         );
     }

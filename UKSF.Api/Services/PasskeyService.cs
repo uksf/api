@@ -1,6 +1,5 @@
 using Fido2NetLib;
 using Fido2NetLib.Objects;
-using Microsoft.Extensions.Caching.Memory;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using UKSF.Api.Core.Configuration;
@@ -19,10 +18,8 @@ public interface IPasskeyService
     Task<DomainPasskey> VerifyRegistration(string flowId, string email, AuthenticatorAttestationRawResponse credential);
 }
 
-public class PasskeyService(IPasskeyContext passkeyContext, IMemoryCache memoryCache, AppSettings appSettings) : IPasskeyService
+public class PasskeyService(IPasskeyContext passkeyContext, PasskeyFlowStore flowStore, AppSettings appSettings) : IPasskeyService
 {
-    private static readonly TimeSpan FlowLifetime = TimeSpan.FromMinutes(10);
-
     // Names for the common passkey providers, keyed by AAGUID (https://github.com/passkeydeveloper/passkey-authenticator-aaguids)
     private static readonly Dictionary<Guid, string> ProviderNames = new()
     {
@@ -40,12 +37,12 @@ public class PasskeyService(IPasskeyContext passkeyContext, IMemoryCache memoryC
     public PasskeyOptionsResponse<AssertionOptions> CreateLoginOptions()
     {
         var options = _fido2.Value.GetAssertionOptions(new GetAssertionOptionsParams { AllowedCredentials = [], UserVerification = UserVerificationRequirement.Required });
-        return new PasskeyOptionsResponse<AssertionOptions> { FlowId = StoreFlow(new PasskeyFlow(options.ToJson(), null, null)), Options = options };
+        return new PasskeyOptionsResponse<AssertionOptions> { FlowId = flowStore.Add(new PasskeyFlow(options.ToJson(), null, null)), Options = options };
     }
 
     public async Task<DomainPasskey> VerifyLogin(string flowId, AuthenticatorAssertionRawResponse credential)
     {
-        var flow = TakeFlow(flowId);
+        var flow = flowStore.Take(flowId);
         if (flow.AccountId != null)
         {
             throw new BadRequestException("Passkey sign-in expired, please try again");
@@ -98,13 +95,13 @@ public class PasskeyService(IPasskeyContext passkeyContext, IMemoryCache memoryC
 
         return new PasskeyOptionsResponse<CredentialCreateOptions>
         {
-            FlowId = StoreFlow(new PasskeyFlow(options.ToJson(), accountId, email)), Options = options
+            FlowId = flowStore.Add(new PasskeyFlow(options.ToJson(), accountId, email)), Options = options
         };
     }
 
     public async Task<DomainPasskey> VerifyRegistration(string flowId, string email, AuthenticatorAttestationRawResponse credential)
     {
-        var flow = TakeFlow(flowId);
+        var flow = flowStore.Take(flowId);
         if (flow.AccountId == null || !string.Equals(flow.Email, email, StringComparison.InvariantCultureIgnoreCase))
         {
             throw new BadRequestException("Passkey registration does not match this account, please try again");
@@ -136,24 +133,6 @@ public class PasskeyService(IPasskeyContext passkeyContext, IMemoryCache memoryC
         };
     }
 
-    private string StoreFlow(PasskeyFlow flow)
-    {
-        var flowId = Guid.NewGuid().ToString("N");
-        memoryCache.Set(FlowKey(flowId), flow, FlowLifetime);
-        return flowId;
-    }
-
-    private PasskeyFlow TakeFlow(string flowId)
-    {
-        if (string.IsNullOrEmpty(flowId) || !memoryCache.TryGetValue(FlowKey(flowId), out PasskeyFlow flow))
-        {
-            throw new BadRequestException("Passkey request expired, please try again");
-        }
-
-        memoryCache.Remove(FlowKey(flowId));
-        return flow;
-    }
-
     private static async Task<T> Verify<T>(Func<Task<T>> verify)
     {
         try
@@ -165,8 +144,6 @@ public class PasskeyService(IPasskeyContext passkeyContext, IMemoryCache memoryC
             throw new BadRequestException($"Passkey verification failed: {exception.Message}");
         }
     }
-
-    private static string FlowKey(string flowId) => $"passkey-flow:{flowId}";
 
     private static Fido2 CreateFido2(string webUrl)
     {
@@ -182,6 +159,4 @@ public class PasskeyService(IPasskeyContext passkeyContext, IMemoryCache memoryC
             null
         );
     }
-
-    private record PasskeyFlow(string OptionsJson, string AccountId, string Email);
 }

@@ -17,6 +17,9 @@ namespace UKSF.Api.Controllers;
 public class PasskeysController(IPasskeyContext passkeyContext, IPasskeyService passkeyService, IAccountService accountService, IUksfLogger logger)
     : ControllerBase
 {
+    // Serialises the last-passkey check with the delete, so parallel deletes cannot remove every sign-in method
+    private static readonly SemaphoreSlim DeleteLock = new(1, 1);
+
     [HttpGet]
     public PasskeysResponse Get()
     {
@@ -54,15 +57,23 @@ public class PasskeysController(IPasskeyContext passkeyContext, IPasskeyService 
     public async Task Delete([FromRoute] string id)
     {
         var account = accountService.GetUserAccount();
-        var passkeys = passkeyContext.Get(x => x.AccountId == account.Id).ToList();
-        var passkey = passkeys.FirstOrDefault(x => x.Id == id) ?? throw new NotFoundException("Passkey not found");
-        if (passkeys.Count == 1 && string.IsNullOrEmpty(account.Password))
+        await DeleteLock.WaitAsync();
+        try
         {
-            throw new BadRequestException("Set a password before removing your only passkey");
-        }
+            var passkeys = passkeyContext.Get(x => x.AccountId == account.Id).ToList();
+            var passkey = passkeys.FirstOrDefault(x => x.Id == id) ?? throw new NotFoundException("Passkey not found");
+            if (passkeys.Count == 1 && string.IsNullOrEmpty(account.Password))
+            {
+                throw new BadRequestException("Set a password before removing your only passkey");
+            }
 
-        await passkeyContext.Delete(passkey);
-        logger.LogAudit($"Passkey '{passkey.Name}' removed for {account.Id}");
+            await passkeyContext.Delete(passkey);
+            logger.LogAudit($"Passkey '{passkey.Name}' removed for {account.Id}");
+        }
+        finally
+        {
+            DeleteLock.Release();
+        }
     }
 
     private static PasskeyResponse MapPasskey(DomainPasskey passkey)

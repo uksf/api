@@ -90,7 +90,16 @@ public class AccountsController(
         await accountContext.Add(account);
         if (passkey != null)
         {
-            await passkeyContext.Add(passkey);
+            try
+            {
+                await passkeyContext.Add(passkey);
+            }
+            catch
+            {
+                // Without its passkey a password-less account cannot sign in, so do not leave it behind
+                await accountContext.Delete(account.Id);
+                throw;
+            }
         }
 
         await SendConfirmationCode(account);
