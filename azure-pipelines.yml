@@ -3,10 +3,6 @@ trigger:
   branches:
     include:
       - main
-  # Pushing a dev-* tag (e.g. dev-passkeys) on any commit builds and deploys it to Dev only
-  tags:
-    include:
-      - dev-*
 
 pool: Avengers
 
@@ -68,9 +64,7 @@ stages:
       deployPath: 'C:\Server\UKSF.Api'
       variableGroup: UKSF API - Production
       dependsOn: DeployDev
-      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
 
   - template: templates/migrate-db.yml
     parameters:
       dependsOn: DeployProd
-      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
