@@ -9,11 +9,15 @@ parameters:
     type: string
   - name: dependsOn
     type: string
+  - name: condition
+    type: string
+    default: succeeded()
 
 stages:
   - stage: Deploy${{ parameters.environment }}
     displayName: Deploy to ${{ parameters.environment }}
     dependsOn: ${{ parameters.dependsOn }}
+    condition: ${{ parameters.condition }}
     variables:
       - group: ${{ parameters.variableGroup }}
     jobs:

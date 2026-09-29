@@ -1,11 +1,15 @@
 parameters:
   - name: dependsOn
     type: string
+  - name: condition
+    type: string
+    default: succeeded()
 
 stages:
   - stage: MigrateDB
     displayName: Migrate DB Data
     dependsOn: ${{ parameters.dependsOn }}
+    condition: ${{ parameters.condition }}
     jobs:
       - job: Migrate
         displayName: Migrate
