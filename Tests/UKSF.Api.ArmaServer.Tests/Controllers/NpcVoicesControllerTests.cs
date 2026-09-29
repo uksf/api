@@ -18,7 +18,7 @@ using Xunit;
 
 namespace UKSF.Api.ArmaServer.Tests.Controllers;
 
-public class NpcVoicesControllerTests
+public partial class NpcVoicesControllerTests
 {
     private readonly Mock<INpcVoicesContext> _context = new();
     private readonly Mock<INpcVoiceJobsContext> _jobs = new();
@@ -106,11 +106,11 @@ public class NpcVoicesControllerTests
     public async Task Mood_variant_gets_compound_slug_and_moodOf()
     {
         // Parent "smuggler" exists; the new slug "smuggler_angry" does not.
-        _context.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcVoice, bool>>()))
-                .Returns((Func<DomainNpcVoice, bool> p) => p(new DomainNpcVoice { VoiceId = "smuggler" }) ? new DomainNpcVoice { VoiceId = "smuggler" } : null);
+        _context.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcVoice, bool>>())).Returns((Func<DomainNpcVoice, bool> p) => p(Parent) ? Parent : null);
         var result = await _sut.Upload(WavFile(24000 * 2 * 5), "ignored", "smuggler", "Angry");
         result.VoiceId.Should().Be("smuggler_angry");
         result.MoodOf.Should().Be("smuggler");
+        result.DisplayName.Should().Be("Smuggler (angry)");
     }
 
     [Fact]

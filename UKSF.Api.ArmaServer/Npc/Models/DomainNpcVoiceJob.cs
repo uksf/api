@@ -40,11 +40,11 @@ public class DomainNpcVoiceJob : MongoObject
     [JsonPropertyName("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public static DomainNpcVoiceJob NewJob(string baseVoiceId, string ownerId) =>
+    public static DomainNpcVoiceJob NewJob(string baseVoiceId, string ownerId, IEnumerable<string> moods = null) =>
         new()
         {
             BaseVoiceId = baseVoiceId,
             OwnerId = ownerId,
-            Moods = MoodScripts.Generated.Select(m => new NpcMoodTask { Mood = m, Status = NpcMoodStatus.Pending }).ToList()
+            Moods = (moods ?? MoodScripts.Generated).Select(m => new NpcMoodTask { Mood = m, Status = NpcMoodStatus.Pending }).ToList()
         };
 }

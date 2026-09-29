@@ -64,9 +64,19 @@ public class NpcVoicesController(
         }
 
         var parentVoiceId = string.IsNullOrWhiteSpace(moodOf) ? null : VoiceSlug.Slugify(moodOf);
-        if (parentVoiceId is not null && context.GetSingle(x => x.VoiceId == parentVoiceId) is null)
+        DomainNpcVoice parent = null;
+        if (parentVoiceId is not null)
         {
-            throw new BadRequestException($"Parent voice '{parentVoiceId}' not found");
+            parent = context.GetSingle(x => x.VoiceId == parentVoiceId) ?? throw new BadRequestException($"Parent voice '{parentVoiceId}' not found");
+            if (!MoodScripts.IsValid(VoiceSlug.Slugify(moodLabel)))
+            {
+                throw new BadRequestException($"Mood must be one of {string.Join(", ", MoodScripts.Generated)}");
+            }
+
+            if (!CanManage(parent))
+            {
+                throw new BadRequestException("Only the owner or an admin can add moods to this voice");
+            }
         }
 
         string voiceId;
@@ -79,9 +89,17 @@ public class NpcVoicesController(
             throw new BadRequestException(exception.Message);
         }
 
-        if (context.GetSingle(x => x.VoiceId == voiceId) is not null)
+        var existing = context.GetSingle(x => x.VoiceId == voiceId);
+        if (existing is not null && parent is null)
         {
             throw new BadRequestException($"Voice '{voiceId}' already exists");
+        }
+
+        if (existing is not null)
+        {
+            // A recorded mood replaces the current one, generated or not.
+            store.Delete(existing.FilePath);
+            await context.Delete(existing.Id);
         }
 
         var filePath = await store.SaveBaseAsync(voiceId, bytes);
@@ -90,7 +108,7 @@ public class NpcVoicesController(
         var doc = new DomainNpcVoice
         {
             VoiceId = voiceId,
-            DisplayName = displayName,
+            DisplayName = parent is null ? displayName : $"{parent.DisplayName} ({VoiceSlug.Slugify(moodLabel)})",
             OwnerId = httpContextService.GetUserId(),
             MoodOf = parentVoiceId,
             FilePath = filePath,
@@ -98,6 +116,10 @@ public class NpcVoicesController(
             DurationMs = wav.DurationMs
         };
         await context.Add(doc);
+        if (parent is not null)
+        {
+            await DropFromJobAsync(parent.VoiceId, VoiceSlug.Slugify(moodLabel));
+        }
 
         var pushed = await clacks.PutVoiceAsync(voiceId, bytes);
         if (!pushed)
@@ -138,9 +160,29 @@ public class NpcVoicesController(
             return NotFound();
         }
 
-        if (doc.OwnerId != httpContextService.GetUserId() && !httpContextService.UserHasPermission(Permissions.Admin))
+        if (!CanManage(doc))
         {
             return Forbid();
+        }
+
+        if (doc.MoodOf is null)
+        {
+            // A mood variant cannot outlive its base: the page lists moods under their base only.
+            foreach (var variant in context.Get(x => x.MoodOf == doc.VoiceId).ToList())
+            {
+                store.Delete(variant.FilePath);
+                await context.Delete(variant.Id);
+            }
+
+            var job = jobs.GetSingle(x => x.BaseVoiceId == doc.VoiceId);
+            if (job is not null)
+            {
+                await jobs.Delete(job.Id);
+            }
+        }
+        else
+        {
+            await DropFromJobAsync(doc.MoodOf, doc.VoiceId[(doc.MoodOf.Length + 1)..]);
         }
 
         store.Delete(doc.FilePath);
@@ -149,9 +191,11 @@ public class NpcVoicesController(
         return Ok();
     }
 
+    /// Queues the requested moods, or every mood the voice does not have yet. Moods already queued
+    /// for this voice stay queued.
     [HttpPost("{baseVoiceId}/generate-moods")]
     [Authorize]
-    public async Task<DomainNpcVoiceJob> GenerateMoods(string baseVoiceId)
+    public async Task<DomainNpcVoiceJob> GenerateMoods(string baseVoiceId, [FromBody] GenerateMoodsRequest request = null)
     {
         var baseDoc = context.GetSingle(x => x.VoiceId == baseVoiceId);
         if (baseDoc is null)
@@ -164,20 +208,53 @@ public class NpcVoicesController(
             throw new BadRequestException("Moods can only be generated for a base voice, not a mood variant");
         }
 
-        if (baseDoc.OwnerId != httpContextService.GetUserId() && !httpContextService.UserHasPermission(Permissions.Admin))
+        if (!CanManage(baseDoc))
         {
             throw new BadRequestException("Only the owner or an admin can generate moods for this voice");
         }
 
-        var existing = jobs.GetSingle(x => x.BaseVoiceId == baseVoiceId);
-        if (existing is not null)
+        var requested = request?.Moods?.Select(VoiceSlug.Slugify).Distinct().ToList() ?? [];
+        var unknown = requested.FirstOrDefault(m => !MoodScripts.IsValid(m));
+        if (unknown is not null)
         {
-            await jobs.Delete(existing.Id); // re-run replaces the prior job
+            throw new BadRequestException($"Unknown mood '{unknown}'");
         }
 
-        var job = DomainNpcVoiceJob.NewJob(baseVoiceId, baseDoc.OwnerId);
-        await jobs.Add(job);
-        logger.LogAudit($"Queued mood generation for NPC voice '{baseVoiceId}'");
+        if (requested.Count == 0)
+        {
+            var have = context.Get(x => x.MoodOf == baseVoiceId).Select(x => x.VoiceId).ToHashSet();
+            requested = MoodScripts.Generated.Where(m => !have.Contains($"{baseVoiceId}_{m}")).ToList();
+            if (requested.Count == 0)
+            {
+                throw new BadRequestException("This voice already has every mood. Pick a mood to regenerate it");
+            }
+        }
+
+        var job = jobs.GetSingle(x => x.BaseVoiceId == baseVoiceId);
+        if (job is null)
+        {
+            job = DomainNpcVoiceJob.NewJob(baseVoiceId, baseDoc.OwnerId, requested);
+            await jobs.Add(job);
+        }
+        else
+        {
+            foreach (var mood in requested)
+            {
+                var task = job.Moods.FirstOrDefault(m => m.Mood == mood);
+                if (task is null)
+                {
+                    job.Moods.Add(new NpcMoodTask { Mood = mood });
+                    continue;
+                }
+
+                task.Status = NpcMoodStatus.Pending;
+                task.Error = null;
+            }
+
+            await jobs.Replace(job);
+        }
+
+        logger.LogAudit($"Queued {string.Join(", ", requested)} mood generation for NPC voice '{baseVoiceId}'");
         return job;
     }
 
@@ -188,4 +265,23 @@ public class NpcVoicesController(
         var job = jobs.GetSingle(x => x.BaseVoiceId == baseVoiceId);
         return job is null ? NotFound() : job;
     }
+
+    private bool CanManage(DomainNpcVoice voice) => voice.OwnerId == httpContextService.GetUserId() || httpContextService.UserHasPermission(Permissions.Admin);
+
+    /// A recorded or deleted mood must not be overwritten later by a queued generation.
+    private async Task DropFromJobAsync(string baseVoiceId, string mood)
+    {
+        var job = jobs.GetSingle(x => x.BaseVoiceId == baseVoiceId);
+        if (job is null || job.Moods.RemoveAll(m => m.Mood == mood && m.Status == NpcMoodStatus.Pending) == 0)
+        {
+            return;
+        }
+
+        await jobs.Replace(job);
+    }
+}
+
+public class GenerateMoodsRequest
+{
+    public List<string> Moods { get; set; }
 }
