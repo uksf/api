@@ -7,6 +7,7 @@ using Moq;
 using UKSF.Api.ArmaServer.Controllers;
 using UKSF.Api.ArmaServer.Npc.Models;
 using UKSF.Api.ArmaServer.Npc.Services;
+using UKSF.Api.Core;
 using UKSF.Api.Core.Exceptions;
 using Xunit;
 
@@ -141,5 +142,37 @@ public partial class NpcVoicesControllerTests
         GivenVoices([Parent, .. MoodScripts.Generated.Select(m => new DomainNpcVoice { VoiceId = $"smuggler_{m}", MoodOf = "smuggler" })]);
         var act = () => _sut.GenerateMoods("smuggler");
         await act.Should().ThrowAsync<BadRequestException>().WithMessage("*every mood*");
+    }
+
+    [Fact]
+    public async Task Mood_upload_never_replaces_another_voice_that_shares_the_id()
+    {
+        var unrelated = new DomainNpcVoice
+        {
+            Id = "other",
+            VoiceId = "smuggler_angry",
+            MoodOf = null,
+            OwnerId = "someone-else",
+            FilePath = "smuggler_angry/ref.wav"
+        };
+        GivenVoices(Parent, unrelated);
+
+        var act = () => _sut.Upload(WavFile(24000 * 2 * 5), null, "smuggler", "Angry");
+
+        await act.Should().ThrowAsync<BadRequestException>().WithMessage("*already exists*");
+        _context.Verify(x => x.Delete("other"), Times.Never);
+        _store.Verify(x => x.Delete(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Mood_uploaded_by_an_admin_belongs_to_the_voice_owner()
+    {
+        _httpContext.Setup(x => x.GetUserId()).Returns("admin-1");
+        _httpContext.Setup(x => x.UserHasPermission(Permissions.Admin)).Returns(true);
+        GivenVoices(Parent);
+
+        var result = await _sut.Upload(WavFile(24000 * 2 * 5), null, "smuggler", "Angry");
+
+        result.OwnerId.Should().Be("user-1");
     }
 }

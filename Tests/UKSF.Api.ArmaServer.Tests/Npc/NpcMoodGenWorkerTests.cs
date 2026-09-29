@@ -19,6 +19,7 @@ public class NpcMoodGenWorkerTests
     {
         var jobs = new Mock<INpcVoiceJobsContext>();
         jobs.Setup(x => x.Get()).Returns(new List<DomainNpcVoiceJob> { job });
+        jobs.Setup(x => x.GetSingle(job.Id)).Returns(() => job);
         var voices = new Mock<INpcVoicesContext>();
         voices.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcVoice, bool>>()))
               .Returns((Func<DomainNpcVoice, bool> p) => p(new DomainNpcVoice { VoiceId = "smuggler", DisplayName = "Smuggler" })
@@ -93,5 +94,29 @@ public class NpcMoodGenWorkerTests
 
         job.Moods.Single(m => m.Mood == "angry").Status.Should().Be(NpcMoodStatus.Failed);
         job.Moods.Where(m => m.Mood != "angry").Should().OnlyContain(m => m.Status == NpcMoodStatus.Ready);
+    }
+
+    [Fact]
+    public async Task Mood_recorded_while_generating_is_not_overwritten()
+    {
+        var job = DomainNpcVoiceJob.NewJob("smuggler", "owner1", ["angry"]);
+        var (worker, _, voices, store, clacks) = Build(job);
+        clacks.Setup(x => x.EmoteAsync("smuggler", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<double>()))
+              .ReturnsAsync(() =>
+                  {
+                      job.Moods.Clear(); // the API dropped the mood when the user uploaded a recording
+                      return new ClacksEmoteResult
+                      {
+                          Status = EmoteStatus.Ok,
+                          WavBytes = [1],
+                          DurationMs = 3000
+                      };
+                  }
+              );
+
+        await worker.DrainOnceAsync();
+
+        store.Verify(x => x.SaveVariantAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
+        voices.Verify(x => x.Add(It.IsAny<DomainNpcVoice>()), Times.Never);
     }
 }

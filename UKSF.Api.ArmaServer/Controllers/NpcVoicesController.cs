@@ -90,7 +90,7 @@ public class NpcVoicesController(
         }
 
         var existing = context.GetSingle(x => x.VoiceId == voiceId);
-        if (existing is not null && parent is null)
+        if (existing is not null && (parent is null || existing.MoodOf != parent.VoiceId))
         {
             throw new BadRequestException($"Voice '{voiceId}' already exists");
         }
@@ -109,7 +109,7 @@ public class NpcVoicesController(
         {
             VoiceId = voiceId,
             DisplayName = parent is null ? displayName : $"{parent.DisplayName} ({VoiceSlug.Slugify(moodLabel)})",
-            OwnerId = httpContextService.GetUserId(),
+            OwnerId = parent?.OwnerId ?? httpContextService.GetUserId(),
             MoodOf = parentVoiceId,
             FilePath = filePath,
             Sha256 = sha,

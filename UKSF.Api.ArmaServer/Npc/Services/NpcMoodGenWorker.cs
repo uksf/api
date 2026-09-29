@@ -55,31 +55,48 @@ public class NpcMoodGenWorker(INpcVoiceJobsContext jobs, INpcVoicesContext voice
                 continue;
             }
 
-            foreach (var task in job.Moods.Where(m => m.Status == NpcMoodStatus.Pending))
+            foreach (var mood in job.Moods.Where(m => m.Status == NpcMoodStatus.Pending).Select(m => m.Mood).ToList())
             {
-                var script = MoodScripts.Table[task.Mood];
+                if (!StillQueued(job.Id, mood)) continue;
+
+                var script = MoodScripts.Table[mood];
                 var result = await clacks.EmoteAsync(job.BaseVoiceId, script.Script, script.EmoText, MoodScripts.EmoAlpha);
                 if (result.Status == EmoteStatus.NodeDown)
                 {
                     return; // no emotion node up — stop the whole drain, retry next tick
                 }
 
+                // Generation takes a minute. The mood may have been recorded, deleted or re-queued, or
+                // the voice deleted, in the meantime; those changes win over this result.
+                if (!StillQueued(job.Id, mood) || voices.GetSingle(x => x.VoiceId == job.BaseVoiceId) is null) continue;
+
                 if (result.Status == EmoteStatus.Failed)
                 {
-                    task.Status = NpcMoodStatus.Failed;
-                    task.Error = "generation failed";
-                    await jobs.Replace(job);
+                    await SetStatusAsync(job.Id, mood, NpcMoodStatus.Failed, "generation failed");
                     continue;
                 }
 
-                await RegisterVariantAsync(baseDoc, task.Mood, result);
-                task.Status = NpcMoodStatus.Ready;
-                task.Error = null;
-                await jobs.Replace(job);
+                await RegisterVariantAsync(baseDoc, mood, result);
+                await SetStatusAsync(job.Id, mood, NpcMoodStatus.Ready, null);
             }
 
             await RenderMissingFillersAsync(baseDoc);
         }
+    }
+
+    private bool StillQueued(string jobId, string mood) => jobs.GetSingle(jobId)?.Moods.Any(m => m.Mood == mood && m.Status == NpcMoodStatus.Pending) == true;
+
+    /// Writes one mood's status onto the current job, not onto the copy read at the start of the drain,
+    /// so moods queued or removed through the API meanwhile are kept.
+    private async Task SetStatusAsync(string jobId, string mood, NpcMoodStatus status, string error)
+    {
+        var current = jobs.GetSingle(jobId);
+        var task = current?.Moods.FirstOrDefault(m => m.Mood == mood);
+        if (task is null) return;
+
+        task.Status = status;
+        task.Error = error;
+        await jobs.Replace(current);
     }
 
     /// Fillers are voice assets rendered by the same emotion engine, so they belong in this
