@@ -1,3 +1,4 @@
+using System.Buffers.Text;
 using Fido2NetLib;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -89,6 +90,7 @@ public class PasskeysController(IPasskeyContext passkeyContext, IPasskeyService 
         return new PasskeyResponse
         {
             Id = passkey.Id,
+            CredentialId = Base64Url.EncodeToString(passkey.CredentialId),
             Name = passkey.Name,
             Created = passkey.Created,
             LastUsed = passkey.LastUsed,

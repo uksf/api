@@ -9,6 +9,7 @@ public class PasskeyOptionsResponse<T>
 public class PasskeyResponse
 {
     public string Id { get; set; }
+    public string CredentialId { get; set; }
     public string Name { get; set; }
     public DateTime Created { get; set; }
     public DateTime? LastUsed { get; set; }

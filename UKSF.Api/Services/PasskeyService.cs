@@ -49,7 +49,7 @@ public class PasskeyService(IPasskeyContext passkeyContext, PasskeyFlowStore flo
         }
 
         var passkey = passkeyContext.GetSingle(x => x.CredentialId.SequenceEqual(credential.RawId)) ??
-                      throw new BadRequestException("This passkey is not registered with UKSF");
+                      throw new NotFoundException("This passkey is not registered with UKSF");
 
         var result = await Verify(() => _fido2.Value.MakeAssertionAsync(
                                           new MakeAssertionParams

@@ -122,7 +122,8 @@ public class PasskeyServiceTests
 
         var act = () => _subject.VerifyLogin(FlowId(loginOptions), Assertion(loginOptions));
 
-        await act.Should().ThrowAsync<BadRequestException>().WithMessage("This passkey is not registered with UKSF");
+        // 404 tells the browser to drop the passkey from the password manager (Signal API)
+        await act.Should().ThrowAsync<NotFoundException>().WithMessage("This passkey is not registered with UKSF");
     }
 
     [Fact]

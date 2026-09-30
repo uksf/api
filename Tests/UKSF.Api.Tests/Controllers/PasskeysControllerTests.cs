@@ -46,6 +46,7 @@ public class PasskeysControllerTests
 
         result.HasPassword.Should().BeTrue();
         result.Passkeys.Select(x => x.Name).Should().Equal("Mine");
+        result.Passkeys.Single().CredentialId.Should().Be(System.Buffers.Text.Base64Url.EncodeToString(_passkeys[0].CredentialId));
     }
 
     [Fact]
@@ -118,5 +119,5 @@ public class PasskeysControllerTests
         await act.Should().ThrowAsync<NotFoundException>();
     }
 
-    private static DomainPasskey Passkey(string accountId, string name) => new() { AccountId = accountId, Name = name, Created = DateTime.UtcNow };
+    private static DomainPasskey Passkey(string accountId, string name) => new() { AccountId = accountId, Name = name, CredentialId = [1, 2, 3], Created = DateTime.UtcNow };
 }
