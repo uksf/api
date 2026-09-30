@@ -74,6 +74,16 @@ public class PasskeysControllerTests
     }
 
     [Fact]
+    public void Creates_profile_options_that_require_verification_and_automatic_options_that_do_not()
+    {
+        _subject.RegistrationOptions();
+        _subject.AutomaticRegistrationOptions();
+
+        _mockPasskeyService.Verify(x => x.CreateRegistrationOptions(_account.Id, _account.Email, It.IsAny<string>(), false), Times.Once);
+        _mockPasskeyService.Verify(x => x.CreateRegistrationOptions(_account.Id, _account.Email, It.IsAny<string>(), true), Times.Once);
+    }
+
+    [Fact]
     public async Task Deletes_a_passkey()
     {
         var passkey = Passkey(_account.Id, "Mine");

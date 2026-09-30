@@ -10,7 +10,7 @@
         <PackageReference Include="AspNet.Security.OpenId.Steam" Version="10.0.0" />
         <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
         <PackageReference Include="Discord.OAuth2" Version="2.0.0" />
-        <PackageReference Include="Fido2" Version="4.1.0" />
+        <PackageReference Include="Fido2" Version="5.0.0-preview.6" />
         <PackageReference Include="Markdig" Version="0.44.0" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.2" />
         <PackageReference Include="Microsoft.AspNetCore.Hosting.WindowsServices" Version="10.0.2" />

@@ -156,15 +156,53 @@ public class PasskeyServiceTests
     {
         _passkeys.Add(await Register());
 
-        var act = Register;
+        var act = () => Register();
 
         await act.Should().ThrowAsync<BadRequestException>().WithMessage("Passkey verification failed*");
     }
 
-    private async Task<DomainPasskey> Register()
+    [Fact]
+    public void Automatic_registration_options_prefer_user_verification()
     {
-        var options = ToJson(_subject.CreateRegistrationOptions(_accountId, "Test@Test.com", "Test User"));
-        var credential = JsonSerializer.Deserialize<AuthenticatorAttestationRawResponse>(_authenticator.Register(OptionsJson(options)), ApiJson);
+        var json = ToJson(_subject.CreateRegistrationOptions(_accountId, "test@test.com", "Test User", automatic: true));
+
+        var options = JsonDocument.Parse(json).RootElement.GetProperty("options");
+        options.GetProperty("authenticatorSelection").GetProperty("userVerification").GetString().Should().Be("preferred");
+        options.GetProperty("authenticatorSelection").GetProperty("residentKey").GetString().Should().Be("required");
+    }
+
+    [Fact]
+    public async Task Automatic_registration_accepts_a_passkey_created_without_user_presence_or_verification()
+    {
+        var passkey = await Register(automatic: true, flags: 0x40);
+        _passkeys.Add(passkey);
+
+        var loginOptions = ToJson(_subject.CreateLoginOptions());
+        var signedIn = await _subject.VerifyLogin(FlowId(loginOptions), Assertion(loginOptions));
+
+        signedIn.Id.Should().Be(passkey.Id);
+    }
+
+    [Fact]
+    public async Task Registration_from_the_profile_still_requires_user_verification()
+    {
+        var act = () => Register(automatic: false, flags: 0x41);
+
+        await act.Should().ThrowAsync<BadRequestException>().WithMessage("Passkey verification failed*");
+    }
+
+    [Fact]
+    public async Task Registration_from_the_profile_still_requires_user_presence()
+    {
+        var act = () => Register(automatic: false, flags: 0x44);
+
+        await act.Should().ThrowAsync<BadRequestException>().WithMessage("Passkey verification failed*");
+    }
+
+    private async Task<DomainPasskey> Register(bool automatic = false, byte flags = 0x45)
+    {
+        var options = ToJson(_subject.CreateRegistrationOptions(_accountId, "Test@Test.com", "Test User", automatic));
+        var credential = JsonSerializer.Deserialize<AuthenticatorAttestationRawResponse>(_authenticator.Register(OptionsJson(options), flags), ApiJson);
         return await _subject.VerifyRegistration(FlowId(options), "test@test.com", credential);
     }
 

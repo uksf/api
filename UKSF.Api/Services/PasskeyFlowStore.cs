@@ -3,7 +3,7 @@ using UKSF.Api.Core.Exceptions;
 
 namespace UKSF.Api.Services;
 
-public record PasskeyFlow(string OptionsJson, string AccountId, string Email);
+public record PasskeyFlow(string OptionsJson, string AccountId, string Email, bool Automatic = false);
 
 /// <summary>
 ///     Holds WebAuthn challenges between the options request and the verify request. Each flow can be taken once.

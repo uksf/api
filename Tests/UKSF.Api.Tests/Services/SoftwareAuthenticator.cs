@@ -21,7 +21,8 @@ public sealed class SoftwareAuthenticator(string rpId, string origin)
     public byte[] CredentialId { get; } = RandomNumberGenerator.GetBytes(32);
     public byte[] UserHandle { get; private set; }
 
-    public string Register(string optionsJson)
+    // 0x45 = user present, user verified, attested credential data
+    public string Register(string optionsJson, byte flags = 0x45)
     {
         var options = JsonNode.Parse(optionsJson)!;
         UserHandle = Base64Url.DecodeFromChars(options["user"]!["id"]!.GetValue<string>());
@@ -44,7 +45,7 @@ public sealed class SoftwareAuthenticator(string rpId, string origin)
 
         byte[] credentialIdLength = [0, (byte)CredentialId.Length];
         var attestedCredentialData = new byte[16].Concat(credentialIdLength).Concat(CredentialId).Concat(cose.Encode()).ToArray();
-        var authenticatorData = AuthenticatorData(0x45).Concat(attestedCredentialData).ToArray();
+        var authenticatorData = AuthenticatorData(flags).Concat(attestedCredentialData).ToArray();
 
         var attestationObject = new CborWriter();
         attestationObject.WriteStartMap(3);

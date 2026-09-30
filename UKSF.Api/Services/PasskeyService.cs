@@ -14,7 +14,7 @@ public interface IPasskeyService
 {
     PasskeyOptionsResponse<AssertionOptions> CreateLoginOptions();
     Task<DomainPasskey> VerifyLogin(string flowId, AuthenticatorAssertionRawResponse credential);
-    PasskeyOptionsResponse<CredentialCreateOptions> CreateRegistrationOptions(string accountId, string email, string displayName);
+    PasskeyOptionsResponse<CredentialCreateOptions> CreateRegistrationOptions(string accountId, string email, string displayName, bool automatic = false);
     Task<DomainPasskey> VerifyRegistration(string flowId, string email, AuthenticatorAttestationRawResponse credential);
 }
 
@@ -76,7 +76,8 @@ public class PasskeyService(IPasskeyContext passkeyContext, PasskeyFlowStore flo
         return passkey;
     }
 
-    public PasskeyOptionsResponse<CredentialCreateOptions> CreateRegistrationOptions(string accountId, string email, string displayName)
+    // Automatic registration is the browser upgrading a saved password silently (conditional create), so there is no user verification to require
+    public PasskeyOptionsResponse<CredentialCreateOptions> CreateRegistrationOptions(string accountId, string email, string displayName, bool automatic = false)
     {
         var excludeCredentials = passkeyContext.Get(x => x.AccountId == accountId).Select(x => new PublicKeyCredentialDescriptor(x.CredentialId)).ToList();
         var options = _fido2.Value.RequestNewCredential(
@@ -86,7 +87,8 @@ public class PasskeyService(IPasskeyContext passkeyContext, PasskeyFlowStore flo
                 ExcludeCredentials = excludeCredentials,
                 AuthenticatorSelection = new AuthenticatorSelection
                 {
-                    ResidentKey = ResidentKeyRequirement.Required, UserVerification = UserVerificationRequirement.Required
+                    ResidentKey = ResidentKeyRequirement.Required,
+                    UserVerification = automatic ? UserVerificationRequirement.Preferred : UserVerificationRequirement.Required
                 },
                 AttestationPreference = AttestationConveyancePreference.None,
                 Extensions = new AuthenticationExtensionsClientInputs { CredProps = true }
@@ -95,7 +97,7 @@ public class PasskeyService(IPasskeyContext passkeyContext, PasskeyFlowStore flo
 
         return new PasskeyOptionsResponse<CredentialCreateOptions>
         {
-            FlowId = flowStore.Add(new PasskeyFlow(options.ToJson(), accountId, email)), Options = options
+            FlowId = flowStore.Add(new PasskeyFlow(options.ToJson(), accountId, email, automatic)), Options = options
         };
     }
 
@@ -112,6 +114,8 @@ public class PasskeyService(IPasskeyContext passkeyContext, PasskeyFlowStore flo
                                               {
                                                   AttestationResponse = credential,
                                                   OriginalOptions = CredentialCreateOptions.FromJson(flow.OptionsJson),
+                                                  // Only an automatic flow may skip the user presence check, as the WebAuthn Level 3 spec allows for conditional create
+                                                  Mediation = flow.Automatic ? CredentialMediationRequirement.Conditional : CredentialMediationRequirement.Optional,
                                                   IsCredentialIdUniqueToUserCallback = (args, _) =>
                                                       Task.FromResult(passkeyContext.GetSingle(x => x.CredentialId.SequenceEqual(args.CredentialId)) == null)
                                               }

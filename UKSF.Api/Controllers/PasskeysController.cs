@@ -38,6 +38,14 @@ public class PasskeysController(IPasskeyContext passkeyContext, IPasskeyService 
         return passkeyService.CreateRegistrationOptions(account.Id, account.Email, $"{account.Firstname} {account.Lastname}");
     }
 
+    // For the browser's automatic passkey upgrade after a password sign-in (conditional create)
+    [HttpPost("options/automatic")]
+    public PasskeyOptionsResponse<CredentialCreateOptions> AutomaticRegistrationOptions()
+    {
+        var account = accountService.GetUserAccount();
+        return passkeyService.CreateRegistrationOptions(account.Id, account.Email, $"{account.Firstname} {account.Lastname}", automatic: true);
+    }
+
     [HttpPost]
     public async Task<PasskeyResponse> Register([FromBody] PasskeyRegistrationRequest request)
     {
