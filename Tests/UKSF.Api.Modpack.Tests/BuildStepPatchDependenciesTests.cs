@@ -126,6 +126,29 @@ public class BuildStepPatchDependenciesTests : IDisposable
         _commands.Should().ContainSingle(x => x.Args.StartsWith("apply"));
     }
 
+    [Fact]
+    public void InvalidateSignatures_Should_RemoveSignaturesOfChangedPbos_Even_When_DatedAfterThePatch()
+    {
+        var patched = Path.Combine(Addons, "a.pbo");
+        var untouched = Path.Combine(Addons, "b.pbo");
+        File.WriteAllBytes(patched, [1]);
+        File.WriteAllBytes(untouched, [1]);
+        var future = DateTime.UtcNow.AddDays(1);
+        foreach (var pbo in new[] { patched, untouched })
+        {
+            File.WriteAllBytes($"{pbo}.uksf_dependencies_dev.bisign", [0]);
+            File.SetLastWriteTimeUtc($"{pbo}.uksf_dependencies_dev.bisign", future);
+        }
+
+        var step = CreateStep();
+        var before = step.SnapshotPbos();
+        File.WriteAllBytes(patched, [1, 2]);
+        step.InvalidateSignatures(before);
+
+        File.Exists($"{patched}.uksf_dependencies_dev.bisign").Should().BeFalse();
+        File.Exists($"{untouched}.uksf_dependencies_dev.bisign").Should().BeTrue();
+    }
+
     private void CreatePatcher()
     {
         Directory.CreateDirectory(_patcherDir);
