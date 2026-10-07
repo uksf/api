@@ -18,17 +18,38 @@ public static class StartServices
         public void StartUksfServices()
         {
             serviceProvider.GetRequiredService<IEnumerable<IEventHandler>>().ForEach(x => x.EarlyInit());
-            serviceProvider.GetRequiredService<MigrationUtility>().RunMigrations().Wait(TimeSpan.FromMinutes(5));
+            serviceProvider.RunStartupMigrations();
             serviceProvider.GetRequiredService<IDataCacheService>().RefreshCachedData();
 
             serviceProvider.GetRequiredService<IScheduledActionFactory>()
                            .RegisterScheduledActions(serviceProvider.GetRequiredService<IEnumerable<IScheduledAction>>());
-            serviceProvider.GetRequiredService<IEnumerable<ISelfCreatingScheduledAction>>().ForEach(x => x.CreateSelf());
+            serviceProvider.CreateSelfScheduledJobs();
 
             serviceProvider.GetRequiredService<IBuildStepService>().RegisterBuildSteps();
             serviceProvider.GetRequiredService<IEnumerable<IEventHandler>>().ForEach(x => x.Init());
 
             serviceProvider.StartIntegrations();
+        }
+
+        public void RunStartupMigrations()
+        {
+            if (serviceProvider.GetRequiredService<VerifyMode>().Enabled)
+            {
+                Console.Out.WriteLine("verify mode: database migrations are not run");
+                return;
+            }
+
+            serviceProvider.GetRequiredService<MigrationUtility>().RunMigrations().Wait(TimeSpan.FromMinutes(5));
+        }
+
+        public void CreateSelfScheduledJobs()
+        {
+            if (serviceProvider.GetRequiredService<VerifyMode>().Enabled)
+            {
+                return;
+            }
+
+            serviceProvider.GetRequiredService<IEnumerable<ISelfCreatingScheduledAction>>().ForEach(x => x.CreateSelf());
         }
 
         public void StartIntegrations()

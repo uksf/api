@@ -1,40 +1,73 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using MongoDB.Driver;
 using Moq;
 using UKSF.Api.AppStart;
 using UKSF.Api.ArmaServer.DataContext;
+using UKSF.Api.ArmaServer.Npc.Observability;
+using UKSF.Api.ArmaServer.Npc.Services;
+using UKSF.Api.ArmaServer.ScheduledActions;
+using UKSF.Api.ArmaServer.Services;
+using UKSF.Api.Backups.Services;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Models;
+using UKSF.Api.Core.ScheduledActions;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Extensions;
 using UKSF.Api.Integrations.Discord.Services;
 using UKSF.Api.Integrations.Teamspeak.Services;
 using UKSF.Api.Modpack.Services;
+using UKSF.Api.Services;
 using Xunit;
 
 namespace UKSF.Api.Tests.AppStart;
 
 public class VerifyModeStartupTests
 {
+    private static readonly Type[] ForbiddenInVerifyMode =
+    [
+        typeof(GameServerProcessManagerStartup),
+        typeof(GameDataExportRecoveryStartup),
+        typeof(DevRunRecoveryStartup),
+        typeof(BackupStartupCheck),
+        typeof(NpcVoiceReconciler),
+        typeof(NpcMoodGenWorker),
+        typeof(NpcWarmKeeper),
+        typeof(NpcTraceMaintenance),
+        typeof(NpcIndexes)
+    ];
+
+    private static readonly Type[] AllowedInVerifyMode = [typeof(MissionStatsIndexes), typeof(NpcTraceWriter)];
+
     private readonly Mock<ITeamspeakManagerService> _teamspeak = new();
     private readonly Mock<IDiscordActivationService> _discord = new();
     private readonly Mock<ISchedulerService> _scheduler = new();
     private readonly Mock<IBuildsService> _builds = new();
     private readonly Mock<IModpackService> _modpack = new();
+    private readonly Mock<IMigrationContext> _migrations = new();
+    private readonly Mock<ISelfCreatingScheduledAction> _selfCreating = new();
 
     private IServiceProvider Provider(string verifyFlag)
     {
         _builds.Setup(x => x.CancelInterruptedBuilds()).ReturnsAsync(0);
         _discord.Setup(x => x.Activate()).Returns(Task.CompletedTask);
+        _discord.Setup(x => x.Deactivate()).Returns(Task.CompletedTask);
+        _migrations.Setup(x => x.GetSingle(It.IsAny<Func<Migration, bool>>())).Returns(new Migration());
         return new ServiceCollection().AddSingleton(new VerifyMode(verifyFlag, null))
                                       .AddSingleton(_teamspeak.Object)
                                       .AddSingleton(_discord.Object)
                                       .AddSingleton(_scheduler.Object)
                                       .AddSingleton(_builds.Object)
                                       .AddScoped(_ => _modpack.Object)
+                                      .AddSingleton(new MigrationUtility(_migrations.Object, new Mock<IMongoDatabase>().Object, new Mock<IUksfLogger>().Object))
+                                      .AddSingleton<IEnumerable<ISelfCreatingScheduledAction>>([_selfCreating.Object])
                                       .BuildServiceProvider();
     }
 
@@ -72,18 +105,57 @@ public class VerifyModeStartupTests
     }
 
     [Fact]
-    public void RemoveExternalHostedServices_RemovesEveryListedServiceFromTheRealRegistrations()
+    public void StopIntegrations_OutsideVerifyMode_StopsTeamspeakAndDiscord()
+    {
+        Provider(null).StopIntegrations();
+
+        _teamspeak.Verify(x => x.Stop(), Times.Once);
+        _discord.Verify(x => x.Deactivate(), Times.Once);
+    }
+
+    [Fact]
+    public void RunMigrations_InVerifyMode_NeverTouchesTheMigrationState()
+    {
+        Provider("1").RunStartupMigrations();
+
+        _migrations.Verify(x => x.GetSingle(It.IsAny<Func<Migration, bool>>()), Times.Never);
+    }
+
+    [Fact]
+    public void RunMigrations_OutsideVerifyMode_ChecksTheMigrationState()
+    {
+        Provider(null).RunStartupMigrations();
+
+        _migrations.Verify(x => x.GetSingle(It.IsAny<Func<Migration, bool>>()), Times.Once);
+    }
+
+    [Fact]
+    public void CreateSelfScheduledJobs_InVerifyMode_CreatesNoJobs()
+    {
+        Provider("1").CreateSelfScheduledJobs();
+
+        _selfCreating.Verify(x => x.CreateSelf(), Times.Never);
+    }
+
+    [Fact]
+    public void CreateSelfScheduledJobs_OutsideVerifyMode_CreatesJobs()
+    {
+        Provider(null).CreateSelfScheduledJobs();
+
+        _selfCreating.Verify(x => x.CreateSelf(), Times.Once);
+    }
+
+    [Fact]
+    public void RemoveExternalHostedServices_RemovesEveryForbiddenServiceFromTheRealRegistrations()
     {
         var services = RealRegistrations();
-        var hostedBefore = HostedImplementations(services);
-        hostedBefore.Should().Contain(VerifyModeServices.ExternalHostedServices, "the list must name services the API really registers");
+        HostedImplementations(services).Should().Contain(ForbiddenInVerifyMode.Concat(AllowedInVerifyMode));
 
         services.RemoveExternalHostedServices();
 
         var hostedAfter = HostedImplementations(services);
-        hostedAfter.Should().NotContain(VerifyModeServices.ExternalHostedServices);
-        hostedAfter.Should().Contain(typeof(MissionStatsIndexes));
-        hostedAfter.Should().HaveCount(hostedBefore.Count - VerifyModeServices.ExternalHostedServices.Count);
+        hostedAfter.Should().NotContain(ForbiddenInVerifyMode);
+        hostedAfter.Should().Contain(AllowedInVerifyMode);
     }
 
     private static IServiceCollection RealRegistrations()

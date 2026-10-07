@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Hosting;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Services;
 
@@ -13,6 +14,7 @@ public class DiscordActivationService(
     IDiscordClientService discordClientService,
     IEnumerable<IDiscordService> discordServices,
     IVariablesService variablesService,
+    IHostEnvironment environment,
     IUksfLogger logger
 ) : IDiscordActivationService
 {
@@ -20,16 +22,16 @@ public class DiscordActivationService(
 
     public async Task Activate()
     {
-        if (!variablesService.GetFeatureState("DISCORD"))
+        if (environment.IsDevelopment())
         {
-            logger.LogInfo("Discord is disabled, the bot will not connect");
+            logger.LogInfo("Discord bot is not started when running locally");
             return;
         }
 
         discordClientService.OnClientReady += OnClientReady;
-        _connected = true;
 
         await discordClientService.Connect();
+        _connected = true;
         foreach (var discordService in discordServices)
         {
             discordService.Activate();

@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Microsoft.Extensions.Hosting;
 using Moq;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Services;
@@ -13,16 +14,18 @@ public class DiscordActivationServiceTests
     private readonly Mock<IDiscordService> _discordService = new();
     private readonly Mock<IVariablesService> _variables = new();
 
-    private DiscordActivationService CreateSubject(bool discordEnabled)
+    private DiscordActivationService CreateSubject(string environmentName, bool discordFeatureEnabled = true)
     {
-        _variables.Setup(x => x.GetFeatureState("DISCORD")).Returns(discordEnabled);
-        return new DiscordActivationService(_client.Object, [_discordService.Object], _variables.Object, new Mock<IUksfLogger>().Object);
+        _variables.Setup(x => x.GetFeatureState("DISCORD")).Returns(discordFeatureEnabled);
+        Mock<IHostEnvironment> environment = new();
+        environment.Setup(x => x.EnvironmentName).Returns(environmentName);
+        return new DiscordActivationService(_client.Object, [_discordService.Object], _variables.Object, environment.Object, new Mock<IUksfLogger>().Object);
     }
 
     [Fact]
-    public async Task Activate_WhenDiscordIsDisabled_NeverConnectsOrActivatesServices()
+    public async Task Activate_WhenRunningLocally_NeverConnectsOrActivatesServices()
     {
-        var subject = CreateSubject(false);
+        var subject = CreateSubject(Environments.Development);
 
         await subject.Activate();
 
@@ -31,9 +34,9 @@ public class DiscordActivationServiceTests
     }
 
     [Fact]
-    public async Task Activate_WhenDiscordIsEnabled_ConnectsAndActivatesServices()
+    public async Task Activate_WhenDeployed_ConnectsAndActivatesServices()
     {
-        var subject = CreateSubject(true);
+        var subject = CreateSubject(Environments.Production);
 
         await subject.Activate();
 
@@ -42,9 +45,19 @@ public class DiscordActivationServiceTests
     }
 
     [Fact]
-    public async Task Deactivate_AfterADisabledActivation_DoesNotDisconnect()
+    public async Task Activate_WhenDeployedWithTheDiscordFeatureOff_StillConnects()
     {
-        var subject = CreateSubject(false);
+        var subject = CreateSubject(Environments.Production, discordFeatureEnabled: false);
+
+        await subject.Activate();
+
+        _client.Verify(x => x.Connect(), Times.Once);
+    }
+
+    [Fact]
+    public async Task Deactivate_AfterALocalActivation_DoesNotDisconnect()
+    {
+        var subject = CreateSubject(Environments.Development);
         await subject.Activate();
 
         await subject.Deactivate();
@@ -53,9 +66,9 @@ public class DiscordActivationServiceTests
     }
 
     [Fact]
-    public async Task Deactivate_AfterAnEnabledActivation_Disconnects()
+    public async Task Deactivate_AfterADeployedActivation_Disconnects()
     {
-        var subject = CreateSubject(true);
+        var subject = CreateSubject(Environments.Production);
         await subject.Activate();
 
         await subject.Deactivate();

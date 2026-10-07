@@ -1,3 +1,4 @@
+using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Npc.Observability;
 using UKSF.Api.ArmaServer.Npc.Services;
 using UKSF.Api.ArmaServer.ScheduledActions;
@@ -17,7 +18,8 @@ public static class VerifyModeServices
         typeof(NpcVoiceReconciler),
         typeof(NpcMoodGenWorker),
         typeof(NpcWarmKeeper),
-        typeof(NpcTraceMaintenance)
+        typeof(NpcTraceMaintenance),
+        typeof(NpcIndexes)
     ];
 
     extension(IServiceCollection services)
