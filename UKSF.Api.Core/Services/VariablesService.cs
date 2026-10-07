@@ -10,7 +10,7 @@ public interface IVariablesService
     bool GetFeatureState(string featureKey);
 }
 
-public class VariablesService(IVariablesContext context) : IVariablesService
+public class VariablesService(IVariablesContext context, FeatureOverrides featureOverrides) : IVariablesService
 {
     public DomainVariableItem GetVariable(string key)
     {
@@ -19,6 +19,6 @@ public class VariablesService(IVariablesContext context) : IVariablesService
 
     public bool GetFeatureState(string featureKey)
     {
-        return context.GetSingle($"FEATURE_{featureKey}").AsBoolWithDefault(false);
+        return !featureOverrides.IsDisabled(featureKey) && context.GetSingle($"FEATURE_{featureKey}").AsBoolWithDefault(false);
     }
 }

@@ -102,6 +102,7 @@ public static class ApiSharedExtensions
         {
             return services.AddSingleton<IScheduledActionFactory, ScheduledActionFactory>()
                            .AddSingleton<ISchedulerService, SchedulerService>()
+                           .AddSingleton(FeatureOverrides.FromEnvironment())
                            .AddSingleton<IVariablesService, VariablesService>()
                            .AddSingleton<IStaticVariablesService, StaticVariablesService>()
                            .AddSingleton<IDisplayNameService, DisplayNameService>()
