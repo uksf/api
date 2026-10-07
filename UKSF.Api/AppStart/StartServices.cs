@@ -1,3 +1,5 @@
+using MongoDB.Driver;
+using UKSF.Api.Extensions;
 using MoreLinq;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.ScheduledActions;
@@ -35,6 +37,7 @@ public static class StartServices
         {
             if (serviceProvider.GetRequiredService<VerifyMode>().Enabled)
             {
+                Console.Out.WriteLine(VerifyModeServices.DatabaseDescription(serviceProvider.GetRequiredService<IMongoDatabase>()));
                 Console.Out.WriteLine("verify mode: database migrations are not run");
                 return;
             }

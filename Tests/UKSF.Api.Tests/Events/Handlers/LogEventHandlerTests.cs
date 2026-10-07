@@ -42,7 +42,8 @@ public class LogEventHandlerTests
             _mockLauncherLogDataService.Object,
             _mockDiscordLogDataService.Object,
             mockLogger.Object,
-            _mockObjectIdConversionService.Object
+            _mockObjectIdConversionService.Object,
+            new VerifyMode(null, null)
         );
         logEventHandler.EarlyInit();
     }
