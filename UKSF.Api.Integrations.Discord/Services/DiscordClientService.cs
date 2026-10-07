@@ -1,6 +1,7 @@
 using System.Net.WebSockets;
 using Discord;
 using Discord.WebSocket;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Configuration;
@@ -17,21 +18,31 @@ public interface IDiscordClientService
     DiscordSocketClient GetClient();
     SocketGuild GetGuild();
     bool IsDiscordDisabled();
+    bool CanConnect();
     Task AssertOnline();
 }
 
 public sealed class DiscordClientService : IDiscordClientService, IAsyncDisposable, IDisposable
 {
     private readonly string _botToken;
+    private readonly bool _canConnect;
     private readonly DiscordSocketClient _client;
     private readonly IUksfLogger _logger;
     private readonly IVariablesService _variablesService;
     private bool _connected;
     private SocketGuild _guild;
 
-    public DiscordClientService(IOptions<AppSettings> options, DiscordSocketClient client, IVariablesService variablesService, IUksfLogger logger)
+    public DiscordClientService(
+        IOptions<AppSettings> options,
+        DiscordSocketClient client,
+        IVariablesService variablesService,
+        IHostEnvironment environment,
+        VerifyMode verifyMode,
+        IUksfLogger logger
+    )
     {
         _client = client;
+        _canConnect = !environment.IsDevelopment() && !verifyMode.Enabled;
         _variablesService = variablesService;
         _logger = logger;
 
@@ -56,8 +67,19 @@ public sealed class DiscordClientService : IDiscordClientService, IAsyncDisposab
 
     public event Action OnClientReady { add => OnClientReadyEvent += value; remove => OnClientReadyEvent -= value; }
 
+    public bool CanConnect()
+    {
+        return _canConnect;
+    }
+
     public async Task Connect()
     {
+        if (!_canConnect)
+        {
+            ConnectionLog("Discord is not connected when running locally or in verify mode");
+            return;
+        }
+
         ConnectionLog("Discord connecting");
 
         await _client.LoginAsync(TokenType.Bot, _botToken);
@@ -89,6 +111,11 @@ public sealed class DiscordClientService : IDiscordClientService, IAsyncDisposab
 
     public async Task AssertOnline()
     {
+        if (!_canConnect)
+        {
+            throw new InvalidOperationException("Discord is not available when running locally or in verify mode");
+        }
+
         if (_connected)
         {
             return;

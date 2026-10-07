@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Hosting;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Services;
 
@@ -14,7 +13,6 @@ public class DiscordActivationService(
     IDiscordClientService discordClientService,
     IEnumerable<IDiscordService> discordServices,
     IVariablesService variablesService,
-    IHostEnvironment environment,
     IUksfLogger logger
 ) : IDiscordActivationService
 {
@@ -22,9 +20,9 @@ public class DiscordActivationService(
 
     public async Task Activate()
     {
-        if (environment.IsDevelopment())
+        if (!discordClientService.CanConnect())
         {
-            logger.LogInfo("Discord bot is not started when running locally");
+            logger.LogInfo("Discord bot is not started when running locally or in verify mode");
             return;
         }
 
