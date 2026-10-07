@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Events;
@@ -22,7 +23,9 @@ public class UksfLoggerEventHandler(
     ILauncherLogContext launcherLogContext,
     IDiscordLogContext discordLogContext,
     IUksfLogger uksfLogger,
-    IObjectIdConversionService objectIdConversionService
+    IObjectIdConversionService objectIdConversionService,
+    VerifyMode verifyMode,
+    TextWriter? verifyOutput = null
 ) : IUksfLoggerEventHandler
 {
     private readonly ConcurrentQueue<DomainBasicLog> _logQueue = new();
@@ -63,15 +66,26 @@ public class UksfLoggerEventHandler(
     {
         while (_logQueue.TryDequeue(out var log))
         {
-            if (log is AuditLog auditLog)
-            {
-                auditLog.Who = objectIdConversionService.ConvertObjectId(auditLog.Who);
-                log = auditLog;
-            }
-
-            log.Message = objectIdConversionService.ConvertObjectIds(log.Message).UnescapeForLogging();
-            await LogToStorageAsync(log);
+            await StoreAsync(log);
         }
+    }
+
+    public Task StoreAsync(DomainBasicLog log)
+    {
+        if (log is AuditLog auditLog)
+        {
+            auditLog.Who = objectIdConversionService.ConvertObjectId(auditLog.Who);
+        }
+
+        log.Message = objectIdConversionService.ConvertObjectIds(log.Message).UnescapeForLogging();
+        return verifyMode.Enabled ? WriteToVerifyOutputAsync(log) : LogToStorageAsync(log);
+    }
+
+    private Task WriteToVerifyOutputAsync(DomainBasicLog log)
+    {
+        var who = log is AuditLog audit ? audit.Who : null;
+        var line = JsonSerializer.Serialize(new { type = log.GetType().Name, level = log.Level.ToString(), who, message = log.Message });
+        return (verifyOutput ?? Console.Out).WriteLineAsync($"verify-log {line}");
     }
 
     private Task LogToStorageAsync(DomainBasicLog log)

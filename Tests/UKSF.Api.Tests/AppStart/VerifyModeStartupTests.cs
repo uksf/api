@@ -41,10 +41,11 @@ public class VerifyModeStartupTests
         typeof(NpcMoodGenWorker),
         typeof(NpcWarmKeeper),
         typeof(NpcTraceMaintenance),
-        typeof(NpcIndexes)
+        typeof(NpcIndexes),
+        typeof(MissionStatsIndexes)
     ];
 
-    private static readonly Type[] AllowedInVerifyMode = [typeof(MissionStatsIndexes), typeof(NpcTraceWriter)];
+    private static readonly Type[] AllowedInVerifyMode = [typeof(NpcTraceWriter)];
 
     private readonly Mock<ITeamspeakManagerService> _teamspeak = new();
     private readonly Mock<IDiscordActivationService> _discord = new();
@@ -61,6 +62,7 @@ public class VerifyModeStartupTests
         _discord.Setup(x => x.Deactivate()).Returns(Task.CompletedTask);
         _migrations.Setup(x => x.GetSingle(It.IsAny<Func<Migration, bool>>())).Returns(new Migration());
         return new ServiceCollection().AddSingleton(new VerifyMode(verifyFlag, null))
+                                      .AddSingleton(new MongoClient("mongodb://db.example:52005/").GetDatabase("devLocal"))
                                       .AddSingleton(_teamspeak.Object)
                                       .AddSingleton(_discord.Object)
                                       .AddSingleton(_scheduler.Object)
@@ -119,6 +121,14 @@ public class VerifyModeStartupTests
         Provider("1").RunStartupMigrations();
 
         _migrations.Verify(x => x.GetSingle(It.IsAny<Func<Migration, bool>>()), Times.Never);
+    }
+
+    [Fact]
+    public void DatabaseDescription_NamesTheDatabaseAndServerTheApiUses()
+    {
+        var database = new MongoClient("mongodb://db.example:52005/").GetDatabase("devLocal");
+
+        VerifyModeServices.DatabaseDescription(database).Should().Be("verify mode: database devLocal at db.example:52005");
     }
 
     [Fact]

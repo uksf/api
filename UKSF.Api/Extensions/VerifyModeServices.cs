@@ -3,6 +3,7 @@ using UKSF.Api.ArmaServer.Npc.Observability;
 using UKSF.Api.ArmaServer.Npc.Services;
 using UKSF.Api.ArmaServer.ScheduledActions;
 using UKSF.Api.ArmaServer.Services;
+using MongoDB.Driver;
 using UKSF.Api.Backups.Services;
 
 namespace UKSF.Api.Extensions;
@@ -19,8 +20,15 @@ public static class VerifyModeServices
         typeof(NpcMoodGenWorker),
         typeof(NpcWarmKeeper),
         typeof(NpcTraceMaintenance),
-        typeof(NpcIndexes)
+        typeof(NpcIndexes),
+        typeof(MissionStatsIndexes)
     ];
+
+    public static string DatabaseDescription(IMongoDatabase database)
+    {
+        var server = database.Client.Settings.Server;
+        return $"verify mode: database {database.DatabaseNamespace.DatabaseName} at {server.Host}:{server.Port}";
+    }
 
     extension(IServiceCollection services)
     {
