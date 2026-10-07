@@ -50,7 +50,7 @@ public static class StringExtensions
 
         public string RemoveNewLines()
         {
-            return text.Replace("\\n", string.Empty);
+            return Regex.Replace(text, "\"[^\"]*\"|\\\\n", match => match.Value == "\\n" ? string.Empty : match.Value);
         }
 
         public string RemoveQuotes()
@@ -71,19 +71,11 @@ public static class StringExtensions
             return Regex.Matches(text, "(?<!\\$)[{(]?[0-9a-fA-F]{24}[)}]?").Where(x => x.Value.IsObjectId()).Select(x => x.Value);
         }
 
-        /// <summary>
-        ///     Escapes an ID with a $ for logging the raw ID
-        /// </summary>
-        /// <returns>Escaped ID</returns>
         public string EscapeForLogging()
         {
             return Regex.Match(text, "[0-9a-fA-F]{24}").Success ? $"${text}" : text;
         }
 
-        /// <summary>
-        ///     Removes the $ for escaping IDs in logs
-        /// </summary>
-        /// <returns>Unescaped text</returns>
         public string UnescapeForLogging()
         {
             return Regex.Replace(text, "\\$([0-9a-fA-F]{24})", "$1");
