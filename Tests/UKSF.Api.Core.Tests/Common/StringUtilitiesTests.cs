@@ -25,8 +25,8 @@ public class StringUtilitiesTests
     [InlineData("")]
     [InlineData("2")]
     [InlineData("1E+309")]
-    [InlineData("-1E+309")] // E+309 is one more than double max/min
-    public void ShouldNotThrowExceptionForDouble(string text)
+    [InlineData("-1E+309")]
+    public void ShouldNotThrowExceptionForDoubleOutsideDoubleRange(string text)
     {
         Action act = () => text.ToDouble();
 
@@ -37,7 +37,7 @@ public class StringUtilitiesTests
     [InlineData("", 0)]
     [InlineData("2", 2)]
     [InlineData("1.79769313486232E+307", 1.79769313486232E+307d)]
-    [InlineData("-1.79769313486232E+307", -1.79769313486232E+307d)] // E+307 is one less than double max/min
+    [InlineData("-1.79769313486232E+307", -1.79769313486232E+307d)]
     public void ShouldParseDoubleCorrectly(string text, double expected)
     {
         var subject = text.ToDouble();
@@ -96,6 +96,9 @@ public class StringUtilitiesTests
     [InlineData("hello\\nworld\\n\\nhello world", "helloworldhello world")]
     [InlineData("hello\\n", "hello")]
     [InlineData("\\n  hello world   \\n", "  hello world   ")]
+    [InlineData("value=\"a3\\data\\numbers\\x.paa\";", "value=\"a3\\data\\numbers\\x.paa\";")]
+    [InlineData("init=\"a;\" \\n \"b;\";", "init=\"a;\"  \"b;\";")]
+    [InlineData("init=\"x [\"\"\\n\"\"];\" \\n \"'\\numbers';\";", "init=\"x [\"\"\\n\"\"];\"  \"'\\numbers';\";")]
     public void ShouldRemoveNewLines(string text, string expected)
     {
         var subject = text.RemoveNewLines();
