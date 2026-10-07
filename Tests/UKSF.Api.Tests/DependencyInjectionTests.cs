@@ -19,6 +19,7 @@ public class DependencyInjectionTests
 {
     private static readonly DependencyInjectionTestHelper Setup;
     public static readonly IEnumerable<object[]> ResolvableTypes;
+    public static readonly IReadOnlyList<ServiceDescriptor> RealRegistrations;
 
     static DependencyInjectionTests()
     {
@@ -27,6 +28,7 @@ public class DependencyInjectionTests
 
         var configuration = TestConfigurationProvider.GetTestConfiguration();
         var hostEnvironment = mockHostEnvironment.Object;
+        List<ServiceDescriptor> registrations = [];
 
         Setup = DependencyInjectionTestHelper.FromServiceCollection(services =>
             {
@@ -37,10 +39,12 @@ public class DependencyInjectionTests
                 services.AddUksfShared(configuration, hostEnvironment);
                 services.AddUksf(configuration, hostEnvironment);
 
+                registrations.AddRange(services);
                 return services;
             }
         );
 
+        RealRegistrations = registrations;
         ResolvableTypes = Setup.ResolvableTypes.Select(x => new object[] { x });
     }
 

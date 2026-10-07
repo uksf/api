@@ -8,6 +8,7 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Configuration;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Services;
 using UKSF.Api.EventHandlers;
 using UKSF.Api.Integrations.Discord;
 using UKSF.Api.Integrations.Instagram;
@@ -139,7 +140,13 @@ public static class ServiceExtensions
                            .AddUksfLauncher()
                            .AddUksfIntegrationDiscord()
                            .AddUksfIntegrationInstagram()
-                           .AddUksfIntegrationTeamspeak();
+                           .AddUksfIntegrationTeamspeak()
+                           .RemoveExternalHostedServicesInVerifyMode();
+        }
+
+        private IServiceCollection RemoveExternalHostedServicesInVerifyMode()
+        {
+            return VerifyMode.FromEnvironment().Enabled ? services.RemoveExternalHostedServices() : services;
         }
 
         private IServiceCollection AddUksfMassTransit(IConfiguration configuration)

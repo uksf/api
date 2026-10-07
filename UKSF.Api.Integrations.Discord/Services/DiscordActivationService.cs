@@ -16,9 +16,18 @@ public class DiscordActivationService(
     IUksfLogger logger
 ) : IDiscordActivationService
 {
+    private bool _connected;
+
     public async Task Activate()
     {
+        if (!variablesService.GetFeatureState("DISCORD"))
+        {
+            logger.LogInfo("Discord is disabled, the bot will not connect");
+            return;
+        }
+
         discordClientService.OnClientReady += OnClientReady;
+        _connected = true;
 
         await discordClientService.Connect();
         foreach (var discordService in discordServices)
@@ -29,6 +38,12 @@ public class DiscordActivationService(
 
     public async Task Deactivate()
     {
+        if (!_connected)
+        {
+            return;
+        }
+
+        _connected = false;
         await discordClientService.Disconnect();
     }
 

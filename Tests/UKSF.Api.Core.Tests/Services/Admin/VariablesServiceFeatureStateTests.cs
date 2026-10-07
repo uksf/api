@@ -34,11 +34,13 @@ public class VariablesServiceFeatureStateTests
     {
         GivenStoredFeature("DISCORD", true);
         GivenStoredFeature("TEAMSPEAK", true);
+        GivenStoredFeature("NPC_BROKER", true);
 
         var subject = CreateSubject("DISCORD, teamspeak");
 
         subject.GetFeatureState("DISCORD").Should().BeFalse();
-        subject.GetFeatureState("TEAMSPEAK").Should().BeFalse();
+        subject.GetFeatureState("teamspeak").Should().BeFalse();
+        subject.GetFeatureState("NPC_BROKER").Should().BeTrue();
     }
 
     [Fact]
@@ -53,8 +55,12 @@ public class VariablesServiceFeatureStateTests
     public void GetFeatureState_NeverEnablesAFeature()
     {
         GivenStoredFeature("DISCORD", false);
+        GivenStoredFeature("NPC_BROKER", true);
 
-        CreateSubject("TEAMSPEAK").GetFeatureState("DISCORD").Should().BeFalse();
+        var subject = CreateSubject("TEAMSPEAK");
+
+        subject.GetFeatureState("DISCORD").Should().BeFalse();
+        subject.GetFeatureState("NPC_BROKER").Should().BeTrue();
     }
 
     [Fact]

@@ -17,66 +17,60 @@ public static class StartServices
     {
         public void StartUksfServices()
         {
-            if (serviceProvider.GetRequiredService<IHostEnvironment>().IsDevelopment())
-            {
-                // Do any test data setup
-                // TestDataSetup.Run(serviceProvider);
-            }
-
-            // Early init event handlers
             serviceProvider.GetRequiredService<IEnumerable<IEventHandler>>().ForEach(x => x.EarlyInit());
-
-            // Execute any DB migration
             serviceProvider.GetRequiredService<MigrationUtility>().RunMigrations().Wait(TimeSpan.FromMinutes(5));
-
-            // Warm cached data services
             serviceProvider.GetRequiredService<IDataCacheService>().RefreshCachedData();
 
-            // Register scheduled actions & run self-creating scheduled actions
             serviceProvider.GetRequiredService<IScheduledActionFactory>()
                            .RegisterScheduledActions(serviceProvider.GetRequiredService<IEnumerable<IScheduledAction>>());
             serviceProvider.GetRequiredService<IEnumerable<ISelfCreatingScheduledAction>>().ForEach(x => x.CreateSelf());
 
-            // Register build steps
             serviceProvider.GetRequiredService<IBuildStepService>().RegisterBuildSteps();
-
-            // Init event handlers
             serviceProvider.GetRequiredService<IEnumerable<IEventHandler>>().ForEach(x => x.Init());
 
-            // Start teamspeak manager
+            serviceProvider.StartIntegrations();
+        }
+
+        public void StartIntegrations()
+        {
+            if (serviceProvider.GetRequiredService<VerifyMode>().Enabled)
+            {
+                Console.Out.WriteLine("verify mode: Teamspeak, Discord, the scheduler and queued builds are not started");
+                return;
+            }
+
             serviceProvider.GetRequiredService<ITeamspeakManagerService>().Start();
-
-            // Initialise discord bot
             serviceProvider.GetRequiredService<IDiscordActivationService>().Activate();
-
-            // Start scheduler
             serviceProvider.GetRequiredService<ISchedulerService>().Load();
 
-            // Mark running builds as cancelled & run queued builds
             serviceProvider.GetRequiredService<IBuildsService>().CancelInterruptedBuilds().Wait(TimeSpan.FromSeconds(30));
-            using (var scope = serviceProvider.CreateScope())
-            {
-                scope.ServiceProvider.GetRequiredService<IModpackService>().RunQueuedBuilds();
-            }
+            using var scope = serviceProvider.CreateScope();
+            scope.ServiceProvider.GetRequiredService<IModpackService>().RunQueuedBuilds();
         }
 
         public void StopUksfServices()
         {
-            // Cancel any running builds in the queue
             serviceProvider.GetRequiredService<IBuildQueueService>().CancelAll().Wait(TimeSpan.FromSeconds(30));
             Console.Out.WriteLine("stopped builds");
 
-            // Stop teamspeak
+            serviceProvider.StopIntegrations();
+
+            serviceProvider.GetRequiredService<IUksfLoggerEventHandler>().FlushAsync().Wait(TimeSpan.FromSeconds(10));
+            Console.Out.WriteLine("flushed logs");
+        }
+
+        public void StopIntegrations()
+        {
+            if (serviceProvider.GetRequiredService<VerifyMode>().Enabled)
+            {
+                return;
+            }
+
             serviceProvider.GetRequiredService<ITeamspeakManagerService>().Stop();
             Console.Out.WriteLine("stopped ts");
 
-            // Stop discord
             serviceProvider.GetRequiredService<IDiscordActivationService>().Deactivate().Wait(TimeSpan.FromSeconds(5));
             Console.Out.WriteLine("stopped discord");
-
-            // Flush pending logs before shutdown
-            serviceProvider.GetRequiredService<IUksfLoggerEventHandler>().FlushAsync().Wait(TimeSpan.FromSeconds(10));
-            Console.Out.WriteLine("flushed logs");
         }
     }
 }
