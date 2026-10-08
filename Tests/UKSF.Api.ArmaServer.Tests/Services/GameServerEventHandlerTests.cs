@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -47,11 +48,6 @@ public class GameServerEventHandlerTests
         );
     }
 
-    /// <summary>
-    /// Mirrors the controller's parse-and-bind step: takes an SQF wire body
-    /// (the engine-native str() output of `[type, data]`) and produces the
-    /// GameServerEvent shape the handler receives in production.
-    /// </summary>
     private static GameServerEvent EventFromSqf(string sqfBody, int apiPort = 2303)
     {
         var parsed = (List<object>)SqfNotationParser.ParseAndNormalize(sqfBody);
@@ -147,11 +143,6 @@ public class GameServerEventHandlerTests
         _mockProcessManager.Verify(x => x.HandleStopStoppingAsync(It.IsAny<int>()), Times.Never);
     }
 
-    // Reproduces the production wire format that the controller would receive from the
-    // Rust extension. Deserialises with the same JsonSerializerOptions configuration as
-    // Program.cs (PropertyNameCaseInsensitive + InferredTypeConverter), then runs the
-    // event handler. Verifies that nested array data inside Dictionary<string, object>
-    // survives the InferredTypeConverter round-trip and reaches the performance service.
     [Fact]
     public async Task HandleEventAsync_Performance_PassesParsedDataToPerformanceService()
     {
@@ -177,11 +168,6 @@ public class GameServerEventHandlerTests
         );
     }
 
-    // End-to-end-ish: replaces the mocked performance service with a real one and only mocks
-    // the mongo data contexts. Verifies the full chain from JSON wire format through to the
-    // mongo Update call, including the UpdateDefinition construction. If this test passes
-    // but production still produces empty arrays, the bug must be in the SQF send path or
-    // network/extension layer, not in any C# code.
     [Fact]
     public async Task HandleEventAsync_Performance_RealServiceProducesMongoUpdate()
     {
@@ -189,7 +175,7 @@ public class GameServerEventHandlerTests
         var mockPlayerStatsContext = new Mock<IPlayerMissionStatsContext>();
 
         var session = new MissionSession { SessionId = "test-session-id", MissionStarted = DateTime.UtcNow.AddMinutes(-5) };
-        mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
+        mockSessionsContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>())).Returns(session);
         mockPlayerStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<PlayerMissionStats, bool>>())).Returns((PlayerMissionStats)null);
 
         var realPerformanceService = new PerformanceService(mockSessionsContext.Object, mockPlayerStatsContext.Object);
@@ -217,13 +203,8 @@ public class GameServerEventHandlerTests
 
         await sut.HandleEventAsync(evt);
 
-        // Verify the real PerformanceService produced both phase-one (array additions) and
-        // phase-two (per-element appends + serverFps) Update calls against mongo. Two writes
-        // is required because Mongo rejects combining a $push to an array with a positional
-        // modification of the same array in one update.
         mockSessionsContext.Verify(x => x.Update(session.Id, It.IsAny<UpdateDefinition<MissionSession>>()), Times.Exactly(2));
 
-        // No exception should have been logged
         _mockLogger.Verify(x => x.LogError(It.IsAny<string>(), It.IsAny<Exception>()), Times.Never);
     }
 
@@ -259,7 +240,6 @@ public class GameServerEventHandlerTests
                            "[\"events\",[[[\"type\",\"shot\"],[\"uid\",\"u1\"]]]]" +
                            "]]";
         var evt = EventFromSqf(sqf);
-        // Mirror the controller's header-injection step.
         evt.Data["enqueueAt"] = "2026-04-25T18:00:00.000Z";
 
         ProcessMissionStatsBatch published = null;

@@ -21,8 +21,6 @@ public class MissionStatsServiceTests
 {
     static MissionStatsServiceTests()
     {
-        // Register the camelCase convention used by the API at startup so rendered
-        // update paths match production shape (e.g. killsByTargetType.infantry.count).
         ConventionRegistry.Register("TestCamelCase", new ConventionPack { new CamelCaseElementNameConvention() }, _ => true);
     }
 
@@ -50,8 +48,8 @@ public class MissionStatsServiceTests
     [Fact]
     public async Task GetOrCreateSessionAsync_WhenNoMatchingSession_ShouldCreateNewSession()
     {
-        var receivedAt = new DateTime(2025, 6, 14, 20, 0, 0); // Saturday
-        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns((MissionSession)null);
+        var receivedAt = new DateTime(2025, 6, 14, 20, 0, 0);
+        _mockSessionsContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>())).Returns((MissionSession)null);
 
         var result = await _subject.GetOrCreateSessionAsync("session-123", "co40_op_eagle", "Altis", receivedAt);
 
@@ -76,7 +74,7 @@ public class MissionStatsServiceTests
             LastBatchReceived = now.AddHours(-1),
             TotalBatchesReceived = 3
         };
-        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(existingSession);
+        _mockSessionsContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>())).Returns(existingSession);
 
         var result = await _subject.GetOrCreateSessionAsync("session-123", "co40_op_eagle", "Altis", now);
 
@@ -277,7 +275,7 @@ public class MissionStatsServiceTests
     {
         var sessionId = "session-123";
         var session = new MissionSession { SessionId = sessionId };
-        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
+        _mockSessionsContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>())).Returns(session);
 
         await _subject.HandleMissionEndedAsync(sessionId, 300, DateTime.UtcNow);
 
@@ -287,7 +285,7 @@ public class MissionStatsServiceTests
     [Fact]
     public async Task HandleMissionEndedAsync_WhenSessionNotFound_ShouldDoNothing()
     {
-        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns((MissionSession)null);
+        _mockSessionsContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>())).Returns((MissionSession)null);
 
         await _subject.HandleMissionEndedAsync("nonexistent", 300, DateTime.UtcNow);
 
@@ -343,7 +341,7 @@ public class MissionStatsServiceTests
     [Fact]
     public async Task FinaliseKilledSessionAsync_WhenSessionNotFound_ShouldDoNothing()
     {
-        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns((MissionSession)null);
+        _mockSessionsContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>())).Returns((MissionSession)null);
 
         await _subject.FinaliseKilledSessionAsync("nonexistent");
 
@@ -355,7 +353,7 @@ public class MissionStatsServiceTests
     public async Task FinaliseKilledSessionAsync_WhenAlreadyEnded_ShouldDoNothing()
     {
         var session = new MissionSession { SessionId = "session-123", MissionEnded = new DateTime(2025, 6, 14, 21, 0, 0) };
-        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
+        _mockSessionsContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>())).Returns(session);
 
         await _subject.FinaliseKilledSessionAsync("session-123");
 
@@ -377,7 +375,7 @@ public class MissionStatsServiceTests
             LastBatchReceived = lastBatch,
             PlayerPresence = []
         };
-        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
+        _mockSessionsContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>())).Returns(session);
         _mockSessionsContext.Setup(x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()))
                             .Callback(() => session.MissionEnded = lastBatch);
         _mockMissionStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionStats, bool>>())).Returns((MissionStats)null);
@@ -428,7 +426,7 @@ public class MissionStatsServiceTests
                 }
             ]
         };
-        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
+        _mockSessionsContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>())).Returns(session);
         _mockSessionsContext.Setup(x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()))
                             .Callback(() => session.MissionEnded = lastBatch);
         _mockMissionStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionStats, bool>>())).Returns((MissionStats)null);
@@ -471,7 +469,7 @@ public class MissionStatsServiceTests
                 }
             ]
         };
-        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
+        _mockSessionsContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>())).Returns(session);
         _mockSessionsContext.Setup(x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()))
                             .Callback(() => session.MissionEnded = lastBatch);
         _mockMissionStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionStats, bool>>())).Returns((MissionStats)null);
@@ -509,7 +507,7 @@ public class MissionStatsServiceTests
             LastBatchReceived = lastBatch,
             PlayerPresence = []
         };
-        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
+        _mockSessionsContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>())).Returns(session);
         _mockSessionsContext.Setup(x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()))
                             .Callback(() => session.MissionEnded = lastBatch);
         _mockMissionStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionStats, bool>>())).Returns((MissionStats)null);
@@ -547,7 +545,7 @@ public class MissionStatsServiceTests
             PlayerPresence = []
         };
 
-        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
+        _mockSessionsContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>())).Returns(session);
         _mockSessionsContext.Setup(x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()))
                             .Callback(() => session.MissionEnded = lastBatch);
         _mockMissionStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionStats, bool>>())).Returns((MissionStats)null);

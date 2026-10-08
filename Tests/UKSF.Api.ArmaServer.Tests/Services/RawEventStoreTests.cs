@@ -136,7 +136,7 @@ public class RawEventStoreTests
             EventCount = 100,
             Events = []
         };
-        _combatContext.Setup(x => x.Get(It.IsAny<Func<MissionStatsEventsCombat, bool>>())).Returns(new[] { existing });
+        _combatContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionStatsEventsCombat, bool>>>(), It.IsAny<Expression<Func<MissionStatsEventsCombat, object>>>())).Returns(existing);
 
         UpdateDefinition<MissionStatsEventsCombat> capturedUpdate = null;
         string capturedId = null;
@@ -173,7 +173,7 @@ public class RawEventStoreTests
             EventCount = MissionStatsEventsCombat.MaxEventsPerBucket,
             Events = []
         };
-        _combatContext.Setup(x => x.Get(It.IsAny<Func<MissionStatsEventsCombat, bool>>())).Returns(new[] { existing });
+        _combatContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionStatsEventsCombat, bool>>>(), It.IsAny<Expression<Func<MissionStatsEventsCombat, object>>>())).Returns(existing);
 
         var added = new List<MissionStatsEventsCombat>();
         _combatContext.Setup(x => x.Add(It.IsAny<MissionStatsEventsCombat>()))
@@ -195,7 +195,7 @@ public class RawEventStoreTests
     [Fact]
     public async Task StoreAsync_CombatEvents_OverflowSplitsIntoMultipleBuckets()
     {
-        _combatContext.Setup(x => x.Get(It.IsAny<Func<MissionStatsEventsCombat, bool>>())).Returns(Array.Empty<MissionStatsEventsCombat>());
+        _combatContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionStatsEventsCombat, bool>>>(), It.IsAny<Expression<Func<MissionStatsEventsCombat, object>>>())).Returns((MissionStatsEventsCombat)null);
 
         var added = new List<MissionStatsEventsCombat>();
         _combatContext.Setup(x => x.Add(It.IsAny<MissionStatsEventsCombat>()))
@@ -266,18 +266,15 @@ public class RawEventStoreTests
     {
         const string sessionId = "s-race";
 
-        _combatContext.SetupSequence(x => x.Get(It.IsAny<Func<MissionStatsEventsCombat, bool>>()))
-                      .Returns(Array.Empty<MissionStatsEventsCombat>())
+        _combatContext.SetupSequence(x => x.FindFirst(It.IsAny<Expression<Func<MissionStatsEventsCombat, bool>>>(), It.IsAny<Expression<Func<MissionStatsEventsCombat, object>>>()))
+                      .Returns((MissionStatsEventsCombat)null)
                       .Returns(
-                          new[]
+                          new MissionStatsEventsCombat
                           {
-                              new MissionStatsEventsCombat
-                              {
-                                  Id = "concurrent-bucket",
-                                  MissionSessionId = sessionId,
-                                  BucketIndex = 1,
-                                  EventCount = 100
-                              }
+                              Id = "concurrent-bucket",
+                              MissionSessionId = sessionId,
+                              BucketIndex = 1,
+                              EventCount = 100
                           }
                       );
 
@@ -326,7 +323,7 @@ public class RawEventStoreTests
     [Fact]
     public async Task StoreAsync_MixedBatch_RoutesEachTypeCorrectly()
     {
-        _combatContext.Setup(x => x.Get(It.IsAny<Func<MissionStatsEventsCombat, bool>>())).Returns(Array.Empty<MissionStatsEventsCombat>());
+        _combatContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionStatsEventsCombat, bool>>>(), It.IsAny<Expression<Func<MissionStatsEventsCombat, object>>>())).Returns((MissionStatsEventsCombat)null);
 
         var events = new List<BsonDocument>
         {
