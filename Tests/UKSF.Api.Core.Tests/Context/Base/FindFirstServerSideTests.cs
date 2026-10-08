@@ -113,6 +113,39 @@ public sealed class FindFirstServerSideTests : IDisposable
         collection.Verify(x => x.FindFirst(It.IsAny<Expression<Func<Bucket, bool>>>(), It.IsAny<Expression<Func<Bucket, object>>>()), Times.Never);
     }
 
+    private (CachedBucketContext Context, Mock<UKSF.Api.Core.Context.Base.IMongoCollection<Bucket>> Collection) CachedContext(bool cacheEnabled)
+    {
+        Mock<IMongoCollectionFactory> factory = new();
+        Mock<UKSF.Api.Core.Context.Base.IMongoCollection<Bucket>> collection = new();
+        factory.Setup(x => x.CreateMongoCollection<Bucket>(It.IsAny<string>())).Returns(collection.Object);
+        collection.Setup(x => x.Get()).Returns(new List<Bucket> { new() { SessionId = "a", BucketIndex = 1 }, new() { SessionId = "a", BucketIndex = 5 } });
+        Mock<IVariablesService> variables = new();
+        variables.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(cacheEnabled);
+        return (new CachedBucketContext(factory.Object, new EventBus(), variables.Object), collection);
+    }
+
+    [Fact]
+    public void FindFirst_OnACachedContextWithoutASort_ReturnsTheFirstCachedMatch()
+    {
+        CachedContext(cacheEnabled: true).Context.FindFirst(x => x.SessionId == "a").BucketIndex.Should().Be(1);
+    }
+
+    [Fact]
+    public void FindFirst_OnACachedContextWithNoMatch_ReturnsNull()
+    {
+        CachedContext(cacheEnabled: true).Context.FindFirst(x => x.SessionId == "missing").Should().BeNull();
+    }
+
+    [Fact]
+    public void FindFirst_OnACachedContextWithTheCacheOff_QueriesMongo()
+    {
+        var (context, collection) = CachedContext(cacheEnabled: false);
+        collection.Setup(x => x.FindFirst(It.IsAny<Expression<Func<Bucket, bool>>>(), It.IsAny<Expression<Func<Bucket, object>>>()))
+                  .Returns(new Bucket { SessionId = "from-mongo", BucketIndex = 9 });
+
+        context.FindFirst(x => x.SessionId == "a").SessionId.Should().Be("from-mongo");
+    }
+
     public class Bucket : MongoObject
     {
         public string SessionId { get; set; }
