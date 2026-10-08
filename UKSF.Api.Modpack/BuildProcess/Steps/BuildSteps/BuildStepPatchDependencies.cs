@@ -8,7 +8,7 @@ namespace UKSF.Api.Modpack.BuildProcess.Steps.BuildSteps;
 [BuildStep(Name)]
 public class BuildStepPatchDependencies : FileBuildStep
 {
-    public const string Name = "Patch Dependencies";
+    public const string Name = "Patches";
     private readonly int _patcherTimeout = (int)TimeSpan.FromMinutes(10).TotalMilliseconds;
     private string _patcher;
 
