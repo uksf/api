@@ -98,6 +98,17 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
         return UseCache() ? Get().FirstOrDefault(predicate) : base.GetSingle(predicate);
     }
 
+    public override T FindFirst(Expression<Func<T, bool>> filter, Expression<Func<T, object>> sortDescending = null)
+    {
+        if (!UseCache())
+        {
+            return base.FindFirst(filter, sortDescending);
+        }
+
+        var matches = Get().Where(filter.Compile());
+        return (sortDescending is null ? matches : matches.OrderByDescending(sortDescending.Compile())).FirstOrDefault();
+    }
+
     public override async Task Add(T item)
     {
         await base.Add(item);

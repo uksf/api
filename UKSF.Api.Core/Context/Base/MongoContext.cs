@@ -41,6 +41,7 @@ public interface IMongoContext<T> where T : MongoObject
 
     T GetSingle(string id);
     T GetSingle(Func<T, bool> predicate);
+    T FindFirst(Expression<Func<T, bool>> filter, Expression<Func<T, object>> sortDescending = null);
     Task Add(T item);
     Task Update<TField>(string id, Expression<Func<T, TField>> fieldSelector, TField value);
     Task Update(string id, UpdateDefinition<T> update);

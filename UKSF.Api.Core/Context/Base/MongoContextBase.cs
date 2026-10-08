@@ -91,6 +91,11 @@ public abstract class MongoContextBase<T>(IMongoCollectionFactory mongoCollectio
         return _mongoCollection.GetSingle(predicate);
     }
 
+    public virtual T FindFirst(Expression<Func<T, bool>> filter, Expression<Func<T, object>> sortDescending = null)
+    {
+        return _mongoCollection.FindFirst(filter, sortDescending);
+    }
+
     public virtual async Task Add(T item)
     {
         if (item == null)

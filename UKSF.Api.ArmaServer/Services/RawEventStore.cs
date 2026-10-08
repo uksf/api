@@ -90,7 +90,7 @@ public class RawEventStore(
 
     private async Task AppendCombatAsync(string sessionId, List<BsonDocument> events)
     {
-        var existingTopBucket = combatContext.Get(b => b.MissionSessionId == sessionId).OrderByDescending(b => b.BucketIndex).FirstOrDefault();
+        var existingTopBucket = combatContext.FindFirst(b => b.MissionSessionId == sessionId, b => b.BucketIndex);
 
         var nextBucketIndex = existingTopBucket?.BucketIndex ?? 0;
         var queue = new Queue<BsonDocument>(events);
@@ -140,7 +140,7 @@ public class RawEventStore(
             }
             catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
             {
-                var latest = combatContext.Get(b => b.MissionSessionId == sessionId).OrderByDescending(b => b.BucketIndex).FirstOrDefault();
+                var latest = combatContext.FindFirst(b => b.MissionSessionId == sessionId, b => b.BucketIndex);
                 nextBucketIndex = latest?.BucketIndex ?? 0;
             }
         }

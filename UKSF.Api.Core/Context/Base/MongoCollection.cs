@@ -20,6 +20,7 @@ public interface IMongoCollection<T> where T : MongoObject
 
     T GetSingle(string id);
     T GetSingle(Func<T, bool> predicate);
+    T FindFirst(Expression<Func<T, bool>> filter, Expression<Func<T, object>> sortDescending = null);
     Task AddAsync(T data);
     Task UpdateAsync(string id, UpdateDefinition<T> update);
     Task UpdateAsync(FilterDefinition<T> filter, UpdateDefinition<T> update);
@@ -79,6 +80,12 @@ public class MongoCollection<T>(IMongoDatabase database, string collectionName) 
     {
         // TODO: Make all this async
         return GetCollection().FindSync(Builders<T>.Filter.Eq(x => x.Id, id)).FirstOrDefault();
+    }
+
+    public T FindFirst(Expression<Func<T, bool>> filter, Expression<Func<T, object>> sortDescending = null)
+    {
+        var query = GetCollection().Find(filter);
+        return (sortDescending is null ? query : query.SortByDescending(sortDescending)).Limit(1).FirstOrDefault();
     }
 
     public T GetSingle(Func<T, bool> predicate)

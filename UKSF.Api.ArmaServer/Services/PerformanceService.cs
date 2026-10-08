@@ -20,19 +20,20 @@ public class PerformanceService(IMissionSessionsContext sessionsContext, IPlayer
         List<PlayerPerformance> players
     )
     {
-        var session = sessionsContext.GetSingle(s => s.SessionId == sessionId);
+        var session = sessionsContext.FindFirst(s => s.SessionId == sessionId);
         if (session is null)
         {
             return;
         }
 
-        var update = Builders<MissionSession>.Update;
+        await AddNewRowsInTheirOwnWriteAsync(session, headlessClients, players);
+        await AppendReportedFpsToExistingRowsAsync(session, serverFps, headlessClients, players);
+        await ExtendGapsForAbsentPlayersInTheirOwnWriteAsync(session, players);
+    }
 
-        // Mongo forbids combining a $push to an array with a positional modification of
-        // the same array in one update. Add new HC/player rows in their own write first;
-        // subsequent writes use indexes from the pre-event session state. New rows aren't
-        // in `session` here, so FindIndex returns -1 for them and the per-element loop
-        // skips them naturally (their Fps was already attached to the row pushed here).
+    private async Task AddNewRowsInTheirOwnWriteAsync(MissionSession session, List<HeadlessClientPerformance> headlessClients, List<PlayerPerformance> players)
+    {
+        var update = Builders<MissionSession>.Update;
         var newHeadlessClients = headlessClients.Where(hc => session.HeadlessClientPerformance.All(h => h.Name != hc.Name)).ToList();
         var newPlayers = players.Where(p => session.PlayerPerformance.All(existing => existing.Uid != p.Uid)).ToList();
 
@@ -43,10 +44,16 @@ public class PerformanceService(IMissionSessionsContext sessionsContext, IPlayer
         {
             await sessionsContext.Update(session.Id, update.Combine(additions));
         }
+    }
 
-        // Reported pushes (serverFps + per-HC/player Fps appends). Mongo forbids combining a
-        // $push on `playerPerformance.i.fps` with a $set on `playerPerformance.i.fps.<n>` in
-        // the same update (path conflict, Code 40). Keep gap-extension in a separate write.
+    private async Task AppendReportedFpsToExistingRowsAsync(
+        MissionSession session,
+        List<int> serverFps,
+        List<HeadlessClientPerformance> headlessClients,
+        List<PlayerPerformance> players
+    )
+    {
+        var update = Builders<MissionSession>.Update;
         var pushes = new List<UpdateDefinition<MissionSession>>();
         if (serverFps.Count > 0)
         {
@@ -69,7 +76,11 @@ public class PerformanceService(IMissionSessionsContext sessionsContext, IPlayer
         {
             await sessionsContext.Update(session.Id, update.Combine(pushes));
         }
+    }
 
+    private async Task ExtendGapsForAbsentPlayersInTheirOwnWriteAsync(MissionSession session, List<PlayerPerformance> players)
+    {
+        var update = Builders<MissionSession>.Update;
         var reported = players.Select(p => p.Uid).ToHashSet();
         var gapExtensions = new List<UpdateDefinition<MissionSession>>();
         for (var i = 0; i < session.PlayerPerformance.Count; i++)
@@ -94,7 +105,7 @@ public class PerformanceService(IMissionSessionsContext sessionsContext, IPlayer
 
     public async Task ComputeFinalFpsStatsAsync(string sessionId)
     {
-        var session = sessionsContext.GetSingle(s => s.SessionId == sessionId);
+        var session = sessionsContext.FindFirst(s => s.SessionId == sessionId);
         if (session is null)
         {
             return;
