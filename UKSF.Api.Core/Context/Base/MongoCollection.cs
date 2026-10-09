@@ -26,7 +26,7 @@ public interface IMongoCollection<T> where T : MongoObject
     Task UpdateAsync(FilterDefinition<T> filter, UpdateDefinition<T> update);
     Task UpdateManyAsync(Expression<Func<T, bool>> predicate, UpdateDefinition<T> update);
     Task UpsertAsync(FilterDefinition<T> filter, UpdateDefinition<T> update);
-    Task FindAndUpdateAsync(FilterDefinition<T> filter, UpdateDefinition<T> update);
+    Task<T> FindAndUpdateAsync(FilterDefinition<T> filter, UpdateDefinition<T> update);
     Task ReplaceAsync(string id, T value);
     Task DeleteAsync(string id);
     Task DeleteManyAsync(Expression<Func<T, bool>> predicate);
@@ -121,9 +121,9 @@ public class MongoCollection<T>(IMongoDatabase database, string collectionName) 
         await GetCollection().UpdateOneAsync(filter, update, new UpdateOptions { IsUpsert = true });
     }
 
-    public async Task FindAndUpdateAsync(FilterDefinition<T> filter, UpdateDefinition<T> update)
+    public Task<T> FindAndUpdateAsync(FilterDefinition<T> filter, UpdateDefinition<T> update)
     {
-        await GetCollection().FindOneAndUpdateAsync(filter, update);
+        return GetCollection().FindOneAndUpdateAsync(filter, update);
     }
 
     public async Task ReplaceAsync(string id, T value)

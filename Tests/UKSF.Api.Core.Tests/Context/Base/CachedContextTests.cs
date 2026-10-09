@@ -72,7 +72,6 @@ public class CachedContextTests
         _mockDataCollection.Setup(x => x.Get()).Returns(() => new List<DomainTestModel> { item });
         _mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
 
-        // Initialize cache
         _testCachedContext.Get().Should().HaveCount(1);
 
         await _testCachedContext.Delete(item.Id);
@@ -87,7 +86,6 @@ public class CachedContextTests
 
         await _testCachedContext.DeleteMany(x => x.Name == "1");
 
-        // Once for Get(predicate) to collect IDs, once for Refresh after delete
         _mockDataCollection.Verify(x => x.Get(), Times.Exactly(2));
     }
 
@@ -109,7 +107,6 @@ public class CachedContextTests
         _mockDataCollection.Setup(x => x.Get()).Returns(() => new List<DomainTestModel> { item });
         _mockDataCollection.Setup(x => x.ReplaceAsync(It.IsAny<string>(), It.IsAny<DomainTestModel>())).Returns(Task.CompletedTask);
 
-        // Initialize cache
         _testCachedContext.Get().Should().HaveCount(1);
 
         var updatedItem = new DomainTestModel { Id = item.Id, Name = "Updated" };
@@ -159,7 +156,6 @@ public class CachedContextTests
         _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<DomainTestModel>>())).Returns(Task.CompletedTask);
         _mockDataCollection.Setup(x => x.GetSingle(item.Id)).Returns(updatedItem);
 
-        // Initialize cache
         _testCachedContext.Get().First().Name.Should().Be("1");
 
         await _testCachedContext.Update(item.Id, x => x.Name, "Updated");
@@ -175,7 +171,6 @@ public class CachedContextTests
 
         await _testCachedContext.UpdateMany(x => x.Name == "1", Builders<DomainTestModel>.Update.Set(x => x.Name, "3"));
 
-        // Once for Get(predicate) to collect IDs, once for Refresh after update
         _mockDataCollection.Verify(x => x.Get(), Times.Exactly(2));
     }
 
@@ -205,7 +200,7 @@ public class CachedContextTests
     public async Task FindAndUpdate_ShouldFullRefresh()
     {
         _mockDataCollection.Setup(x => x.FindAndUpdateAsync(It.IsAny<FilterDefinition<DomainTestModel>>(), It.IsAny<UpdateDefinition<DomainTestModel>>()))
-                           .Returns(Task.CompletedTask);
+                           .ReturnsAsync(new DomainTestModel());
 
         await _testCachedContext.FindAndUpdate(x => x.Name == "1", Builders<DomainTestModel>.Update.Set(x => x.Name, "Updated"));
 
@@ -216,7 +211,7 @@ public class CachedContextTests
     public async Task FindAndUpdate_ShouldNotThrow_WhenFilterNoLongerMatchesAfterUpdate()
     {
         _mockDataCollection.Setup(x => x.FindAndUpdateAsync(It.IsAny<FilterDefinition<DomainTestModel>>(), It.IsAny<UpdateDefinition<DomainTestModel>>()))
-                           .Returns(Task.CompletedTask);
+                           .ReturnsAsync(new DomainTestModel());
 
         var act = () => _testCachedContext.FindAndUpdate(x => x.Name == "NonExistent", Builders<DomainTestModel>.Update.Set(x => x.Name, "Updated"));
 
@@ -260,10 +255,8 @@ public class CachedContextOrderingTests
         );
         _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<DomainTestModel>>())).Returns(Task.CompletedTask);
 
-        // Initialize cache — should be ordered A, B, C
         _testOrderedContext.Get().Select(x => x.Name).Should().ContainInOrder("A", "B", "C");
 
-        // Update A's name to Z — should reorder to B, C, Z
         var updatedItem = new DomainTestModel { Id = itemA.Id, Name = "Z" };
         _mockDataCollection.Setup(x => x.GetSingle(itemA.Id)).Returns(updatedItem);
 
@@ -289,10 +282,8 @@ public class CachedContextOrderingTests
         );
         _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<DomainTestModel>>())).Returns(Task.CompletedTask);
 
-        // Initialize cache
         _testOrderedContext.Get().Select(x => x.Name).Should().ContainInOrder("A", "B", "C");
 
-        // Update A's name to Z — should reorder to B, C, Z
         var updatedItem = new DomainTestModel { Id = itemA.Id, Name = "Z" };
         _mockDataCollection.Setup(x => x.GetSingle(itemA.Id)).Returns(updatedItem);
 
@@ -318,10 +309,8 @@ public class CachedContextOrderingTests
         );
         _mockDataCollection.Setup(x => x.ReplaceAsync(It.IsAny<string>(), It.IsAny<DomainTestModel>())).Returns(Task.CompletedTask);
 
-        // Initialize cache
         _testOrderedContext.Get().Select(x => x.Name).Should().ContainInOrder("A", "B", "C");
 
-        // Replace A with Z — should reorder to B, C, Z
         var replacedItem = new DomainTestModel { Id = itemA.Id, Name = "Z" };
         await _testOrderedContext.Replace(replacedItem);
 

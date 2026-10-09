@@ -113,6 +113,11 @@ public class InstagramService(IVariablesContext variablesContext, IVariablesServ
     public async Task<List<InstagramImage>> GetImagesFromLocalCache()
     {
         var folder = variablesService.GetVariable("INSTAGRAM_LOCAL_CACHE").AsString();
+        if (!Directory.Exists(folder))
+        {
+            return [];
+        }
+
         var imageFiles = Directory.EnumerateFiles(folder).Shuffle().Take(12);
         var images = new ConcurrentBag<InstagramImage>();
         var tasks = imageFiles.Select(async x =>

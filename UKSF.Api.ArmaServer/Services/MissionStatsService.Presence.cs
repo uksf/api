@@ -21,7 +21,7 @@ public partial class MissionStatsService
             return;
         }
 
-        var endTimestamp = ToBsonMillisecondPrecision(session.LastBatchReceived != default ? session.LastBatchReceived : session.MissionStarted ?? DateTime.UtcNow);
+        var endTimestamp = session.LastBatchReceived != default ? session.LastBatchReceived : session.MissionStarted ?? DateTime.UtcNow;
 
         double? durationSeconds = session.MissionStarted.HasValue ? (endTimestamp - session.MissionStarted.Value).TotalSeconds : null;
 
@@ -39,7 +39,7 @@ public partial class MissionStatsService
             updates.Add(Builders<MissionSession>.Update.Set(x => x.PlayerPresence[index].Disconnected, endTimestamp));
         }
 
-        if (!await TryClaimFinalisationAsync(sessionId, updates, endTimestamp))
+        if (!await sessionsContext.FindAndUpdate(s => s.SessionId == sessionId && s.MissionEnded == null, Builders<MissionSession>.Update.Combine(updates)))
         {
             logger.LogInfo($"FinaliseKilledSession: session '{sessionId}' was claimed by another path, skipping");
             return;
@@ -112,17 +112,6 @@ public partial class MissionStatsService
         }
 
         await CloseOpenPresenceAsync(existing, uid, timestamp);
-    }
-
-    private static DateTime ToBsonMillisecondPrecision(DateTime timestamp)
-    {
-        return new DateTime(timestamp.Ticks - timestamp.Ticks % TimeSpan.TicksPerMillisecond, timestamp.Kind);
-    }
-
-    private async Task<bool> TryClaimFinalisationAsync(string sessionId, List<UpdateDefinition<MissionSession>> updates, DateTime endTimestamp)
-    {
-        await sessionsContext.FindAndUpdate(s => s.SessionId == sessionId && s.MissionEnded == null, Builders<MissionSession>.Update.Combine(updates));
-        return sessionsContext.FindFirst(s => s.SessionId == sessionId)?.MissionEnded == endTimestamp;
     }
 
     private async Task CloseOpenPresenceAsync(MissionSession session, string uid, DateTime timestamp)
