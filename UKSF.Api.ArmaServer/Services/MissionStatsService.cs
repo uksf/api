@@ -205,9 +205,13 @@ public partial class MissionStatsService(
             return;
         }
 
-        var update = Builders<MissionSession>.Update.Set(x => x.MissionEnded, timestamp).Set(x => x.DurationSeconds, durationSeconds);
-        await sessionsContext.Update(existing.Id, update);
+        var naturalEnd = Builders<MissionSession>.Update.Set(x => x.MissionEnded, timestamp).Set(x => x.DurationSeconds, durationSeconds);
+        if (await sessionsContext.FindAndUpdate(s => s.SessionId == sessionId && s.MissionEnded == null, naturalEnd))
+        {
+            await performanceService.ComputeFinalFpsStatsAsync(sessionId);
+            return;
+        }
 
-        await performanceService.ComputeFinalFpsStatsAsync(sessionId);
+        await sessionsContext.Update(existing.Id, naturalEnd);
     }
 }
