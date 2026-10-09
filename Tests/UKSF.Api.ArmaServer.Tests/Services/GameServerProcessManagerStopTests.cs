@@ -29,7 +29,7 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
 
         server.Status.StopPhase.Should().Be(StopPhase.Ending);
         server.Status.StopRequestedAt.Should().NotBeNull();
-        server.Status.StopPhaseEnteredAt.Should().BeNull(); // provisional, not armed until a game event
+        server.Status.StopPhaseEnteredAt.Should().BeNull();
         _mockContext.Verify(x => x.Replace(server), Times.Once);
         _mockServersClient.Verify(x => x.ReceiveServerUpdate(It.IsAny<GameServerUpdate>()), Times.Once);
     }
@@ -50,7 +50,7 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
 
         await _sut.StopServerAsync(server);
 
-        httpClient.Timeout.Should().Be(TimeSpan.FromSeconds(5)); // matches UpdateServerStatus's timeout for the same class of call
+        httpClient.Timeout.Should().Be(TimeSpan.FromSeconds(5));
     }
 
     [Fact]
@@ -92,9 +92,8 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
         await _sut.HandleStopEndingAsync(2303);
 
         server.Status.StopPhase.Should().Be(StopPhase.Ending);
-        server.Status.StopPhaseEnteredAt.Should().NotBeNull(); // armed
-        server.Status.StopRequestedAt.Should().NotBeNull(); // set for in-game path
-        // Must NOT clear process/session state:
+        server.Status.StopPhaseEnteredAt.Should().NotBeNull();
+        server.Status.StopRequestedAt.Should().NotBeNull();
         server.ProcessId.Should().Be(1234);
         server.HeadlessClientProcessIds.Should().Contain(5001);
         server.Status.CurrentMissionSessionId.Should().Be("sess-1");
@@ -118,7 +117,7 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
 
         await _sut.HandleStopEndingAsync(2303);
 
-        server.Status.StopRequestedAt.Should().Be(requested); // web-press value preserved, not overwritten
+        server.Status.StopRequestedAt.Should().Be(requested);
         server.Status.StopPhaseEnteredAt.Should().NotBeNull();
     }
 
@@ -140,10 +139,10 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
-        await _sut.HandleStopEndingAsync(2303); // late/duplicated ending event, arrives during Saving
+        await _sut.HandleStopEndingAsync(2303);
 
         server.Status.StopPhase.Should().Be(StopPhase.Saving);
-        server.Status.StopPhaseEnteredAt.Should().Be(enteredAt); // 120s Saving ceiling clock untouched
+        server.Status.StopPhaseEnteredAt.Should().Be(enteredAt);
         _mockContext.Verify(x => x.Replace(It.IsAny<DomainGameServer>()), Times.Never);
         _mockServersClient.Verify(x => x.ReceiveServerUpdate(It.IsAny<GameServerUpdate>()), Times.Never);
     }
@@ -200,7 +199,7 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
 
         server.Status.StopPhase.Should().Be(StopPhase.Stopping);
         server.Status.StopPhaseEnteredAt.Should().NotBeNull();
-        server.ProcessId.Should().Be(1234); // NOT cleared — OS-death owns that
+        server.ProcessId.Should().Be(1234);
         server.HeadlessClientProcessIds.Should().Contain(5001);
         server.Status.CurrentMissionSessionId.Should().Be("sess-1");
         _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync(It.IsAny<string>()), Times.Never);
@@ -215,6 +214,44 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
         await _sut.HandleStopStoppingAsync(9999);
 
         _mockLogger.Verify(x => x.LogWarning(It.Is<string>(s => s.Contains("9999"))), Times.Once);
+        _mockContext.Verify(x => x.Replace(It.IsAny<DomainGameServer>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task HandleStopDeliveringAsync_AdvancesFromSaving()
+    {
+        var server = new DomainGameServer
+        {
+            Id = "s1",
+            ApiPort = 2303,
+            Status = new GameServerStatus { StopPhase = StopPhase.Saving, StopPhaseEnteredAt = DateTime.UtcNow }
+        };
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
+
+        await _sut.HandleStopDeliveringAsync(2303);
+
+        server.Status.StopPhase.Should().Be(StopPhase.Delivering);
+        _mockContext.Verify(x => x.Replace(server), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleStopDeliveringAsync_ArrivingAfterStopping_DoesNotRegress()
+    {
+        var enteredAt = DateTime.UtcNow.AddSeconds(-2);
+        var server = new DomainGameServer
+        {
+            Id = "s1",
+            ApiPort = 2303,
+            Status = new GameServerStatus { StopPhase = StopPhase.Stopping, StopPhaseEnteredAt = enteredAt }
+        };
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
+
+        await _sut.HandleStopDeliveringAsync(2303);
+
+        server.Status.StopPhase.Should().Be(StopPhase.Stopping);
+        server.Status.StopPhaseEnteredAt.Should().Be(enteredAt);
         _mockContext.Verify(x => x.Replace(It.IsAny<DomainGameServer>()), Times.Never);
     }
 }

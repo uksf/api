@@ -29,10 +29,6 @@ public partial class GameServerProcessManager
         return gameServers;
     }
 
-    // Poll-path reconciliation runs under the same per-server lock the monitor uses, so poll and monitor
-    // cannot concurrently reset the same server (which would double-finalise its session). WaitAsync(0)
-    // skips a server another operation already owns; per-server try/catch keeps one failure from failing
-    // the whole poll batch.
     private async Task ReconcileServerSafely(DomainGameServer gameServer, Func<Task> reconcile)
     {
         var serverLock = GetServerLock(gameServer.Id);
@@ -57,6 +53,7 @@ public partial class GameServerProcessManager
 
     public Task HandleStopEndingAsync(int apiPort) => AdvanceStopPhaseAsync(apiPort, StopPhase.Ending, "shutdown_ending");
     public Task HandleStopSavingAsync(int apiPort) => AdvanceStopPhaseAsync(apiPort, StopPhase.Saving, "shutdown_saving");
+    public Task HandleStopDeliveringAsync(int apiPort) => AdvanceStopPhaseAsync(apiPort, StopPhase.Delivering, "shutdown_delivering");
     public Task HandleStopStoppingAsync(int apiPort) => AdvanceStopPhaseAsync(apiPort, StopPhase.Stopping, "shutdown_stopping");
 
     private async Task AdvanceStopPhaseAsync(int apiPort, StopPhase phase, string eventName)
@@ -72,15 +69,15 @@ public partial class GameServerProcessManager
         await serverLock.WaitAsync();
         try
         {
-            if (phase < gameServer.Status.StopPhase)
+            if (StopPhaseWatchdog.Rank(phase) < StopPhaseWatchdog.Rank(gameServer.Status.StopPhase))
             {
-                return; // never regress a stop (late/duplicated event racing a later phase)
+                return;
             }
 
             var now = DateTime.UtcNow;
-            gameServer.Status.StopRequestedAt ??= now; // in-game trigger: API never set it on a stop press
+            gameServer.Status.StopRequestedAt ??= now;
             gameServer.Status.StopPhase = phase;
-            gameServer.Status.StopPhaseEnteredAt = now; // arms the per-stage watchdog
+            gameServer.Status.StopPhaseEnteredAt = now;
             gameServer.Status.KillAllowedAt = StopPhaseWatchdog.KillOfferAt(gameServer.Status);
             await gameServersContext.Replace(gameServer);
             await PushServerUpdateAsync(gameServer);
@@ -117,7 +114,8 @@ public partial class GameServerProcessManager
                 logger.LogWarning($"server_status 'players' missing or not a list. Keys: {string.Join(", ", data.Keys)}");
             }
 
-            if (status.StartedAt is null && data.TryGetValue("uptime", out var uptimeRaw) &&
+            if (status.StartedAt is null &&
+                data.TryGetValue("uptime", out var uptimeRaw) &&
                 float.TryParse(uptimeRaw?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var startUptime))
             {
                 status.StartedAt = DateTime.UtcNow.AddSeconds(-startUptime);
@@ -157,24 +155,18 @@ public partial class GameServerProcessManager
 
         if (data.TryGetValue("entityCount", out var entityCount) && int.TryParse(entityCount?.ToString(), out var entityCountValue))
             status.EntityCount = entityCountValue;
-        if (data.TryGetValue("aiCount", out var aiCount) && int.TryParse(aiCount?.ToString(), out var aiCountValue))
-            status.AiCount = aiCountValue;
+        if (data.TryGetValue("aiCount", out var aiCount) && int.TryParse(aiCount?.ToString(), out var aiCountValue)) status.AiCount = aiCountValue;
         if (data.TryGetValue("headlessClientCount", out var headlessClientCount) &&
-            int.TryParse(headlessClientCount?.ToString(), out var headlessClientCountValue))
-            status.HeadlessClientCount = headlessClientCountValue;
+            int.TryParse(headlessClientCount?.ToString(), out var headlessClientCountValue)) status.HeadlessClientCount = headlessClientCountValue;
     }
 
     private void ApplyPolledStatus(DomainGameServer gameServer, string sqfBody)
     {
-        // Empty body during the boot race (extension up but no server_status seen yet)
-        // is expected — treat as "no data, try again next poll" rather than parse failure.
         if (string.IsNullOrWhiteSpace(sqfBody))
         {
             return;
         }
 
-        // Body is engine-native SQF str() of the server_status data hashmap (pair-list).
-        // Parse to a Dictionary<string,object> then map fields onto the in-memory status.
         Dictionary<string, object> polled;
         try
         {

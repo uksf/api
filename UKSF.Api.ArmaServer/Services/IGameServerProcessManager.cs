@@ -12,6 +12,7 @@ public interface IGameServerProcessManager
     Task<List<DomainGameServer>> GetAllServerStatusesAsync();
     Task HandleStopEndingAsync(int apiPort);
     Task HandleStopSavingAsync(int apiPort);
+    Task HandleStopDeliveringAsync(int apiPort);
     Task HandleStopStoppingAsync(int apiPort);
     Task HandleServerStatusAsync(int apiPort, Dictionary<string, object> data);
     Task PushServerUpdateAsync(DomainGameServer server);

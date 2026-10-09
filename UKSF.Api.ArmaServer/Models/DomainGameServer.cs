@@ -13,10 +13,11 @@ public enum GameServerOption
 
 public enum StopPhase
 {
-    None,
-    Ending,
-    Saving,
-    Stopping
+    None = 0,
+    Ending = 1,
+    Saving = 2,
+    Stopping = 3,
+    Delivering = 4
 }
 
 public class DomainGameServer : MongoObject
@@ -36,12 +37,8 @@ public class DomainGameServer : MongoObject
     public int? ProcessId { get; set; }
     public string ProfileName { get; set; }
 
-    /// Arma verifySignatures level. Null means 2 (full verification). Dev servers set 0 so
-    /// unsigned dev-build PBOs (hemtt dev junctions) can connect without a signed release mirror.
     public int? VerifySignatures { get; set; }
 
-    /// Arma allowedFilePatching level. Null means 1 (server only). Dev servers set 2 so
-    /// filepatching clients (dev junction workflows) are not kicked.
     public int? AllowedFilePatching { get; set; }
 
     public List<GameServerMod> ServerMods { get; set; } = [];

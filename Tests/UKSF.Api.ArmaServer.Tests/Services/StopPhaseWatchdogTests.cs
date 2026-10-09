@@ -12,10 +12,11 @@ public class StopPhaseWatchdogTests
     [InlineData(StopPhase.None, 0, false)]
     [InlineData(StopPhase.Ending, 14, false)]
     [InlineData(StopPhase.Ending, 16, true)]
-    [InlineData(StopPhase.Saving, 199, false)]
-    [InlineData(StopPhase.Saving, 201, true)]
-    [InlineData(StopPhase.Stopping, 59, false)]
-    [InlineData(StopPhase.Stopping, 61, true)]
+    [InlineData(StopPhase.Saving, 3600, false)]
+    [InlineData(StopPhase.Delivering, 134, false)]
+    [InlineData(StopPhase.Delivering, 136, true)]
+    [InlineData(StopPhase.Stopping, 29, false)]
+    [InlineData(StopPhase.Stopping, 31, true)]
     public void WatchdogExceeded_ArmedUsesPerStageCeiling(StopPhase phase, int secondsInPhase, bool expected)
     {
         var now = DateTime.UtcNow;
@@ -51,8 +52,8 @@ public class StopPhaseWatchdogTests
         var now = DateTime.UtcNow;
         var status = new GameServerStatus
         {
-            StopPhase = StopPhase.Saving,
-            StopPhaseEnteredAt = now.AddSeconds(-190),
+            StopPhase = StopPhase.Delivering,
+            StopPhaseEnteredAt = now.AddSeconds(-130),
             StopRequestedAt = now.AddSeconds(-300)
         };
 
@@ -68,6 +69,7 @@ public class StopPhaseWatchdogTests
     [Theory]
     [InlineData(StopPhase.Ending, 10)]
     [InlineData(StopPhase.Saving, 45)]
+    [InlineData(StopPhase.Delivering, 0)]
     [InlineData(StopPhase.Stopping, 20)]
     public void KillOfferAt_ArmedUsesPerStageOffer(StopPhase phase, int expectedOfferSeconds)
     {
@@ -107,13 +109,27 @@ public class StopPhaseWatchdogTests
 
     [Theory]
     [InlineData(StopPhase.Ending, 15)]
-    [InlineData(StopPhase.Saving, 200)]
-    [InlineData(StopPhase.Stopping, 60)]
+    [InlineData(StopPhase.Delivering, 135)]
+    [InlineData(StopPhase.Stopping, 30)]
     public void KillOfferAt_LandsBeforeTheApiForceKills(StopPhase phase, int ceilingSeconds)
     {
         var entered = DateTime.UtcNow;
         var status = new GameServerStatus { StopPhase = phase, StopPhaseEnteredAt = entered };
 
         StopPhaseWatchdog.KillOfferAt(status).Should().BeBefore(entered.AddSeconds(ceilingSeconds));
+    }
+
+    [Fact]
+    public void Rank_PutsDeliveringBetweenSavingAndStopping()
+    {
+        StopPhaseWatchdog.Rank(StopPhase.Saving).Should().BeLessThan(StopPhaseWatchdog.Rank(StopPhase.Delivering));
+        StopPhaseWatchdog.Rank(StopPhase.Delivering).Should().BeLessThan(StopPhaseWatchdog.Rank(StopPhase.Stopping));
+    }
+
+    [Fact]
+    public void StopPhase_KeepsTheNumbersStoredInMongoAndReadByTheWeb()
+    {
+        new[] { (int)StopPhase.None, (int)StopPhase.Ending, (int)StopPhase.Saving, (int)StopPhase.Stopping, (int)StopPhase.Delivering }.Should()
+            .Equal(0, 1, 2, 3, 4);
     }
 }

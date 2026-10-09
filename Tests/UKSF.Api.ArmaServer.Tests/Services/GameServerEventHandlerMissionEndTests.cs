@@ -120,4 +120,12 @@ public class GameServerEventHandlerMissionEndTests
 
         _logger.Verify(x => x.LogWarning(It.Is<string>(message => message.Contains("k") && message.Contains("partial"))), Times.Once);
     }
+
+    [Fact]
+    public async Task ShutdownDelivering_AdvancesTheStopPhase()
+    {
+        await Send(new Dictionary<string, object>(), "shutdown_delivering");
+
+        _processManager.Verify(x => x.HandleStopDeliveringAsync(2303), Times.Once);
+    }
 }
