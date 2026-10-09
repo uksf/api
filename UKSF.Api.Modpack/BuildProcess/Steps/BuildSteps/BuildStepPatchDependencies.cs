@@ -85,7 +85,7 @@ public class BuildStepPatchDependencies : FileBuildStep
             foreach (var bisign in Directory.GetFiles(AddonsPath, $"{Path.GetFileName(pbo)}.*.bisign"))
             {
                 File.Delete(bisign);
-                StepLogger.Log($"Removed {Path.GetFileName(bisign)}: {Path.GetFileName(pbo)} was patched");
+                StepLogger.Log($"Removed {Path.GetFileName(bisign)}");
                 removed++;
             }
         }
