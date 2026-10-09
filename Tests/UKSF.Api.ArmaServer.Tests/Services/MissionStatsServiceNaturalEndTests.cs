@@ -40,7 +40,7 @@ public class MissionStatsServiceNaturalEndTests
         _sessions.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>()))
                  .Returns(() => Snapshot());
         _sessions.Setup(x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()))
-                 .Returns<Expression<Func<MissionSession, bool>>, UpdateDefinition<MissionSession>>((_, update) => Task.FromResult(ClaimAndApply(update)));
+                 .Returns<Expression<Func<MissionSession, bool>>, UpdateDefinition<MissionSession>>((filter, update) => Task.FromResult(ClaimAndApply(filter, update)));
         _sessions.Setup(x => x.Update(It.IsAny<string>(), It.IsAny<UpdateDefinition<MissionSession>>()))
                  .Returns<string, UpdateDefinition<MissionSession>>((_, update) =>
                      {
@@ -75,11 +75,11 @@ public class MissionStatsServiceNaturalEndTests
         }
     }
 
-    private bool ClaimAndApply(UpdateDefinition<MissionSession> update)
+    private bool ClaimAndApply(Expression<Func<MissionSession, bool>> filter, UpdateDefinition<MissionSession> update)
     {
         lock (_stored)
         {
-            if (_stored.MissionEnded is not null)
+            if (!filter.Compile()(Snapshot()))
             {
                 return false;
             }
