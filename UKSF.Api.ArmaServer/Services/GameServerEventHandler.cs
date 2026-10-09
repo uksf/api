@@ -17,7 +17,7 @@ public interface IGameServerEventHandler
     Task HandleEventAsync(GameServerEvent gameServerEvent);
 }
 
-public class GameServerEventHandler(
+public partial class GameServerEventHandler(
     IGameServerProcessManager processManager,
     IGameServersContext gameServersContext,
     IPublishEndpoint publishEndpoint,
@@ -49,17 +49,24 @@ public class GameServerEventHandler(
                     break;
                 case "shutdown_stopping":
                 case "shutdown_complete":
+                    ReportUnstoredShutdownSave(gameServerEvent.ApiPort, gameServerEvent.Data);
                     if (!hasNoGameServerRow) await processManager.HandleStopStoppingAsync(gameServerEvent.ApiPort);
                     break;
-                case "mission_stats":       await HandleMissionStatsEvent(gameServerEvent.Data); break;
-                case "mission_started":     await HandleMissionLifecycleEvent(gameServerEvent.ApiPort, gameServerEvent.Data, true); break;
-                case "mission_ended":       await HandleMissionLifecycleEvent(gameServerEvent.ApiPort, gameServerEvent.Data, false); break;
+                case "mission_stats":   await HandleMissionStatsEvent(gameServerEvent.Data); break;
+                case "mission_started": await HandleMissionLifecycleEvent(gameServerEvent.ApiPort, gameServerEvent.Data, true); break;
+                case "mission_ended":
+                    ReportUnsavedMissionEnd(gameServerEvent.Data);
+                    await HandleMissionLifecycleEvent(gameServerEvent.ApiPort, gameServerEvent.Data, false);
+                    break;
                 case "player_connected":    await HandlePlayerPresenceEvent(gameServerEvent.Data, isConnected: true); break;
                 case "player_disconnected": await HandlePlayerPresenceEvent(gameServerEvent.Data, isConnected: false); break;
                 case "performance":         await HandlePerformanceEvent(gameServerEvent.Data); break;
-                case "persistence_save":    await HandlePersistenceSaveEvent(gameServerEvent.Data); break;
-                case "npc_register":        await npcBrokerService.HandleRegisterAsync(gameServerEvent.ApiPort, gameServerEvent.Data); break;
-                case "npc_turn":            await npcBrokerService.HandleTurnAsync(gameServerEvent.ApiPort, gameServerEvent.Data); break;
+                case "persistence_save":
+                    ReportPartialSave(gameServerEvent.Data);
+                    await HandlePersistenceSaveEvent(gameServerEvent.Data);
+                    break;
+                case "npc_register": await npcBrokerService.HandleRegisterAsync(gameServerEvent.ApiPort, gameServerEvent.Data); break;
+                case "npc_turn":     await npcBrokerService.HandleTurnAsync(gameServerEvent.ApiPort, gameServerEvent.Data); break;
                 case "npc_utterance":
                 case "npc_ack": await npcBrokerService.HandleTraceEventAsync(gameServerEvent.Type, gameServerEvent.Data); break;
                 default: logger.LogWarning($"Unknown game server event type: {gameServerEvent.Type}"); break;

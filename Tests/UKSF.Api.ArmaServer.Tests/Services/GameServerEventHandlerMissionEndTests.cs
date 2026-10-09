@@ -15,6 +15,7 @@ namespace UKSF.Api.ArmaServer.Tests.Services;
 public class GameServerEventHandlerMissionEndTests
 {
     private readonly Mock<IMissionStatsService> _missionStats = new();
+    private readonly Mock<IUksfLogger> _logger = new();
     private readonly GameServerEventHandler _sut;
 
     public GameServerEventHandlerMissionEndTests()
@@ -26,17 +27,17 @@ public class GameServerEventHandlerMissionEndTests
             _missionStats.Object,
             Mock.Of<IPerformanceService>(),
             Mock.Of<IPersistenceSessionsService>(),
-            Mock.Of<IUksfLogger>(),
+            _logger.Object,
             Mock.Of<INpcBrokerService>(),
             Mock.Of<IMissionSessionCaptureService>()
         );
     }
 
-    private Task Send(Dictionary<string, object> data) =>
+    private Task Send(Dictionary<string, object> data, string type = "mission_ended") =>
         _sut.HandleEventAsync(
             new GameServerEvent
             {
-                Type = "mission_ended",
+                Type = type,
                 ApiPort = 2303,
                 Data = data
             }
@@ -65,5 +66,56 @@ public class GameServerEventHandlerMissionEndTests
         await Send(new Dictionary<string, object> { { "sessionId", "s1" }, { "duration", "60" } });
 
         _missionStats.Verify(x => x.HandleMissionEndedAsync("s1", 60, It.Is<DateTime>(t => t >= before && t <= DateTime.UtcNow)), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("lost")]
+    [InlineData("rejected")]
+    [InlineData("timeout")]
+    [InlineData("unsent")]
+    public async Task ShutdownStopping_WithAnUnstoredSave_LogsAnError(string outcome)
+    {
+        await Send(new Dictionary<string, object> { { "saveOutcome", outcome } }, "shutdown_stopping");
+
+        _logger.Verify(x => x.LogError(It.Is<string>(message => message.Contains("2303") && message.Contains(outcome))), Times.Once);
+    }
+
+    [Fact]
+    public async Task ShutdownStopping_WithADeliveredSave_LogsNoError()
+    {
+        await Send(new Dictionary<string, object> { { "saveOutcome", "delivered" } }, "shutdown_stopping");
+
+        _logger.Verify(x => x.LogError(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task MissionEnded_WithoutASave_LogsAWarning()
+    {
+        await Send(
+            new Dictionary<string, object>
+            {
+                { "sessionId", "s1" },
+                { "duration", "60" },
+                { "saved", false }
+            }
+        );
+
+        _logger.Verify(x => x.LogWarning(It.Is<string>(message => message.Contains("s1"))), Times.Once);
+    }
+
+    [Fact]
+    public async Task PersistenceSave_MarkedPartial_LogsAWarning()
+    {
+        await Send(
+            new Dictionary<string, object>
+            {
+                { "key", "k" },
+                { "sessionId", "s1" },
+                { "partial", true }
+            },
+            "persistence_save"
+        );
+
+        _logger.Verify(x => x.LogWarning(It.Is<string>(message => message.Contains("k") && message.Contains("partial"))), Times.Once);
     }
 }

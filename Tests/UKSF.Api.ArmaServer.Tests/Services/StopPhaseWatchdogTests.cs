@@ -9,13 +9,13 @@ namespace UKSF.Api.ArmaServer.Tests.Services;
 public class StopPhaseWatchdogTests
 {
     [Theory]
-    [InlineData(StopPhase.None, 0, false)] // not stopping
-    [InlineData(StopPhase.Ending, 14, false)] // armed, within 15s
-    [InlineData(StopPhase.Ending, 16, true)] // armed, past 15s
-    [InlineData(StopPhase.Saving, 119, false)] // armed, within 120s
-    [InlineData(StopPhase.Saving, 121, true)] // armed, past 120s
-    [InlineData(StopPhase.Stopping, 59, false)] // armed, within 60s
-    [InlineData(StopPhase.Stopping, 61, true)] // armed, past 60s
+    [InlineData(StopPhase.None, 0, false)]
+    [InlineData(StopPhase.Ending, 14, false)]
+    [InlineData(StopPhase.Ending, 16, true)]
+    [InlineData(StopPhase.Saving, 199, false)]
+    [InlineData(StopPhase.Saving, 201, true)]
+    [InlineData(StopPhase.Stopping, 59, false)]
+    [InlineData(StopPhase.Stopping, 61, true)]
     public void WatchdogExceeded_ArmedUsesPerStageCeiling(StopPhase phase, int secondsInPhase, bool expected)
     {
         var now = DateTime.UtcNow;
@@ -30,15 +30,15 @@ public class StopPhaseWatchdogTests
     }
 
     [Theory]
-    [InlineData(179, false)] // unarmed backstop, within 180s
-    [InlineData(181, true)] // unarmed backstop, past 180s
-    public void WatchdogExceeded_UnarmedUsesBackstop(int secondsSinceRequested, bool expected)
+    [InlineData(179, false)]
+    [InlineData(181, true)]
+    public void WatchdogExceeded_WithoutGameEvents_UsesBackstopFromStopRequest(int secondsSinceRequested, bool expected)
     {
         var now = DateTime.UtcNow;
         var status = new GameServerStatus
         {
-            StopPhase = StopPhase.Ending, // API-set provisional phase
-            StopPhaseEnteredAt = null, // NOT armed (old modpack: no game event)
+            StopPhase = StopPhase.Ending,
+            StopPhaseEnteredAt = null,
             StopRequestedAt = now.AddSeconds(-secondsSinceRequested)
         };
 
@@ -48,14 +48,12 @@ public class StopPhaseWatchdogTests
     [Fact]
     public void WatchdogExceeded_ArmedPastBackstopButWithinPerStage_NotExceeded()
     {
-        // Mutual exclusivity: an armed server long past 180s-from-request but within its
-        // per-stage ceiling is NOT killed (backstop applies only when unarmed).
         var now = DateTime.UtcNow;
         var status = new GameServerStatus
         {
             StopPhase = StopPhase.Saving,
-            StopPhaseEnteredAt = now.AddSeconds(-100), // within 120s Saving ceiling
-            StopRequestedAt = now.AddSeconds(-300) // way past 180s backstop
+            StopPhaseEnteredAt = now.AddSeconds(-190),
+            StopRequestedAt = now.AddSeconds(-300)
         };
 
         StopPhaseWatchdog.WatchdogExceeded(status, now).Should().BeFalse();
@@ -80,13 +78,13 @@ public class StopPhaseWatchdogTests
     }
 
     [Fact]
-    public void KillOfferAt_UnarmedUsesBackstopOffer()
+    public void KillOfferAt_WithoutGameEvents_UsesBackstopOffer()
     {
         var requested = DateTime.UtcNow;
         var status = new GameServerStatus
         {
             StopPhase = StopPhase.Ending,
-            StopPhaseEnteredAt = null, // old modpack: no game events arrive
+            StopPhaseEnteredAt = null,
             StopRequestedAt = requested
         };
 
@@ -94,9 +92,8 @@ public class StopPhaseWatchdogTests
     }
 
     [Fact]
-    public void KillOfferAt_KeepsEarlierExistingOffer()
+    public void KillOfferAt_ALaterPhaseNeverWithdrawsAnOfferAlreadyMade()
     {
-        // A later phase must never withdraw a kill the web has already offered.
         var now = DateTime.UtcNow;
         var status = new GameServerStatus
         {
@@ -110,12 +107,10 @@ public class StopPhaseWatchdogTests
 
     [Theory]
     [InlineData(StopPhase.Ending, 15)]
-    [InlineData(StopPhase.Saving, 120)]
+    [InlineData(StopPhase.Saving, 200)]
     [InlineData(StopPhase.Stopping, 60)]
-    public void KillOfferAt_AlwaysPrecedesForceKillCeiling(StopPhase phase, int ceilingSeconds)
+    public void KillOfferAt_LandsBeforeTheApiForceKills(StopPhase phase, int ceilingSeconds)
     {
-        // The offer must land before the watchdog fires, or the button appears only as the
-        // API force-kills the server anyway.
         var entered = DateTime.UtcNow;
         var status = new GameServerStatus { StopPhase = phase, StopPhaseEnteredAt = entered };
 
