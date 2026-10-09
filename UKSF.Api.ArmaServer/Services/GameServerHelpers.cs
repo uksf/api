@@ -26,9 +26,9 @@ public interface IGameServerHelpers
 
     IReadOnlyList<ProcessCommandLineInfo> GetArmaProcessesWithCommandLine();
 
-    /// Returns true if the command line belongs to a synthetic-mission server
-    /// (game-data-export or dev-run). Used to filter these out of game-server lifecycle.
     bool IsSyntheticProcess(string commandLine);
+    bool IsOwnedProcess(string commandLine);
+    string ApiUrl { get; }
 
     bool IsGameDataExportProcess(string commandLine);
     IReadOnlyList<ProcessCommandLineInfo> GetGameServerArmaProcesses();
@@ -39,10 +39,7 @@ public interface IGameServerHelpers
 public class GameServerHelpers(IVariablesService variablesService, IProcessUtilities processUtilities, IUksfLogger logger, IConfiguration configuration)
     : IGameServerHelpers
 {
-    // Force 127.0.0.1 — the game extension posts events here, and on Windows
-    // `localhost` can resolve to ::1 in a way that hangs the arma process's HTTP
-    // client even when curl from the shell reaches both stacks fine.
-    private string ApiUrl =>
+    public string ApiUrl =>
         (configuration["Kestrel:Endpoints:Http:Url"] ?? "http://127.0.0.1:5500").Replace("localhost", "127.0.0.1", StringComparison.OrdinalIgnoreCase);
 
     private static readonly string[] BaseConfig =
@@ -227,9 +224,15 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
 
     public bool IsGameDataExportProcess(string commandLine) => IsSyntheticProcess(commandLine);
 
+    public bool IsOwnedProcess(string commandLine)
+    {
+        if (string.IsNullOrEmpty(commandLine)) return false;
+        return Regex.IsMatch(commandLine, $@"-apiUrl=""?{Regex.Escape(ApiUrl)}(?:""|\s|$)", RegexOptions.IgnoreCase);
+    }
+
     public IReadOnlyList<ProcessCommandLineInfo> GetGameServerArmaProcesses()
     {
-        return GetArmaProcessesWithCommandLine().Where(p => !IsSyntheticProcess(p.CommandLine)).ToList();
+        return GetArmaProcessesWithCommandLine().Where(p => !IsSyntheticProcess(p.CommandLine) && IsOwnedProcess(p.CommandLine)).ToList();
     }
 
     public bool IsMainOpTime()

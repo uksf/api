@@ -23,7 +23,7 @@ public class GameDataExportRecoveryStartup(
     {
         try
         {
-            await SalvageRecentExportsAsync();
+            await SalvageRecentConfigExportsAsync();
             KillOrphanProcesses();
         }
         catch (Exception ex)
@@ -38,7 +38,7 @@ public class GameDataExportRecoveryStartup(
     {
         foreach (var process in processUtilities.GetProcessesWithCommandLine("arma3server"))
         {
-            if (!helpers.IsGameDataExportProcess(process.CommandLine)) continue;
+            if (!helpers.IsGameDataExportProcess(process.CommandLine) || !helpers.IsOwnedProcess(process.CommandLine)) continue;
             try
             {
                 var runningProcess = processUtilities.FindProcessById(process.ProcessId);
@@ -55,8 +55,7 @@ public class GameDataExportRecoveryStartup(
         }
     }
 
-    // Salvage scope is intentionally config-only — CBA settings outputs have no recovery history yet.
-    private async Task SalvageRecentExportsAsync()
+    private async Task SalvageRecentConfigExportsAsync()
     {
         var storageRoot = variablesService.GetVariable("SERVER_PATH_CONFIG_EXPORT").AsString();
         if (!Directory.Exists(storageRoot)) return;

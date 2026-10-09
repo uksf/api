@@ -57,6 +57,7 @@ public class GameDataExportRecoveryStartupTests
         var orphan = new ProcessCommandLineInfo(9999, "\"arma3server_x64.exe\" -profiles=C:/p/GameDataExport -port=3302");
         _processUtilities.Setup(x => x.GetProcessesWithCommandLine("arma3server")).Returns(new[] { orphan });
         _helpers.Setup(x => x.IsGameDataExportProcess(It.IsAny<string>())).Returns(true);
+        _helpers.Setup(x => x.IsOwnedProcess(It.IsAny<string>())).Returns(true);
         _processUtilities.Setup(x => x.FindProcessById(9999)).Returns((System.Diagnostics.Process)null);
 
         SetupVariable("SERVER_PATH_CONFIG_EXPORT", Path.Combine(Path.GetTempPath(), "nonexistent-" + Guid.NewGuid()));
@@ -65,6 +66,20 @@ public class GameDataExportRecoveryStartupTests
         await sut.StartAsync(CancellationToken.None);
 
         _processUtilities.Verify(x => x.FindProcessById(9999), Times.Once);
+    }
+
+    [Fact]
+    public async Task StartAsync_DoesNotKillGameDataExportProcessOfAnotherApi()
+    {
+        var foreign = new ProcessCommandLineInfo(9998, "\"arma3server_x64.exe\" -profiles=C:/p/GameDataExport -port=3302");
+        _processUtilities.Setup(x => x.GetProcessesWithCommandLine("arma3server")).Returns(new[] { foreign });
+        _helpers.Setup(x => x.IsGameDataExportProcess(It.IsAny<string>())).Returns(true);
+        _helpers.Setup(x => x.IsOwnedProcess(It.IsAny<string>())).Returns(false);
+        SetupVariable("SERVER_PATH_CONFIG_EXPORT", Path.Combine(Path.GetTempPath(), "nonexistent-" + Guid.NewGuid()));
+
+        await CreateSut().StartAsync(CancellationToken.None);
+
+        _processUtilities.Verify(x => x.FindProcessById(It.IsAny<int>()), Times.Never);
     }
 
     [Fact]

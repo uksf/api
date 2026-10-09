@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Moq;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.ArmaServer.ScheduledActions;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Processes;
@@ -15,6 +16,7 @@ namespace UKSF.Api.ArmaServer.Tests.ScheduledActions;
 
 public class DevRunRecoveryStartupTests
 {
+    private readonly Mock<IGameServerHelpers> _helpers = new();
     private readonly Mock<IProcessUtilities> _processUtilities = new();
     private readonly Mock<IDevRunsContext> _context = new();
     private readonly Mock<IUksfLogger> _logger = new();
@@ -22,16 +24,17 @@ public class DevRunRecoveryStartupTests
     public DevRunRecoveryStartupTests()
     {
         _processUtilities.Setup(x => x.GetProcessesWithCommandLine("arma3server")).Returns(Array.Empty<ProcessCommandLineInfo>());
+        _helpers.Setup(x => x.IsOwnedProcess(It.Is<string>(c => c.Contains("-apiUrl=\"mine\"")))).Returns(true);
         _context.Setup(x => x.Get(It.IsAny<Func<DomainDevRun, bool>>())).Returns(new List<DomainDevRun>());
         _context.Setup(x => x.Update(It.IsAny<string>(), It.IsAny<Expression<Func<DomainDevRun, object>>>(), It.IsAny<object>())).Returns(Task.CompletedTask);
     }
 
-    private DevRunRecoveryStartup CreateSut() => new(_processUtilities.Object, _context.Object, _logger.Object);
+    private DevRunRecoveryStartup CreateSut() => new(_helpers.Object, _processUtilities.Object, _context.Object, _logger.Object);
 
     [Fact]
     public async Task StartAsync_KillsOrphanDevRunProcess()
     {
-        var orphan = new ProcessCommandLineInfo(123, "-profiles=C:/x/DevRun_abc -port=3304");
+        var orphan = new ProcessCommandLineInfo(123, "-profiles=C:/x/DevRun_abc -port=3304 -apiUrl=\"mine\"");
         _processUtilities.Setup(x => x.GetProcessesWithCommandLine("arma3server")).Returns(new[] { orphan });
         _processUtilities.Setup(x => x.FindProcessById(123)).Returns((System.Diagnostics.Process)null);
 
@@ -85,6 +88,17 @@ public class DevRunRecoveryStartupTests
     }
 
     [Fact]
+    public async Task StartAsync_DoesNotKillDevRunProcessOfAnotherApi()
+    {
+        var foreign = new ProcessCommandLineInfo(789, "-profiles=C:/x/DevRun_abc -port=3304 -apiUrl=\"theirs\"");
+        _processUtilities.Setup(x => x.GetProcessesWithCommandLine("arma3server")).Returns(new[] { foreign });
+
+        await CreateSut().StartAsync(CancellationToken.None);
+
+        _processUtilities.Verify(x => x.FindProcessById(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
     public async Task StartAsync_DoesNotKillNonDevRunProcess()
     {
         var unrelated = new ProcessCommandLineInfo(456, "-profiles=C:/x/GameDataExport -port=3302");
@@ -105,8 +119,6 @@ public class DevRunRecoveryStartupTests
             RunId = "xyz",
             Status = DevRunStatus.Success
         };
-        // Return only completed records; the filter in SUT will exclude them since filter runs in-memory,
-        // but the mock returns whatever we configure — so we configure it to return empty as the SUT filter would.
         _context.Setup(x => x.Get(It.IsAny<Func<DomainDevRun, bool>>())).Returns(new List<DomainDevRun>());
 
         var sut = CreateSut();
