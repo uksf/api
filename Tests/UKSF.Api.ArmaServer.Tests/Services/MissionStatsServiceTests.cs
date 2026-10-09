@@ -271,11 +271,11 @@ public class MissionStatsServiceTests
     }
 
     [Fact]
-    public async Task HandleMissionEndedAsync_ShouldCallComputeFinalFpsStats()
+    public async Task HandleMissionEndedAsync_WhenItClaimsTheSession_ShouldCallComputeFinalFpsStats()
     {
         var sessionId = "session-123";
-        var session = new MissionSession { SessionId = sessionId };
-        _mockSessionsContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>())).Returns(session);
+        _mockSessionsContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>())).Returns(new MissionSession { SessionId = sessionId });
+        _mockSessionsContext.Setup(x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>())).ReturnsAsync(true);
 
         await _subject.HandleMissionEndedAsync(sessionId, 300, DateTime.UtcNow);
 
@@ -377,7 +377,7 @@ public class MissionStatsServiceTests
         };
         _mockSessionsContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>())).Returns(session);
         _mockSessionsContext.Setup(x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()))
-                            .Callback(() => session.MissionEnded = lastBatch);
+                            .Callback(() => session.MissionEnded = lastBatch).ReturnsAsync(true);
         _mockMissionStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionStats, bool>>())).Returns((MissionStats)null);
 
         await _subject.FinaliseKilledSessionAsync("session-123");
@@ -428,7 +428,7 @@ public class MissionStatsServiceTests
         };
         _mockSessionsContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>())).Returns(session);
         _mockSessionsContext.Setup(x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()))
-                            .Callback(() => session.MissionEnded = lastBatch);
+                            .Callback(() => session.MissionEnded = lastBatch).ReturnsAsync(true);
         _mockMissionStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionStats, bool>>())).Returns((MissionStats)null);
 
         await _subject.FinaliseKilledSessionAsync("session-123");
@@ -471,7 +471,7 @@ public class MissionStatsServiceTests
         };
         _mockSessionsContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>())).Returns(session);
         _mockSessionsContext.Setup(x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()))
-                            .Callback(() => session.MissionEnded = lastBatch);
+                            .Callback(() => session.MissionEnded = lastBatch).ReturnsAsync(true);
         _mockMissionStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionStats, bool>>())).Returns((MissionStats)null);
 
         List<BsonDocument> capturedEvents = null;
@@ -509,7 +509,7 @@ public class MissionStatsServiceTests
         };
         _mockSessionsContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>())).Returns(session);
         _mockSessionsContext.Setup(x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()))
-                            .Callback(() => session.MissionEnded = lastBatch);
+                            .Callback(() => session.MissionEnded = lastBatch).ReturnsAsync(true);
         _mockMissionStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionStats, bool>>())).Returns((MissionStats)null);
 
         List<BsonDocument> capturedEvents = null;
@@ -547,7 +547,7 @@ public class MissionStatsServiceTests
 
         _mockSessionsContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>())).Returns(session);
         _mockSessionsContext.Setup(x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()))
-                            .Callback(() => session.MissionEnded = lastBatch);
+                            .Callback(() => session.MissionEnded = lastBatch).ReturnsAsync(true);
         _mockMissionStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionStats, bool>>())).Returns((MissionStats)null);
 
         await _subject.FinaliseKilledSessionAsync("session-123");

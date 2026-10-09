@@ -160,15 +160,17 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
         }
     }
 
-    public override async Task FindAndUpdate(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update)
+    public override async Task<bool> FindAndUpdate(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update)
     {
-        await base.FindAndUpdate(filterExpression, update);
+        var matched = await base.FindAndUpdate(filterExpression, update);
         Refresh();
         var match = GetSingle(filterExpression.Compile());
         if (match is not null)
         {
             DataUpdateEvent(match.Id);
         }
+
+        return matched;
     }
 
     public override async Task Replace(T item)

@@ -26,7 +26,7 @@ public interface IMongoCollection<T> where T : MongoObject
     Task UpdateAsync(FilterDefinition<T> filter, UpdateDefinition<T> update);
     Task UpdateManyAsync(Expression<Func<T, bool>> predicate, UpdateDefinition<T> update);
     Task UpsertAsync(FilterDefinition<T> filter, UpdateDefinition<T> update);
-    Task FindAndUpdateAsync(FilterDefinition<T> filter, UpdateDefinition<T> update);
+    Task<T> FindAndUpdateAsync(FilterDefinition<T> filter, UpdateDefinition<T> update);
     Task ReplaceAsync(string id, T value);
     Task DeleteAsync(string id);
     Task DeleteManyAsync(Expression<Func<T, bool>> predicate);
@@ -78,7 +78,6 @@ public class MongoCollection<T>(IMongoDatabase database, string collectionName) 
 
     public T GetSingle(string id)
     {
-        // TODO: Make all this async
         return GetCollection().FindSync(Builders<T>.Filter.Eq(x => x.Id, id)).FirstOrDefault();
     }
 
@@ -110,10 +109,12 @@ public class MongoCollection<T>(IMongoDatabase database, string collectionName) 
 
     public async Task UpdateManyAsync(Expression<Func<T, bool>> predicate, UpdateDefinition<T> update)
     {
-        // Getting ids by the filter predicate is necessary to cover filtering items by a default model value
-        // (e.g. Role order default 0, may not be stored in document, and is thus not filterable)
-        var ids = Get(predicate.Compile()).Select(x => x.Id);
-        await GetCollection().UpdateManyAsync(Builders<T>.Filter.In(x => x.Id, ids), update);
+        await GetCollection().UpdateManyAsync(Builders<T>.Filter.In(x => x.Id, IdsMatchingIncludingUnstoredDefaults(predicate)), update);
+    }
+
+    private IEnumerable<string> IdsMatchingIncludingUnstoredDefaults(Expression<Func<T, bool>> predicate)
+    {
+        return Get(predicate.Compile()).Select(x => x.Id);
     }
 
     public async Task UpsertAsync(FilterDefinition<T> filter, UpdateDefinition<T> update)
@@ -121,9 +122,9 @@ public class MongoCollection<T>(IMongoDatabase database, string collectionName) 
         await GetCollection().UpdateOneAsync(filter, update, new UpdateOptions { IsUpsert = true });
     }
 
-    public async Task FindAndUpdateAsync(FilterDefinition<T> filter, UpdateDefinition<T> update)
+    public Task<T> FindAndUpdateAsync(FilterDefinition<T> filter, UpdateDefinition<T> update)
     {
-        await GetCollection().FindOneAndUpdateAsync(filter, update);
+        return GetCollection().FindOneAndUpdateAsync(filter, update);
     }
 
     public async Task ReplaceAsync(string id, T value)
@@ -138,9 +139,7 @@ public class MongoCollection<T>(IMongoDatabase database, string collectionName) 
 
     public async Task DeleteManyAsync(Expression<Func<T, bool>> predicate)
     {
-        // This is necessary for filtering items by a default model value (e.g Role order default 0, may not be stored in document)
-        var ids = Get(predicate.Compile()).Select(x => x.Id);
-        await GetCollection().DeleteManyAsync(Builders<T>.Filter.In(x => x.Id, ids));
+        await GetCollection().DeleteManyAsync(Builders<T>.Filter.In(x => x.Id, IdsMatchingIncludingUnstoredDefaults(predicate)));
     }
 
     public async Task AssertCollectionExistsAsync()

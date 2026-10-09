@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using MongoDB.Bson;
@@ -45,20 +46,26 @@ public class MissionStatsServiceFinalisationTests
         };
     }
 
-    private void SetupReads(MissionSession beforeClaim, MissionSession afterClaim)
+    private void SetupClaims(params bool[] results)
     {
-        _sessions.SetupSequence(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>()))
-                 .Returns(beforeClaim)
-                 .Returns(afterClaim);
+        var sequence = _sessions.SetupSequence(x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()));
+        foreach (var result in results)
+        {
+            sequence = sequence.ReturnsAsync(result);
+        }
+    }
+
+    private void SetupRunningSession(DateTime lastBatch)
+    {
+        _sessions.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>()))
+                 .Returns(() => RunningSession(lastBatch));
     }
 
     [Fact]
     public async Task FinaliseKilledSessionAsync_WhenAnotherPathClaimedTheSessionFirst_DoesNotBackfillOrComputeFps()
     {
-        var lastBatch = new DateTime(2026, 10, 7, 20, 30, 0, DateTimeKind.Utc);
-        var claimedByOther = RunningSession(lastBatch);
-        claimedByOther.MissionEnded = lastBatch.AddSeconds(-5);
-        SetupReads(RunningSession(lastBatch), claimedByOther);
+        SetupRunningSession(new DateTime(2026, 10, 7, 20, 30, 0, DateTimeKind.Utc));
+        SetupClaims(false);
 
         await _subject.FinaliseKilledSessionAsync("session-1");
 
@@ -67,16 +74,44 @@ public class MissionStatsServiceFinalisationTests
     }
 
     [Fact]
-    public async Task FinaliseKilledSessionAsync_WithSubMillisecondLastBatch_WinsTheClaimAfterMongoTruncatesTheTimestamp()
+    public async Task FinaliseKilledSessionAsync_WhenTwoCallersComputeTheSameEndTimestamp_OnlyTheClaimWinnerBackfills()
     {
-        var lastBatch = new DateTime(2026, 10, 7, 20, 30, 0, DateTimeKind.Utc).AddTicks(1234);
-        var storedByMongo = RunningSession(lastBatch);
-        storedByMongo.MissionEnded = new DateTime(2026, 10, 7, 20, 30, 0, DateTimeKind.Utc);
-        SetupReads(RunningSession(lastBatch), storedByMongo);
+        var lastBatch = new DateTime(2026, 10, 7, 20, 30, 0, DateTimeKind.Utc);
+        var stored = RunningSession(lastBatch);
+        var reads = 0;
+        TaskCompletionSource bothCallersHaveRead = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        _sessions.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>()))
+                 .Returns(() =>
+                     {
+                         if (Interlocked.Increment(ref reads) == 2)
+                         {
+                             bothCallersHaveRead.SetResult();
+                         }
 
-        await _subject.FinaliseKilledSessionAsync("session-1");
+                         var copy = RunningSession(lastBatch);
+                         copy.MissionEnded = stored.MissionEnded;
+                         return copy;
+                     }
+                 );
+        _sessions.Setup(x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()))
+                 .Returns(async () =>
+                     {
+                         await bothCallersHaveRead.Task;
+                         lock (stored)
+                         {
+                             if (stored.MissionEnded is not null)
+                             {
+                                 return false;
+                             }
 
-        _sessions.Verify(x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()), Times.Once);
+                             stored.MissionEnded = lastBatch;
+                             return true;
+                         }
+                     }
+                 );
+
+        await Task.WhenAll(_subject.FinaliseKilledSessionAsync("session-1"), _subject.FinaliseKilledSessionAsync("session-1"));
+
         _rawEventStore.Verify(x => x.StoreAsync("session-1", It.IsAny<List<BsonDocument>>()), Times.Once);
         _performance.Verify(x => x.ComputeFinalFpsStatsAsync("session-1"), Times.Once);
     }

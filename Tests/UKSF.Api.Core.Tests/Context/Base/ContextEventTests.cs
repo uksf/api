@@ -187,7 +187,7 @@ public class ContextEventTests
     public async Task Should_not_fire_event_for_find_and_update_when_no_item_matches()
     {
         _mockDataCollection.Setup(x => x.FindAndUpdateAsync(It.IsAny<FilterDefinition<DomainTestModel>>(), It.IsAny<UpdateDefinition<DomainTestModel>>()))
-                           .Returns(Task.CompletedTask);
+                           .ReturnsAsync((DomainTestModel)null);
 
         await _testContext.FindAndUpdate(x => x.Name == "nonexistent", Builders<DomainTestModel>.Update.Set(x => x.Name, "2"));
 
@@ -200,7 +200,7 @@ public class ContextEventTests
         EventModel subject = null;
 
         _mockDataCollection.Setup(x => x.FindAndUpdateAsync(It.IsAny<FilterDefinition<DomainTestModel>>(), It.IsAny<UpdateDefinition<DomainTestModel>>()))
-                           .Returns(Task.CompletedTask);
+                           .ReturnsAsync(new DomainTestModel { Id = _id1 });
         _mockEventBus.Setup(x => x.Send(It.IsAny<EventModel>())).Callback<EventModel>(dataEventModel => subject = dataEventModel);
 
         await _testContext.FindAndUpdate(x => x.Id == _id1, Builders<DomainTestModel>.Update.Set(x => x.Name, "2"));
