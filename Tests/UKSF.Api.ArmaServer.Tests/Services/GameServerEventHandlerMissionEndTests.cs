@@ -16,12 +16,13 @@ public class GameServerEventHandlerMissionEndTests
 {
     private readonly Mock<IMissionStatsService> _missionStats = new();
     private readonly Mock<IUksfLogger> _logger = new();
+    private readonly Mock<IGameServerProcessManager> _processManager = new();
     private readonly GameServerEventHandler _sut;
 
     public GameServerEventHandlerMissionEndTests()
     {
         _sut = new GameServerEventHandler(
-            Mock.Of<IGameServerProcessManager>(),
+            _processManager.Object,
             Mock.Of<IGameServersContext>(),
             Mock.Of<IPublishEndpoint>(),
             _missionStats.Object,
@@ -86,6 +87,7 @@ public class GameServerEventHandlerMissionEndTests
         await Send(new Dictionary<string, object> { { "saveOutcome", "delivered" } }, "shutdown_stopping");
 
         _logger.Verify(x => x.LogError(It.IsAny<string>()), Times.Never);
+        _processManager.Verify(x => x.HandleStopStoppingAsync(2303), Times.Once);
     }
 
     [Fact]
