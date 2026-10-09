@@ -54,12 +54,15 @@ public class BuildStepPatchDependencies : FileBuildStep
         StepLogger.LogSurround("\nApplying dependency patches...");
         var before = SnapshotPbos();
         await RunProcess(AddonsPath, _patcher, $"apply {args}", _patcherTimeout, true);
-        InvalidateSignatures(before);
         StepLogger.LogSurround("Applied dependency patches");
 
         StepLogger.LogSurround("\nVerifying dependency patches...");
         await RunProcess(AddonsPath, _patcher, $"verify {args}", _patcherTimeout, true);
         StepLogger.LogSurround("Verified dependency patches");
+
+        StepLogger.LogSurround("\nRemoving signatures of patched PBOs...");
+        var removed = InvalidateSignatures(before);
+        StepLogger.LogSurround($"Removed {removed} signatures");
     }
 
     internal Dictionary<string, (long Length, DateTime WriteTime)> SnapshotPbos()
@@ -67,10 +70,11 @@ public class BuildStepPatchDependencies : FileBuildStep
         return Directory.GetFiles(AddonsPath, "*.pbo").ToDictionary(x => x, x => (new FileInfo(x).Length, File.GetLastWriteTimeUtc(x)));
     }
 
-    // The signing step finds changed PBOs by timestamp alone, so a signature dated after the patch would survive.
-    // Deleting the signatures of every PBO the patcher wrote makes the signing step sign them.
-    internal void InvalidateSignatures(Dictionary<string, (long Length, DateTime WriteTime)> before)
+    // A PBO newer than its signature makes the signing step re-sign every dependency with a new key, and a
+    // signature dated after the patch would survive. With the signature gone, it signs only the patched PBOs.
+    internal int InvalidateSignatures(Dictionary<string, (long Length, DateTime WriteTime)> before)
     {
+        var removed = 0;
         foreach (var (pbo, now) in SnapshotPbos())
         {
             if (before.TryGetValue(pbo, out var was) && was == now)
@@ -82,7 +86,10 @@ public class BuildStepPatchDependencies : FileBuildStep
             {
                 File.Delete(bisign);
                 StepLogger.Log($"Removed {Path.GetFileName(bisign)}: {Path.GetFileName(pbo)} was patched");
+                removed++;
             }
         }
+
+        return removed;
     }
 }

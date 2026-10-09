@@ -143,7 +143,7 @@ public class BuildStepPatchDependenciesTests : IDisposable
         var step = CreateStep();
         var before = step.SnapshotPbos();
         File.WriteAllBytes(patched, [1, 2]);
-        step.InvalidateSignatures(before);
+        step.InvalidateSignatures(before).Should().Be(1);
 
         File.Exists($"{patched}.uksf_dependencies_dev.bisign").Should().BeFalse();
         File.Exists($"{untouched}.uksf_dependencies_dev.bisign").Should().BeTrue();
