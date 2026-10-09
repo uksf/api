@@ -32,12 +32,6 @@ public class GameServerEventHandler(
 {
     public async Task HandleEventAsync(GameServerEvent gameServerEvent)
     {
-        // Synthetic launches (config export, dev run) reuse the production -apiUrl pipeline.
-        // server_status and the shutdown_* events reference a gameServers row keyed by apiPort
-        // and synthetic ports never have one — gate ONLY those off. Other event types
-        // (mission_stats, performance, persistence_save, mission lifecycle, player presence)
-        // are content-driven and have no port dependency, so they should still flow through
-        // for synthetic runs (e.g. dev-test-server e2e validation of the persistence pipeline).
         var isSynthetic = SyntheticApiPorts.IsSynthetic(gameServerEvent.ApiPort);
 
         try
@@ -54,7 +48,7 @@ public class GameServerEventHandler(
                     if (!isSynthetic) await processManager.HandleStopSavingAsync(gameServerEvent.ApiPort);
                     break;
                 case "shutdown_stopping":
-                case "shutdown_complete": // legacy alias — remove once the modpack update is fully deployed
+                case "shutdown_complete":
                     if (!isSynthetic) await processManager.HandleStopStoppingAsync(gameServerEvent.ApiPort);
                     break;
                 case "mission_stats":       await HandleMissionStatsEvent(gameServerEvent.Data); break;
@@ -93,9 +87,6 @@ public class GameServerEventHandler(
             return;
         }
 
-        // Each event in the buffer is a parsed hashmap (List<object> pair-list normalised
-        // to Dictionary<string,object>). Re-serialise to JSON for the BsonDocument-based
-        // batch consumer, which already expects JSON strings.
         var events = new List<string>();
         if (data.TryGetValue("events", out var eventsObj) && eventsObj is List<object> eventList)
         {
@@ -107,13 +98,7 @@ public class GameServerEventHandler(
         }
 
         var receivedAt = DateTime.UtcNow;
-        var enqueueAt = receivedAt;
-        if (data.TryGetValue("enqueueAt", out var enqueueAtValue) &&
-            enqueueAtValue is string enqueueAtString &&
-            DateTime.TryParse(enqueueAtString, null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsedEnqueue))
-        {
-            enqueueAt = parsedEnqueue;
-        }
+        var enqueueAt = ParseEnqueueAt(data) ?? receivedAt;
 
         await publishEndpoint.Publish(
             new ProcessMissionStatsBatch
@@ -253,12 +238,20 @@ public class GameServerEventHandler(
 
         if (string.IsNullOrEmpty(key) || sessionData is null)
         {
-            logger.LogWarning($"persistence_save event missing key or data (key='{key}', hasData={sessionData is not null})");
-            return;
+            throw new PersistenceSaveRejectedException($"persistence_save event missing key or data (key='{key}', hasData={sessionData is not null})");
         }
 
-        await persistenceSessionsService.HandleSaveAsync(key, sessionId, sessionData);
+        await persistenceSessionsService.HandleSaveAsync(key, sessionId, sessionData, ParseEnqueueAt(data));
         logger.LogInfo($"persistence_save handled: key='{key}'");
+    }
+
+    private static DateTime? ParseEnqueueAt(Dictionary<string, object> data)
+    {
+        return data.TryGetValue("enqueueAt", out var value) &&
+               value is string text &&
+               DateTime.TryParse(text, null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed)
+            ? parsed
+            : null;
     }
 
     private static List<int> ToIntList(object value)

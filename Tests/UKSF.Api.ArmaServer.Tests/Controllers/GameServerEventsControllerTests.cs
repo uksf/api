@@ -117,4 +117,39 @@ public class GameServerEventsControllerTests
         result.Should().BeOfType<BadRequestObjectResult>();
         _mockEventHandler.VerifyNoOtherCalls();
     }
+
+    [Fact]
+    public async Task ReceiveEvent_RejectedSaveFromAcknowledgingExtension_Returns422()
+    {
+        SetRequest(@"[""persistence_save"",[[""key"",""k""]]]", 2303);
+        _sut.ControllerContext.HttpContext.Request.Headers["X-Uksf-Protocol"] = "2";
+        _mockEventHandler.Setup(x => x.HandleEventAsync(It.IsAny<GameServerEvent>())).ThrowsAsync(new PersistenceSaveRejectedException("empty save"));
+
+        var result = await _sut.ReceiveEvent();
+
+        result.Should().BeOfType<UnprocessableEntityObjectResult>().Which.Value.Should().Be("empty save");
+    }
+
+    [Fact]
+    public async Task ReceiveEvent_RejectedSaveFromLegacyExtension_Returns200SoTheQueueIsNotBlocked()
+    {
+        SetRequest(@"[""persistence_save"",[[""key"",""k""]]]", 2303);
+        _mockEventHandler.Setup(x => x.HandleEventAsync(It.IsAny<GameServerEvent>())).ThrowsAsync(new PersistenceSaveRejectedException("empty save"));
+
+        var result = await _sut.ReceiveEvent();
+
+        result.Should().BeOfType<OkResult>();
+    }
+
+    [Fact]
+    public async Task ReceiveEvent_SaveStorageFailure_Propagates()
+    {
+        SetRequest(@"[""persistence_save"",[[""key"",""k""]]]", 2303);
+        _sut.ControllerContext.HttpContext.Request.Headers["X-Uksf-Protocol"] = "2";
+        _mockEventHandler.Setup(x => x.HandleEventAsync(It.IsAny<GameServerEvent>())).ThrowsAsync(new TimeoutException("mongo down"));
+
+        var act = () => _sut.ReceiveEvent();
+
+        await act.Should().ThrowAsync<TimeoutException>();
+    }
 }

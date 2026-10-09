@@ -45,6 +45,7 @@ public static class ApiArmaServerExtensions
                            .AddQueries()
                            .AddActions()
                            .AddHostedService<MissionStatsIndexes>()
+                           .AddHostedService<PersistenceIndexes>()
                            .AddHostedService<NpcIndexes>()
                            .AddHostedService<NpcVoiceReconciler>()
                            .AddHostedService<NpcMoodGenWorker>()

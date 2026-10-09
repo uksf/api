@@ -17,12 +17,6 @@ using static UKSF.Api.ArmaServer.Converters.PersistenceConversionHelpers;
 
 namespace UKSF.Api.ArmaServer.Tests.E2E;
 
-/// <summary>
-/// Stage 2 of the e2e harness: consume the captured save payload, run it through
-/// the API parse + persistence pipeline, then emit the equivalent reload payload
-/// (DomainPersistenceSession → SQF str via SqfNotationWriter) to disk for stage 3
-/// to consume in a second synthetic Arma run.
-/// </summary>
 public class PersistenceReloadPayloadProducer
 {
     private const string CapturePath = @"D:\Arma\persistence-e2e\captured\stage1.json";
@@ -50,16 +44,15 @@ public class PersistenceReloadPayloadProducer
 
         DomainPersistenceSession captured = null;
         var ctx = new Mock<IPersistenceSessionsContext>();
-        ctx.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
-        ctx.Setup(x => x.Add(It.IsAny<DomainPersistenceSession>())).Callback<DomainPersistenceSession>(s => captured = s).Returns(Task.CompletedTask);
-        ctx.Setup(x => x.Replace(It.IsAny<DomainPersistenceSession>())).Callback<DomainPersistenceSession>(s => captured = s).Returns(Task.CompletedTask);
+        ctx.Setup(x => x.SaveIfNewer(It.IsAny<DomainPersistenceSession>(), It.IsAny<string>()))
+           .Callback<DomainPersistenceSession, string>((s, _) => captured = s)
+           .ReturnsAsync(true);
 
         var service = new PersistenceSessionsService(ctx.Object, new Mock<IUksfLogger>().Object);
         var sessionDict = ToDict(SqfNotationParser.ParseAndNormalize(payload));
         await service.HandleSaveAsync(key, sessionId, sessionDict);
         captured.Should().NotBeNull();
 
-        // Emit the canonical SQF str payload the load endpoint will ship to the game.
         var reloadHashmap = PersistenceConverter.ToHashmap(captured!);
         var reloadSqf = SqfNotationWriter.Write(reloadHashmap);
 
