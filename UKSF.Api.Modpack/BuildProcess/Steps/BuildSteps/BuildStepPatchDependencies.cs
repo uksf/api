@@ -43,6 +43,7 @@ public class BuildStepPatchDependencies : FileBuildStep
 
         Directory.CreateDirectory(StatePath);
         Directory.CreateDirectory(PatchesPath);
+        StepLogger.Log($"Using {_patcher}");
         return Task.CompletedTask;
     }
 
