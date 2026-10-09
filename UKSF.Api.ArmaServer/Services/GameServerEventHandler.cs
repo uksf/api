@@ -32,30 +32,24 @@ public class GameServerEventHandler(
 {
     public async Task HandleEventAsync(GameServerEvent gameServerEvent)
     {
-        // Synthetic launches (config export, dev run) reuse the production -apiUrl pipeline.
-        // server_status and the shutdown_* events reference a gameServers row keyed by apiPort
-        // and synthetic ports never have one — gate ONLY those off. Other event types
-        // (mission_stats, performance, persistence_save, mission lifecycle, player presence)
-        // are content-driven and have no port dependency, so they should still flow through
-        // for synthetic runs (e.g. dev-test-server e2e validation of the persistence pipeline).
-        var isSynthetic = SyntheticApiPorts.IsSynthetic(gameServerEvent.ApiPort);
+        var hasNoGameServerRow = SyntheticApiPorts.IsSynthetic(gameServerEvent.ApiPort);
 
         try
         {
             switch (gameServerEvent.Type)
             {
                 case "server_status":
-                    if (!isSynthetic) await processManager.HandleServerStatusAsync(gameServerEvent.ApiPort, gameServerEvent.Data);
+                    if (!hasNoGameServerRow) await processManager.HandleServerStatusAsync(gameServerEvent.ApiPort, gameServerEvent.Data);
                     break;
                 case "shutdown_ending":
-                    if (!isSynthetic) await processManager.HandleStopEndingAsync(gameServerEvent.ApiPort);
+                    if (!hasNoGameServerRow) await processManager.HandleStopEndingAsync(gameServerEvent.ApiPort);
                     break;
                 case "shutdown_saving":
-                    if (!isSynthetic) await processManager.HandleStopSavingAsync(gameServerEvent.ApiPort);
+                    if (!hasNoGameServerRow) await processManager.HandleStopSavingAsync(gameServerEvent.ApiPort);
                     break;
                 case "shutdown_stopping":
-                case "shutdown_complete": // legacy alias — remove once the modpack update is fully deployed
-                    if (!isSynthetic) await processManager.HandleStopStoppingAsync(gameServerEvent.ApiPort);
+                case "shutdown_complete":
+                    if (!hasNoGameServerRow) await processManager.HandleStopStoppingAsync(gameServerEvent.ApiPort);
                     break;
                 case "mission_stats":       await HandleMissionStatsEvent(gameServerEvent.Data); break;
                 case "mission_started":     await HandleMissionLifecycleEvent(gameServerEvent.ApiPort, gameServerEvent.Data, true); break;
@@ -93,9 +87,6 @@ public class GameServerEventHandler(
             return;
         }
 
-        // Each event in the buffer is a parsed hashmap (List<object> pair-list normalised
-        // to Dictionary<string,object>). Re-serialise to JSON for the BsonDocument-based
-        // batch consumer, which already expects JSON strings.
         var events = new List<string>();
         if (data.TryGetValue("events", out var eventsObj) && eventsObj is List<object> eventList)
         {
@@ -107,13 +98,7 @@ public class GameServerEventHandler(
         }
 
         var receivedAt = DateTime.UtcNow;
-        var enqueueAt = receivedAt;
-        if (data.TryGetValue("enqueueAt", out var enqueueAtValue) &&
-            enqueueAtValue is string enqueueAtString &&
-            DateTime.TryParse(enqueueAtString, null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsedEnqueue))
-        {
-            enqueueAt = parsedEnqueue;
-        }
+        var enqueueAt = EnqueueTimeOr(data, receivedAt);
 
         await publishEndpoint.Publish(
             new ProcessMissionStatsBatch
@@ -172,10 +157,17 @@ public class GameServerEventHandler(
         else
         {
             var duration = data.TryGetValue("duration", out var durationValue) && double.TryParse(durationValue?.ToString(), out var parsed) ? parsed : 0;
-            await missionStatsService.HandleMissionEndedAsync(sessionId, duration, now);
+            await missionStatsService.HandleMissionEndedAsync(sessionId, duration, EnqueueTimeOr(data, now));
             await npcBrokerService.HandleMissionEndedAsync(sessionId);
         }
     }
+
+    private static DateTime EnqueueTimeOr(Dictionary<string, object> data, DateTime fallback) =>
+        data.TryGetValue("enqueueAt", out var value) &&
+        value is string text &&
+        DateTime.TryParse(text, null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed)
+            ? parsed
+            : fallback;
 
     private async Task HandlePlayerPresenceEvent(Dictionary<string, object> data, bool isConnected)
     {
