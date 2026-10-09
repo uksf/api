@@ -21,8 +21,7 @@ public static class VerifyModeServices
         typeof(NpcWarmKeeper),
         typeof(NpcTraceMaintenance),
         typeof(NpcIndexes),
-        typeof(MissionStatsIndexes),
-        typeof(PersistenceIndexes)
+        typeof(MissionStatsIndexes)
     ];
 
     public static string DatabaseDescription(IMongoDatabase database)

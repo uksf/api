@@ -108,13 +108,27 @@ public class GameServerEventsControllerTests
     }
 
     [Fact]
-    public async Task ReceiveEvent_RejectsMalformedSqf()
+    public async Task ReceiveEvent_MalformedSqfFromLegacyExtension_Returns200SoTheQueueIsNotBlocked()
     {
-        SetRequest("not valid sqf", 2303);
+        SetRequest(@"[""persistence_save"",[[""key"",""k""]", 2303);
 
         var result = await _sut.ReceiveEvent();
 
-        result.Should().BeOfType<BadRequestObjectResult>();
+        result.Should().BeOfType<OkResult>();
+        _mockEventHandler.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [InlineData(@"[""persistence_save"",[[""key"",""k""]")]
+    [InlineData(@"[""persistence_save""]")]
+    public async Task ReceiveEvent_MalformedSqfFromAcknowledgingExtension_Returns422(string body)
+    {
+        SetRequest(body, 2303);
+        _sut.ControllerContext.HttpContext.Request.Headers["X-Uksf-Protocol"] = "2";
+
+        var result = await _sut.ReceiveEvent();
+
+        result.Should().BeOfType<UnprocessableEntityObjectResult>();
         _mockEventHandler.VerifyNoOtherCalls();
     }
 

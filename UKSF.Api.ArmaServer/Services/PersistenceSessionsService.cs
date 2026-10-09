@@ -17,6 +17,8 @@ public class PersistenceSaveRejectedException(string message, Exception innerExc
 
 public class PersistenceSessionsService(IPersistenceSessionsContext context, IUksfLogger logger) : IPersistenceSessionsService
 {
+    private static readonly string[] ListFields = ["objects", "deletedObjects", "dateTime", "mapMarkers"];
+
     public DomainPersistenceSession Load(string key)
     {
         return context.GetSingle(x => x.Key == key);
@@ -55,18 +57,30 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
                 throw new PersistenceSaveRejectedException($"persistence_save data was empty for key '{key}'");
             }
 
+            RejectMistypedFields(key, rawDict);
             session = PersistenceConverter.FromHashmap(rawDict);
         }
-        catch (FormatException exception)
+        catch (Exception exception) when (exception is not PersistenceSaveRejectedException)
         {
             throw new PersistenceSaveRejectedException($"Failed to deserialize persistence session for key '{key}'", exception);
         }
 
-        if (session is null)
+        await SaveAsync(key, session, sessionId, enqueuedAt);
+    }
+
+    private static void RejectMistypedFields(string key, Dictionary<string, object> rawDict)
+    {
+        foreach (var field in ListFields)
         {
-            throw new PersistenceSaveRejectedException($"Failed to deserialize persistence session for key '{key}'");
+            if (rawDict.TryGetValue(field, out var value) && value is not List<object> and not object[])
+            {
+                throw new PersistenceSaveRejectedException($"persistence_save field '{field}' is not a list for key '{key}'");
+            }
         }
 
-        await SaveAsync(key, session, sessionId, enqueuedAt);
+        if (rawDict.TryGetValue("players", out var players) && players is not Dictionary<string, object> and not List<object>)
+        {
+            throw new PersistenceSaveRejectedException($"persistence_save field 'players' is not a hashmap for key '{key}'");
+        }
     }
 }

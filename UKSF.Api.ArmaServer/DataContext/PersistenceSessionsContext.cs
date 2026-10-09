@@ -10,11 +10,17 @@ public interface IPersistenceSessionsContext : IMongoContext<DomainPersistenceSe
     Task<bool> SaveIfNewer(DomainPersistenceSession session, string sessionId);
 }
 
-public class PersistenceSessionsContext(IMongoCollectionFactory mongoCollectionFactory)
-    : MongoContextBase<DomainPersistenceSession>(mongoCollectionFactory, "persistenceSessions"), IPersistenceSessionsContext
+public class PersistenceSessionsContext(IMongoCollectionFactory mongoCollectionFactory, IMongoDatabase database)
+    : MongoContextBase<DomainPersistenceSession>(mongoCollectionFactory, Collection), IPersistenceSessionsContext
 {
+    private const string Collection = "persistenceSessions";
+
+    private bool _keyIndexReady;
+
     public async Task<bool> SaveIfNewer(DomainPersistenceSession session, string sessionId)
     {
+        await EnsureUniqueKeyIndex();
+
         var key = session.Key;
         var enqueuedAt = session.SaveEnqueuedAt;
         Expression<Func<DomainPersistenceSession, bool>> filter = enqueuedAt is null
@@ -27,8 +33,12 @@ public class PersistenceSessionsContext(IMongoCollectionFactory mongoCollectionF
                                                        .Set(x => x.Markers, session.Markers)
                                                        .Set(x => x.ArmaDateTime, session.ArmaDateTime)
                                                        .Set(x => x.CustomData, session.CustomData)
-                                                       .Set(x => x.SavedAt, session.SavedAt)
-                                                       .Set(x => x.SaveEnqueuedAt, enqueuedAt);
+                                                       .Set(x => x.SavedAt, session.SavedAt);
+        if (enqueuedAt is not null)
+        {
+            update = update.Set(x => x.SaveEnqueuedAt, enqueuedAt);
+        }
+
         if (!string.IsNullOrEmpty(sessionId))
         {
             update = update.AddToSet(x => x.MissionSessionIds, sessionId);
@@ -43,5 +53,20 @@ public class PersistenceSessionsContext(IMongoCollectionFactory mongoCollectionF
         {
             return await FindAndUpdate(filter, update);
         }
+    }
+
+    private async Task EnsureUniqueKeyIndex()
+    {
+        if (_keyIndexReady)
+        {
+            return;
+        }
+
+        var model = new CreateIndexModel<DomainPersistenceSession>(
+            Builders<DomainPersistenceSession>.IndexKeys.Ascending(x => x.Key),
+            new CreateIndexOptions { Name = "ix_key", Unique = true }
+        );
+        await database.GetCollection<DomainPersistenceSession>(Collection).Indexes.CreateOneAsync(model);
+        _keyIndexReady = true;
     }
 }

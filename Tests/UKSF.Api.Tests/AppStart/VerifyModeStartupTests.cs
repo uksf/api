@@ -42,8 +42,7 @@ public class VerifyModeStartupTests
         typeof(NpcWarmKeeper),
         typeof(NpcTraceMaintenance),
         typeof(NpcIndexes),
-        typeof(MissionStatsIndexes),
-        typeof(PersistenceIndexes)
+        typeof(MissionStatsIndexes)
     ];
 
     private static readonly Type[] AllowedInVerifyMode = [typeof(NpcTraceWriter)];

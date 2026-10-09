@@ -43,7 +43,8 @@ public class GameServerEventsController(IGameServerEventHandler eventHandler, IS
             var parsed = SqfNotationParser.ParseAndNormalize(body);
             if (parsed is not List<object> envelope || envelope.Count != 2 || envelope[0] is not string parsedType)
             {
-                return BadRequest("expected [type, data] envelope");
+                logger.LogError($"SQF event body is not a [type, data] envelope: {body[..Math.Min(body.Length, 200)]}");
+                return Undeliverable("expected [type, data] envelope");
             }
 
             type = parsedType;
@@ -52,7 +53,7 @@ public class GameServerEventsController(IGameServerEventHandler eventHandler, IS
         catch (FormatException exception)
         {
             logger.LogError($"Failed to parse SQF event body: {body[..Math.Min(body.Length, 200)]}", exception);
-            return BadRequest("malformed SQF body");
+            return Undeliverable("malformed SQF body");
         }
 
         if (!string.IsNullOrEmpty(enqueueAt))
@@ -78,13 +79,9 @@ public class GameServerEventsController(IGameServerEventHandler eventHandler, IS
             {
                 await eventHandler.HandleEventAsync(gameServerEvent);
             }
-            catch (PersistenceSaveRejectedException exception) when (Request.Headers["X-Uksf-Protocol"] == "2")
+            catch (PersistenceSaveRejectedException exception)
             {
-                return UnprocessableEntity(exception.Message);
-            }
-            catch (PersistenceSaveRejectedException)
-            {
-                return Ok();
+                return Undeliverable(exception.Message);
             }
 
             return Ok();
@@ -106,5 +103,10 @@ public class GameServerEventsController(IGameServerEventHandler eventHandler, IS
         );
 
         return Accepted();
+    }
+
+    private IActionResult Undeliverable(string reason)
+    {
+        return Request.Headers["X-Uksf-Protocol"] == "2" ? UnprocessableEntity(reason) : Ok();
     }
 }

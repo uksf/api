@@ -27,8 +27,10 @@ public sealed class PersistenceSaveMongoTests : IDisposable
     public PersistenceSaveMongoTests()
     {
         _database = new MongoClient(_runner.ConnectionString).GetDatabase($"persistence-{ObjectId.GenerateNewId()}");
-        PersistenceIndexes.CreateKeyIndex(_database).GetAwaiter().GetResult();
-        _subject = new PersistenceSessionsService(new PersistenceSessionsContext(new MongoCollectionFactory(_database)), new Mock<IUksfLogger>().Object);
+        _subject = new PersistenceSessionsService(
+            new PersistenceSessionsContext(new MongoCollectionFactory(_database), _database),
+            new Mock<IUksfLogger>().Object
+        );
     }
 
     public void Dispose() => _runner.Dispose();
@@ -37,8 +39,27 @@ public sealed class PersistenceSaveMongoTests : IDisposable
         new()
         {
             DeletedObjects = [marker],
-            Markers = [],
-            CustomData = new Dictionary<string, object> { ["marker"] = marker }
+            Markers =
+            [
+                [
+                    "marker_1", "hd_dot", new List<object>
+                    {
+                        1.5,
+                        2.5,
+                        0.0
+                    }
+                ]
+            ],
+            CustomData = new Dictionary<string, object>
+            {
+                ["marker"] = marker,
+                ["nested"] = new List<object>
+                {
+                    1L,
+                    "two",
+                    new List<object> { true }
+                }
+            }
         };
 
     private List<DomainPersistenceSession> Stored(string key) =>
@@ -94,15 +115,15 @@ public sealed class PersistenceSaveMongoTests : IDisposable
     }
 
     [Fact]
-    public async Task LegacyDocumentWithoutStamp_IsOverwrittenByStampedSave()
+    public async Task LegacyDocumentWithoutStampField_IsOverwrittenByStampedSave()
     {
-        await _database.GetCollection<DomainPersistenceSession>("persistenceSessions")
+        await _database.GetCollection<BsonDocument>("persistenceSessions")
                        .InsertOneAsync(
-                           new DomainPersistenceSession
+                           new BsonDocument
                            {
-                               Key = "k",
-                               DeletedObjects = ["legacy"],
-                               MissionSessionIds = ["old"]
+                               ["key"] = "k",
+                               ["deletedObjects"] = new BsonArray { "legacy" },
+                               ["missionSessionIds"] = new BsonArray { "old" }
                            }
                        );
 
@@ -112,6 +133,57 @@ public sealed class PersistenceSaveMongoTests : IDisposable
         var stored = Stored("k").Should().ContainSingle().Subject;
         stored.DeletedObjects.Should().Equal("stamped");
         stored.MissionSessionIds.Should().Equal("old", "session-a");
+    }
+
+    [Fact]
+    public async Task UnstampedSave_KeepsTheStoredStampSoAnOlderRetryCannotOverwriteIt()
+    {
+        await _subject.SaveAsync("k", Save("stamped"), "session-a", T0.AddMinutes(5));
+        await _subject.SaveAsync("k", Save("unstamped"), "session-a");
+
+        var applied = await _subject.SaveAsync("k", Save("older"), "session-a", T0);
+
+        applied.Should().BeFalse();
+        var stored = Stored("k").Should().ContainSingle().Subject;
+        stored.DeletedObjects.Should().Equal("unstamped");
+        stored.SaveEnqueuedAt.Should().Be(T0.AddMinutes(5));
+    }
+
+    [Fact]
+    public async Task SavedMarkersAndCustomData_RoundTripThroughTheProductionSerializers()
+    {
+        await _subject.SaveAsync("k", Save("first"), "session-a", T0);
+
+        var stored = _subject.Load("k");
+
+        stored.Markers.Should()
+        .BeEquivalentTo(
+            new List<List<object>>
+            {
+                new()
+                {
+                    "marker_1",
+                    "hd_dot",
+                    new List<object>
+                    {
+                        1.5,
+                        2.5,
+                        0.0
+                    }
+                }
+            },
+            o => o.WithStrictOrdering()
+        );
+        stored.CustomData["nested"]
+        .Should()
+        .BeEquivalentTo(
+            new List<object>
+            {
+                1L,
+                "two",
+                new List<object> { true }
+            }
+        );
     }
 
     [Fact]

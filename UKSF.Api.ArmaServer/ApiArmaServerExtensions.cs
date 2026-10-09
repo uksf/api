@@ -24,20 +24,7 @@ public static class ApiArmaServerExtensions
         {
             BsonSerializer.RegisterSerializer(new JsonElementBsonSerializer());
 
-            BsonClassMap.RegisterClassMap<AceMedicalState>(cm =>
-                {
-                    cm.AutoMap();
-                    cm.GetMemberMap(x => x.AdditionalData).SetSerializer(PlainObjectDictionaryBsonSerializer.Instance);
-                }
-            );
-
-            BsonClassMap.RegisterClassMap<DomainPersistenceSession>(cm =>
-                {
-                    cm.AutoMap();
-                    cm.GetMemberMap(x => x.Markers).SetSerializer(PlainObjectNestedListBsonSerializer.Instance);
-                    cm.GetMemberMap(x => x.CustomData).SetSerializer(PlainObjectDictionaryBsonSerializer.Instance);
-                }
-            );
+            PersistenceBsonClassMaps.Register();
 
             return services.AddContexts()
                            .AddServices()
@@ -45,7 +32,6 @@ public static class ApiArmaServerExtensions
                            .AddQueries()
                            .AddActions()
                            .AddHostedService<MissionStatsIndexes>()
-                           .AddHostedService<PersistenceIndexes>()
                            .AddHostedService<NpcIndexes>()
                            .AddHostedService<NpcVoiceReconciler>()
                            .AddHostedService<NpcMoodGenWorker>()
