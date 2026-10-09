@@ -33,6 +33,8 @@ public abstract class GameServerProcessManagerTestBase
         _mockServersClient = new Mock<IServersClient>();
         mockClients.Setup(x => x.All).Returns(_mockServersClient.Object);
         _mockServersHub.Setup(x => x.Clients).Returns(mockClients.Object);
+        _mockHelpers.Setup(x => x.IsOwnedProcessId(It.IsAny<int>())).Returns(true);
+        _mockHelpers.Setup(x => x.IsOwnedApiPort(It.IsAny<int>())).Returns(true);
 
         _sut = new GameServerProcessManager(
             _mockContext.Object,

@@ -119,11 +119,34 @@ public class GameServerHelpersProcessTests
     [InlineData("-name=HC1 -APIURL=\"HTTP://127.0.0.1:5500\"", true)]
     [InlineData("-name=HC1 -apiUrl=\"http://127.0.0.1:5500/\"", false)]
     [InlineData("-name=HC1 -apiUrl=\"http://127.0.0.1:55001\"", false)]
+    [InlineData("-name=HC1 -apiUrl=\"http://localhost:5500\" -client", true)]
+    [InlineData("-apiUrl=\"http://127.0.0.1:5600\" -password=x-apiUrl=http://127.0.0.1:5500 -client", false)]
+    [InlineData("-apiUrl=\"http://127.0.0.1:5500\" -apiUrl=\"http://127.0.0.1:5600\"", false)]
     [InlineData("-name=HC1", false)]
     [InlineData("", false)]
     [InlineData(null, false)]
     public void IsOwnedProcess_MatchesOnlyThisApisUrl(string commandLine, bool expected)
     {
         _sut.IsOwnedProcess(commandLine).Should().Be(expected);
+    }
+
+    [Fact]
+    public void IsOwnedProcessId_IsFalseWhenTheStoredPidNowBelongsToAnotherApi()
+    {
+        Running(Process(1001, "-port=2302 OWNED"), Process(1002, "-port=2402 -apiUrl=\"http://127.0.0.1:5600\""));
+
+        _sut.IsOwnedProcessId(1001).Should().BeTrue();
+        _sut.IsOwnedProcessId(1002).Should().BeFalse();
+        _sut.IsOwnedProcessId(1003).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsOwnedApiPort_MatchesOnlyAnOwnedProcessLaunchedWithThatApiPort()
+    {
+        Running(Process(1001, "-port=2302 -apiport=\"2303\" OWNED"), Process(1002, "-port=2402 -apiport=\"2403\" -apiUrl=\"http://127.0.0.1:5600\""));
+
+        _sut.IsOwnedApiPort(2303).Should().BeTrue();
+        _sut.IsOwnedApiPort(2403).Should().BeFalse();
+        _sut.IsOwnedApiPort(230).Should().BeFalse();
     }
 }

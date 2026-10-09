@@ -118,7 +118,7 @@ public partial class GameServerProcessManager
 
                 if (gameServersContext.Get().Any(s => s.ProcessId is not null))
                 {
-                    continue; // a server was launched during the drain; reconcile it instead of exiting
+                    continue;
                 }
 
                 break;
@@ -198,7 +198,7 @@ public partial class GameServerProcessManager
         logger.LogInfo($"Force-killing server '{server.Name}' after stop watchdog exceeded (phase {server.Status.StopPhase})");
 
         var process = processUtilities.FindProcessById(server.ProcessId!.Value);
-        if (process is { HasExited: false })
+        if (process is { HasExited: false } && gameServerHelpers.IsOwnedProcessId(process.Id))
         {
             process.Kill(true);
         }
@@ -247,7 +247,7 @@ public partial class GameServerProcessManager
             {
                 { StopPhase: not StopPhase.None } => TimeSpan.FromSeconds(1),
                 { Launching: true }               => TimeSpan.FromSeconds(2),
-                _                                  => TimeSpan.FromSeconds(30)
+                _                                 => TimeSpan.FromSeconds(30)
             };
 
             if (interval < minInterval)
