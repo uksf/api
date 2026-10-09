@@ -10,8 +10,7 @@ public class StopPhaseWatchdogTests
 {
     [Theory]
     [InlineData(StopPhase.None, 0, false)]
-    [InlineData(StopPhase.Ending, 14, false)]
-    [InlineData(StopPhase.Ending, 16, true)]
+    [InlineData(StopPhase.Ending, 3600, false)]
     [InlineData(StopPhase.Saving, 3600, false)]
     [InlineData(StopPhase.Delivering, 134, false)]
     [InlineData(StopPhase.Delivering, 136, true)]
@@ -108,7 +107,6 @@ public class StopPhaseWatchdogTests
     }
 
     [Theory]
-    [InlineData(StopPhase.Ending, 15)]
     [InlineData(StopPhase.Delivering, 135)]
     [InlineData(StopPhase.Stopping, 30)]
     public void KillOfferAt_LandsBeforeTheApiForceKills(StopPhase phase, int ceilingSeconds)

@@ -155,6 +155,44 @@ public class GameServersControllerTests
         _mockProcessManager.Verify(x => x.KillServerAsync(gameServer), Times.Once);
     }
 
+    [Theory]
+    [InlineData(StopPhase.Ending)]
+    [InlineData(StopPhase.Saving)]
+    [InlineData(StopPhase.Delivering)]
+    public async Task KillServer_BeforeTheSaveIsStored_WithoutDataLossConfirmation_ThrowsAndDoesNotKill(StopPhase phase)
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "s1",
+            Name = "Test",
+            ProcessId = 1234,
+            Status = new GameServerStatus { StopPhase = phase, KillAllowedAt = DateTime.UtcNow.AddSeconds(-1) }
+        };
+        _mockGameServersService.Setup(x => x.GetServer("s1")).Returns(gameServer);
+
+        var act = () => _sut.KillServer("s1");
+
+        await act.Should().ThrowAsync<BadRequestException>().WithMessage("*persistence data*");
+        _mockProcessManager.Verify(x => x.KillServerAsync(It.IsAny<DomainGameServer>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task KillServer_BeforeTheSaveIsStored_WithDataLossConfirmation_Kills()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "s1",
+            Name = "Test",
+            ProcessId = 1234,
+            Status = new GameServerStatus { StopPhase = StopPhase.Saving, KillAllowedAt = DateTime.UtcNow.AddSeconds(-1) }
+        };
+        _mockGameServersService.Setup(x => x.GetServer("s1")).Returns(gameServer);
+
+        await _sut.KillServer("s1", confirmDataLoss: true);
+
+        _mockProcessManager.Verify(x => x.KillServerAsync(gameServer), Times.Once);
+    }
+
     [Fact]
     public async Task AddServer_ShouldAddServerAndPushAllServersUpdate()
     {

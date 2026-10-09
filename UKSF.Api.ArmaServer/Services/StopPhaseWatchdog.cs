@@ -4,13 +4,11 @@ namespace UKSF.Api.ArmaServer.Services;
 
 public static class StopPhaseWatchdog
 {
-    private static readonly TimeSpan SqfPlayerDrainCap = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan ExtensionSaveDeliveryWindow = TimeSpan.FromSeconds(120);
     private static readonly TimeSpan LegacyFlushThenShutdownDelay = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan MeasuredProcessTeardown = TimeSpan.FromSeconds(4);
     private static readonly TimeSpan PhaseEventMargin = TimeSpan.FromSeconds(15);
 
-    private static readonly TimeSpan EndingCeiling = SqfPlayerDrainCap + TimeSpan.FromSeconds(5);
     private static readonly TimeSpan DeliveringCeiling = ExtensionSaveDeliveryWindow + PhaseEventMargin;
     private static readonly TimeSpan StoppingCeiling = LegacyFlushThenShutdownDelay + MeasuredProcessTeardown + TimeSpan.FromSeconds(11);
     private static readonly TimeSpan BackstopCeiling = TimeSpan.FromSeconds(180);
@@ -32,6 +30,8 @@ public static class StopPhaseWatchdog
             _                    => throw new ArgumentOutOfRangeException(nameof(phase), phase, null)
         };
 
+    public static bool SaveNotYetStored(StopPhase phase) => phase is StopPhase.Ending or StopPhase.Saving or StopPhase.Delivering;
+
     public static bool WatchdogExceeded(GameServerStatus status, DateTime nowUtc)
     {
         if (status.StopPhase == StopPhase.None)
@@ -43,7 +43,7 @@ public static class StopPhaseWatchdog
         {
             TimeSpan? ceiling = status.StopPhase switch
             {
-                StopPhase.Ending     => EndingCeiling,
+                StopPhase.Ending     => null,
                 StopPhase.Saving     => null,
                 StopPhase.Delivering => DeliveringCeiling,
                 StopPhase.Stopping   => StoppingCeiling,

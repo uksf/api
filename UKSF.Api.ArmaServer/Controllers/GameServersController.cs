@@ -113,7 +113,7 @@ public class GameServersController(
 
     [HttpPost("{id}/kill")]
     [Authorize]
-    public async Task KillServer(string id)
+    public async Task KillServer(string id, [FromQuery] bool confirmDataLoss = false)
     {
         var gameServer = gameServersService.GetServer(id);
         if (!gameServer.Status.Launching && !gameServer.Status.Running && gameServer.Status.StopPhase == StopPhase.None)
@@ -126,7 +126,12 @@ public class GameServersController(
             throw new BadRequestException("Server is stopping normally. Kill becomes available if the shutdown takes longer than expected");
         }
 
-        logger.LogAudit($"Game server killed '{gameServer.Name}'");
+        if (StopPhaseWatchdog.SaveNotYetStored(gameServer.Status.StopPhase) && !confirmDataLoss)
+        {
+            throw new BadRequestException("Killing now loses persistence data the API has not stored. Reload the page and confirm the kill");
+        }
+
+        logger.LogAudit($"Game server killed '{gameServer.Name}' in stop phase {gameServer.Status.StopPhase}");
         try
         {
             await processManager.KillServerAsync(gameServer);

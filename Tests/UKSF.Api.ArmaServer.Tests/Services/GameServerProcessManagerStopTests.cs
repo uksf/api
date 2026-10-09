@@ -254,4 +254,22 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
         server.Status.StopPhaseEnteredAt.Should().Be(enteredAt);
         _mockContext.Verify(x => x.Replace(It.IsAny<DomainGameServer>()), Times.Never);
     }
+
+    [Fact]
+    public async Task HandleStopStoppingAsync_AfterDelivering_Advances()
+    {
+        var server = new DomainGameServer
+        {
+            Id = "s1",
+            ApiPort = 2303,
+            Status = new GameServerStatus { StopPhase = StopPhase.Delivering, StopPhaseEnteredAt = DateTime.UtcNow }
+        };
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
+
+        await _sut.HandleStopStoppingAsync(2303);
+
+        server.Status.StopPhase.Should().Be(StopPhase.Stopping);
+        _mockContext.Verify(x => x.Replace(server), Times.Once);
+    }
 }

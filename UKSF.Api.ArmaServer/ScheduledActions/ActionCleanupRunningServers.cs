@@ -35,6 +35,12 @@ public class ActionCleanupRunningServers(
         }
 
         var serverStatuses = await processManager.GetAllServerStatusesAsync();
+        if (serverStatuses.Any(x => x.Status.StopPhase != StopPhase.None))
+        {
+            logger.LogInfo("Skipping running server cleanup while a server is stopping");
+            return;
+        }
+
         var runningServers = serverStatuses.Where(x => x.Status.Running).ToList();
         var populatedServers = runningServers.Where(x => x.Status.Players.Count > 0);
 
