@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.ComponentModel;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core.Processes;
@@ -116,9 +117,10 @@ public partial class GameServerProcessManager
                     }
                 }
 
-                if (gameServersContext.Get().Any(s => s.ProcessId is not null))
+                var serverLaunchedDuringDrain = gameServersContext.Get().Any(s => s.ProcessId is not null);
+                if (serverLaunchedDuringDrain)
                 {
-                    continue; // a server was launched during the drain; reconcile it instead of exiting
+                    continue;
                 }
 
                 break;
@@ -169,19 +171,17 @@ public partial class GameServerProcessManager
                 return;
             }
 
+            var process = processUtilities.FindProcessById(server.ProcessId!.Value);
+            if (process is not { HasExited: false } || !IsServerProcess(server, process))
+            {
+                await HandleProcessGone(server);
+                return;
+            }
+
             if (StopPhaseWatchdog.WatchdogExceeded(server.Status, DateTime.UtcNow))
             {
-                await ForceKillServer(server);
-                return;
+                await ForceKillServer(server, process);
             }
-
-            var process = processUtilities.FindProcessById(server.ProcessId!.Value);
-            if (process is { HasExited: false } && IsServerProcess(server, process))
-            {
-                return;
-            }
-
-            await HandleProcessGone(server);
         }
         catch (Exception ex)
         {
@@ -193,12 +193,11 @@ public partial class GameServerProcessManager
         }
     }
 
-    private async Task ForceKillServer(DomainGameServer server)
+    private async Task ForceKillServer(DomainGameServer server, Process process)
     {
         logger.LogInfo($"Force-killing server '{server.Name}' after stop watchdog exceeded (phase {server.Status.StopPhase})");
 
-        var process = processUtilities.FindProcessById(server.ProcessId!.Value);
-        if (process is { HasExited: false })
+        if (!process.HasExited)
         {
             process.Kill(true);
         }
@@ -248,7 +247,7 @@ public partial class GameServerProcessManager
             {
                 { StopPhase: not StopPhase.None } => TimeSpan.FromSeconds(1),
                 { Launching: true }               => TimeSpan.FromSeconds(2),
-                _                                  => TimeSpan.FromSeconds(30)
+                _                                 => TimeSpan.FromSeconds(30)
             };
 
             if (interval < minInterval)
