@@ -41,6 +41,7 @@ public partial class GameServerProcessManager
 
     private async Task MonitorLoop()
     {
+        var lastInstanceCount = -1;
         try
         {
             while (true)
@@ -57,101 +58,41 @@ public partial class GameServerProcessManager
                     continue;
                 }
 
-                if (serversWithProcess.Count > 0)
+                foreach (var server in serversWithProcess)
                 {
-                    foreach (var server in serversWithProcess)
+                    await CheckServer(server);
+                }
+
+                var instanceCount = await ReconcileOrphansAsync(DateTime.UtcNow);
+                if (instanceCount != lastInstanceCount)
+                {
+                    await serversHub.Clients.All.ReceiveInstanceCount(instanceCount);
+                    lastInstanceCount = instanceCount;
+                }
+
+                if (serversWithProcess.Count == 0 && instanceCount == 0)
+                {
+                    lock (_monitorLock)
                     {
-                        await CheckServer(server);
+                        if (gameServersContext.Get().All(server => server.ProcessId is null))
+                        {
+                            _monitorRunning = false;
+                            return;
+                        }
                     }
 
-                    var interval = CalculateTickInterval(serversWithProcess);
-                    await Task.Delay(interval);
                     continue;
                 }
 
-                var remainingProcesses = GetInstanceCount();
-                if (remainingProcesses == 0)
-                {
-                    await serversHub.Clients.All.ReceiveInstanceCount(0);
-                    break;
-                }
-
-                var orphanStart = DateTime.UtcNow;
-                var lastReportedCount = remainingProcesses;
-                var lastLogAt = orphanStart;
-                var forceKilled = false;
-                logger.LogInfo($"Process monitor: {remainingProcesses} orphaned arma process(es) still running after server state cleared, waiting for exit");
-
-                while (true)
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(2));
-
-                    var currentCount = GetInstanceCount();
-                    if (currentCount != lastReportedCount)
-                    {
-                        await serversHub.Clients.All.ReceiveInstanceCount(currentCount);
-                        lastReportedCount = currentCount;
-                    }
-
-                    if (currentCount == 0)
-                    {
-                        logger.LogInfo($"Process monitor: orphaned arma process(es) exited after {(DateTime.UtcNow - orphanStart).TotalSeconds:F0}s");
-                        break;
-                    }
-
-                    if (!forceKilled && DateTime.UtcNow - orphanStart >= OrphanKillCeiling)
-                    {
-                        logger.LogWarning(
-                            $"Process monitor: {currentCount} orphaned arma process(es) exceeded {OrphanKillCeiling.TotalMinutes:F0}m ceiling, force-killing"
-                        );
-                        KillOrphanedArmaProcesses();
-                        forceKilled = true;
-                    }
-
-                    if (DateTime.UtcNow - lastLogAt >= TimeSpan.FromSeconds(30))
-                    {
-                        logger.LogWarning(
-                            $"Process monitor: {currentCount} orphaned arma process(es) still running after {(DateTime.UtcNow - orphanStart).TotalSeconds:F0}s"
-                        );
-                        lastLogAt = DateTime.UtcNow;
-                    }
-                }
-
-                var serverLaunchedDuringDrain = gameServersContext.Get().Any(s => s.ProcessId is not null);
-                if (serverLaunchedDuringDrain)
-                {
-                    continue;
-                }
-
-                break;
+                await Task.Delay(serversWithProcess.Count > 0 ? CalculateTickInterval(serversWithProcess) : TimeSpan.FromSeconds(2));
             }
         }
         catch (Exception ex)
         {
             logger.LogError("Process monitor loop crashed unexpectedly", ex);
-        }
-        finally
-        {
             lock (_monitorLock)
             {
                 _monitorRunning = false;
-            }
-        }
-    }
-
-    internal void KillOrphanedArmaProcesses()
-    {
-        foreach (var processInfo in gameServerHelpers.GetGameServerArmaProcesses())
-        {
-            var process = processUtilities.FindProcessById(processInfo.ProcessId);
-            if (process is { HasExited: false })
-            {
-                try
-                {
-                    processUtilities.KillProcess(process);
-                }
-                catch (InvalidOperationException) { }
-                catch (Win32Exception) { }
             }
         }
     }
