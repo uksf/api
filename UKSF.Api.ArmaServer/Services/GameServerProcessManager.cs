@@ -27,19 +27,13 @@ public partial class GameServerProcessManager(
 {
     private readonly ConcurrentDictionary<string, GameServerStatus> StatusCache = new();
 
-    // Two independent force-kill ceilings, kept separate on purpose:
-    // OrphanKillCeiling catches a process that died or hung outside any stop; the per-stage
-    // stop watchdog (Ending/Saving/Stopping/StopBackstop) bounds a graceful stop's lifecycle.
-    // Do not merge them (see commit 364f5cc2, hung-engine orphan incident).
+    private static readonly TimeSpan CommandTimeoutUnderServerLock = TimeSpan.FromSeconds(5);
+    private const string SqfShutdownCommandEnvelope = "[\"shutdown\"]";
     private static readonly TimeSpan OrphanKillCeiling = TimeSpan.FromMinutes(5);
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _serverLocks = new();
     private readonly Lock _monitorLock = new();
     private bool _monitorRunning;
 
-    // Guards one DomainGameServer instance per Id only because gameServersContext is a
-    // CachedMongoContext: with USE_MEMORY_DATA_CACHE on, Get()/GetSingle return the same
-    // shared instance every call. If that cache is ever disabled, this lock guards unrelated
-    // per-call instances instead -> lost updates / double-finalise.
     private SemaphoreSlim GetServerLock(string serverId)
     {
         return _serverLocks.GetOrAdd(serverId, _ => new SemaphoreSlim(1, 1));
@@ -86,7 +80,7 @@ public partial class GameServerProcessManager(
             );
 
             server.Status = new GameServerStatus { Launching = true };
-            server.HeadlessClientProcessIds.Clear(); // defensive: don't accumulate onto a stale list from a prior run
+            server.HeadlessClientProcessIds.Clear();
             StatusCache.TryRemove(server.Id, out _);
 
             if (missionName is not null)
@@ -112,6 +106,7 @@ public partial class GameServerProcessManager(
 
             var launchArguments = gameServerHelpers.FormatGameServerLaunchArguments(server);
             server.ProcessId = processUtilities.LaunchManagedProcess(gameServerHelpers.GetGameServerExecutablePath(server), launchArguments);
+            server.ProcessStartedAt = StartTimeOfProcessId(server.ProcessId);
 
             await Task.Delay(TimeSpan.FromMilliseconds(50));
 
@@ -151,7 +146,7 @@ public partial class GameServerProcessManager(
 
             server.Status.StopPhase = StopPhase.Ending;
             server.Status.StopRequestedAt = DateTime.UtcNow;
-            server.Status.StopPhaseEnteredAt = null; // provisional, armed only by a game shutdown event
+            server.Status.StopPhaseEnteredAt = null;
             server.Status.KillAllowedAt = StopPhaseWatchdog.KillOfferAt(server.Status);
             await gameServersContext.Replace(server);
             await SendShutdownAsync(server.ApiPort, $"game server '{server.Name}'");
@@ -223,6 +218,7 @@ public partial class GameServerProcessManager(
                 }
 
                 gameServer.ProcessId = null;
+                gameServer.ProcessStartedAt = null;
                 gameServer.LaunchedBy = null;
                 gameServer.Status = new GameServerStatus();
                 gameServer.HeadlessClientProcessIds.Clear();
@@ -269,10 +265,8 @@ public partial class GameServerProcessManager(
         try
         {
             using var client = httpClientFactory.CreateClient();
-            client.Timeout = TimeSpan.FromSeconds(5); // this call runs under the per-server lock; don't block it on a hung endpoint
-            // Game-side handleCommand expects an SQF array envelope; the extension
-            // forwards the body to the game callback verbatim.
-            var content = new StringContent("[\"shutdown\"]", System.Text.Encoding.UTF8, "text/plain");
+            client.Timeout = CommandTimeoutUnderServerLock;
+            var content = new StringContent(SqfShutdownCommandEnvelope, System.Text.Encoding.UTF8, "text/plain");
             await client.PostAsync($"http://127.0.0.1:{port}/command", content);
         }
         catch (HttpRequestException ex)

@@ -35,6 +35,7 @@ public class DomainGameServer : MongoObject
     public string Password { get; set; }
     public int Port { get; set; }
     public int? ProcessId { get; set; }
+    public DateTime? ProcessStartedAt { get; set; }
     public string ProfileName { get; set; }
 
     public int? VerifySignatures { get; set; }

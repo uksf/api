@@ -196,6 +196,7 @@ public partial class GameServerProcessManager
             return;
         }
 
+        if (gameServer.ProcessId != matchingProcess.ProcessId) gameServer.ProcessStartedAt = StartTimeOfProcessId(matchingProcess.ProcessId);
         gameServer.ProcessId = matchingProcess.ProcessId;
         gameServer.Status.Launching = true;
 

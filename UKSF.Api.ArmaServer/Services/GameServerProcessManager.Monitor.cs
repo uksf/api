@@ -179,7 +179,7 @@ public partial class GameServerProcessManager
             }
 
             var process = processUtilities.FindProcessById(server.ProcessId!.Value);
-            if (process is { HasExited: false })
+            if (process is { HasExited: false } && IsServerProcess(server, process))
             {
                 return;
             }
@@ -221,6 +221,7 @@ public partial class GameServerProcessManager
         }
 
         server.ProcessId = null;
+        server.ProcessStartedAt = null;
         server.HeadlessClientProcessIds.Clear();
         server.LaunchedBy = null;
         server.Status = new GameServerStatus();
