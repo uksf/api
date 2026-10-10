@@ -15,7 +15,8 @@ public partial class GameServerProcessManager
             return 0;
         }
 
-        var serverLocks = gameServersContext.Get().Select(server => server.Id).Distinct().Order().Select(GetServerLock).ToList();
+        var lockedServerIds = gameServersContext.Get().Select(server => server.Id).Distinct().Order().ToList();
+        var serverLocks = lockedServerIds.Select(GetServerLock).ToList();
         foreach (var serverLock in serverLocks)
         {
             await serverLock.WaitAsync();
@@ -23,7 +24,13 @@ public partial class GameServerProcessManager
 
         try
         {
-            var tracked = gameServersContext.Get().SelectMany(server => server.HeadlessClientProcessIds.Append(server.ProcessId ?? 0)).ToHashSet();
+            var servers = gameServersContext.Get();
+            if (!servers.Select(server => server.Id).Distinct().Order().SequenceEqual(lockedServerIds))
+            {
+                return owned.Count;
+            }
+
+            var tracked = servers.SelectMany(server => server.HeadlessClientProcessIds.Append(server.ProcessId ?? 0)).ToHashSet();
             var orphans = owned.Where(process => !tracked.Contains(process.ProcessId))
                                .Select(process => (process.ProcessId, StartedAt: StartTimeOfProcessId(process.ProcessId)))
                                .ToHashSet();
@@ -64,6 +71,11 @@ public partial class GameServerProcessManager
 
     private void KillOrphan((int ProcessId, DateTime? StartedAt) orphan)
     {
+        if (orphan.StartedAt is null || !gameServerHelpers.IsOwnedProcessId(orphan.ProcessId))
+        {
+            return;
+        }
+
         var process = processUtilities.FindProcessById(orphan.ProcessId);
         if (process is not { HasExited: false } || StartTimeOf(process) != orphan.StartedAt)
         {

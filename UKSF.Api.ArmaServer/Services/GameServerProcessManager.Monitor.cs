@@ -39,6 +39,8 @@ public partial class GameServerProcessManager
         _ = Task.Run(MonitorLoop);
     }
 
+    private static readonly TimeSpan MonitorRestartDelay = TimeSpan.FromSeconds(2);
+
     private async Task MonitorLoop()
     {
         var lastInstanceCount = -1;
@@ -89,11 +91,14 @@ public partial class GameServerProcessManager
         }
         catch (Exception ex)
         {
-            logger.LogError("Process monitor loop crashed unexpectedly", ex);
+            logger.LogError("Process monitor loop crashed unexpectedly, restarting", ex);
+            await Task.Delay(MonitorRestartDelay);
             lock (_monitorLock)
             {
                 _monitorRunning = false;
             }
+
+            EnsureMonitorRunning();
         }
     }
 

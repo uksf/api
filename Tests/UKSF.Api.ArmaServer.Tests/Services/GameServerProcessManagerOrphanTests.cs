@@ -124,5 +124,62 @@ public class GameServerProcessManagerOrphanTests : GameServerProcessManagerTestB
         var act = () => _sut.ReconcileOrphansAsync(_now.AddMinutes(5));
 
         await act.Should().NotThrowAsync();
+        _mockProcessUtilities.Verify(x => x.KillProcess(_process, It.IsAny<bool>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ReconcileOrphans_WhenTheStartTimeCannotBeRead_NeverKills()
+    {
+        _mockProcessUtilities.Setup(x => x.FindProcessById(OrphanPid)).Returns(new Process());
+
+        await _sut.ReconcileOrphansAsync(_now);
+        await _sut.ReconcileOrphansAsync(_now.AddMinutes(10));
+
+        _mockProcessUtilities.Verify(x => x.KillProcess(It.IsAny<Process>(), It.IsAny<bool>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ReconcileOrphans_WhenTheProcessIsNoLongerOwnedAtKillTime_DoesNotKill()
+    {
+        await _sut.ReconcileOrphansAsync(_now);
+        _mockHelpers.Setup(x => x.IsOwnedProcessId(OrphanPid)).Returns(false);
+
+        await _sut.ReconcileOrphansAsync(_now.AddMinutes(5));
+
+        _mockProcessUtilities.Verify(x => x.KillProcess(It.IsAny<Process>(), It.IsAny<bool>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ReconcileOrphans_WhenAServerIsAddedWhileLocking_SkipsTheTick()
+    {
+        await _sut.ReconcileOrphansAsync(_now);
+        var reads = 0;
+        _mockContext.Setup(x => x.Get()).Returns(() => ++reads == 1 ? [] : [new DomainGameServer { Id = "added" }]);
+
+        await _sut.ReconcileOrphansAsync(_now.AddMinutes(5));
+
+        _mockProcessUtilities.Verify(x => x.KillProcess(It.IsAny<Process>(), It.IsAny<bool>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Monitor_AfterACrash_RestartsAndKeepsCheckingTrackedServers()
+    {
+        _servers.Add(
+            new DomainGameServer
+            {
+                Id = "s1",
+                Name = "Test",
+                ProcessId = 7001,
+                Status = new GameServerStatus { Running = true }
+            }
+        );
+        var enumerations = 0;
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses())
+                    .Returns(() => ++enumerations == 1 ? throw new InvalidOperationException("enumeration failed") : []);
+
+        _sut.EnsureMonitorRunning();
+        await Task.Delay(TimeSpan.FromSeconds(3));
+
+        enumerations.Should().BeGreaterThan(1);
     }
 }
