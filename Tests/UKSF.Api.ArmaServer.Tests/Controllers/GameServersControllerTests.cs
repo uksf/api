@@ -194,6 +194,40 @@ public class GameServersControllerTests
     }
 
     [Fact]
+    public async Task KillAll_WhileAServerIsSaving_WithoutDataLossConfirmation_ThrowsAndDoesNotKill()
+    {
+        _mockGameServersService.Setup(x => x.GetServers())
+                               .Returns([new DomainGameServer { Name = "Saving", Status = new GameServerStatus { StopPhase = StopPhase.Delivering } }]);
+
+        var act = () => _sut.KillAllArmaProcesses();
+
+        await act.Should().ThrowAsync<BadRequestException>().WithMessage("*Saving*persistence data*");
+        _mockProcessManager.Verify(x => x.KillAllAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task KillAll_WhileAServerIsSaving_WithDataLossConfirmation_Kills()
+    {
+        _mockGameServersService.Setup(x => x.GetServers())
+                               .Returns([new DomainGameServer { Name = "Saving", Status = new GameServerStatus { StopPhase = StopPhase.Saving } }]);
+
+        await _sut.KillAllArmaProcesses(confirmDataLoss: true);
+
+        _mockProcessManager.Verify(x => x.KillAllAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task KillAll_WhenNoServerIsSaving_KillsWithoutConfirmation()
+    {
+        _mockGameServersService.Setup(x => x.GetServers())
+                               .Returns([new DomainGameServer { Name = "Stopping", Status = new GameServerStatus { StopPhase = StopPhase.Stopping } }]);
+
+        await _sut.KillAllArmaProcesses();
+
+        _mockProcessManager.Verify(x => x.KillAllAsync(), Times.Once);
+    }
+
+    [Fact]
     public async Task AddServer_ShouldAddServerAndPushAllServersUpdate()
     {
         var gameServer = new DomainGameServer { Id = "s1", Name = "New Server" };

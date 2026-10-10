@@ -145,8 +145,16 @@ public class GameServersController(
 
     [HttpPost("killall")]
     [Authorize]
-    public async Task KillAllArmaProcesses()
+    public async Task KillAllArmaProcesses([FromQuery] bool confirmDataLoss = false)
     {
+        var saving = gameServersService.GetServers().Where(server => StopPhaseWatchdog.SaveNotYetStored(server.Status.StopPhase)).ToList();
+        if (saving.Count > 0 && !confirmDataLoss)
+        {
+            throw new BadRequestException(
+                $"{string.Join(", ", saving.Select(server => server.Name))} still saving. Killing now loses persistence data the API has not stored. Reload the page and confirm the kill"
+            );
+        }
+
         var killed = await processManager.KillAllAsync();
 
         logger.LogAudit($"Killed {killed} Arma instances");
