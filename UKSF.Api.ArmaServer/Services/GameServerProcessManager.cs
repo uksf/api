@@ -149,7 +149,15 @@ public partial class GameServerProcessManager(
             server.Status.StopPhaseEnteredAt = null;
             server.Status.KillAllowedAt = StopPhaseWatchdog.KillOfferAt(server.Status);
             await gameServersContext.Replace(server);
-            await SendShutdownAsync(server.ApiPort, $"game server '{server.Name}'");
+            if (gameServerHelpers.IsOwnedApiPort(server.ApiPort))
+            {
+                await SendShutdownAsync(server.ApiPort, $"game server '{server.Name}'");
+            }
+            else
+            {
+                logger.LogWarning($"Not sending shutdown for '{server.Name}': no process launched by this API listens on API port {server.ApiPort}");
+            }
+
             await PushServerUpdateAsync(server);
         }
         finally
@@ -246,6 +254,11 @@ public partial class GameServerProcessManager(
 
     private async Task KillProcessAndWaitAsync(int processId)
     {
+        if (!gameServerHelpers.IsOwnedProcessId(processId))
+        {
+            return;
+        }
+
         var process = processUtilities.FindProcessById(processId);
         if (process is { HasExited: false })
         {

@@ -197,7 +197,7 @@ public partial class GameServerProcessManager
     {
         logger.LogInfo($"Force-killing server '{server.Name}' after stop watchdog exceeded (phase {server.Status.StopPhase})");
 
-        if (!process.HasExited)
+        if (!process.HasExited && gameServerHelpers.IsOwnedProcessId(process.Id))
         {
             process.Kill(true);
         }

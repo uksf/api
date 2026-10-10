@@ -20,7 +20,7 @@ public class UpdateServerInfrastructureCommand(
     ISteamCmdService steamCmdService,
     IVariablesContext variablesContext,
     IVariablesService variablesService,
-    IGameServerProcessManager processManager,
+    IGameServerHelpers gameServerHelpers,
     IHubContext<ServersHub, IServersClient> serversHub,
     IUksfLogger logger
 ) : IUpdateServerInfrastructureCommand
@@ -32,8 +32,7 @@ public class UpdateServerInfrastructureCommand(
             throw new BadRequestException("Server infrastructure is already updating");
         }
 
-        var instances = processManager.GetInstanceCount();
-        if (instances != 0)
+        if (gameServerHelpers.GetArmaProcessesWithCommandLine().Count != 0)
         {
             throw new BadRequestException("There are servers running, cannot update infrastructure at this time");
         }

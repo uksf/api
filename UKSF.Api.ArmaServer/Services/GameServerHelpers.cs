@@ -26,9 +26,11 @@ public interface IGameServerHelpers
 
     IReadOnlyList<ProcessCommandLineInfo> GetArmaProcessesWithCommandLine();
 
-    /// Returns true if the command line belongs to a synthetic-mission server
-    /// (game-data-export or dev-run). Used to filter these out of game-server lifecycle.
     bool IsSyntheticProcess(string commandLine);
+    bool IsOwnedProcess(string commandLine);
+    bool IsOwnedProcessId(int processId);
+    bool IsOwnedApiPort(int apiPort);
+    string ApiUrl { get; }
 
     bool IsGameDataExportProcess(string commandLine);
     IReadOnlyList<ProcessCommandLineInfo> GetGameServerArmaProcesses();
@@ -39,11 +41,14 @@ public interface IGameServerHelpers
 public class GameServerHelpers(IVariablesService variablesService, IProcessUtilities processUtilities, IUksfLogger logger, IConfiguration configuration)
     : IGameServerHelpers
 {
-    // Force 127.0.0.1 — the game extension posts events here, and on Windows
-    // `localhost` can resolve to ::1 in a way that hangs the arma process's HTTP
-    // client even when curl from the shell reaches both stacks fine.
-    private string ApiUrl =>
-        (configuration["Kestrel:Endpoints:Http:Url"] ?? "http://127.0.0.1:5500").Replace("localhost", "127.0.0.1", StringComparison.OrdinalIgnoreCase);
+    private static readonly Regex ApiUrlArgument = new(
+        @"(?:^|\s)-apiUrl=(?:""(?<quoted>[^""]*)""|(?<bare>\S+))",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled
+    );
+
+    public string ApiUrl => NormaliseLoopback(configuration["Kestrel:Endpoints:Http:Url"] ?? "http://127.0.0.1:5500");
+
+    private static string NormaliseLoopback(string url) => url.Replace("localhost", "127.0.0.1", StringComparison.OrdinalIgnoreCase);
 
     private static readonly string[] BaseConfig =
     [
@@ -227,9 +232,27 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
 
     public bool IsGameDataExportProcess(string commandLine) => IsSyntheticProcess(commandLine);
 
+    public bool IsOwnedProcess(string commandLine)
+    {
+        var arguments = ApiUrlArgument.Matches(commandLine ?? string.Empty);
+        if (arguments.Count != 1) return false;
+        var url = arguments[0].Groups["quoted"].Success ? arguments[0].Groups["quoted"].Value : arguments[0].Groups["bare"].Value;
+        return string.Equals(NormaliseLoopback(url), ApiUrl, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public bool IsOwnedProcessId(int processId)
+    {
+        return GetArmaProcessesWithCommandLine().Any(p => p.ProcessId == processId && IsOwnedProcess(p.CommandLine));
+    }
+
+    public bool IsOwnedApiPort(int apiPort)
+    {
+        return GetGameServerArmaProcesses().Any(p => Regex.IsMatch(p.CommandLine, $@"(?:^|\s)-apiport=""?{apiPort}(?:""|\s|$)", RegexOptions.IgnoreCase));
+    }
+
     public IReadOnlyList<ProcessCommandLineInfo> GetGameServerArmaProcesses()
     {
-        return GetArmaProcessesWithCommandLine().Where(p => !IsSyntheticProcess(p.CommandLine)).ToList();
+        return GetArmaProcessesWithCommandLine().Where(p => !IsSyntheticProcess(p.CommandLine) && IsOwnedProcess(p.CommandLine)).ToList();
     }
 
     public bool IsMainOpTime()

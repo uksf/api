@@ -1,5 +1,4 @@
 using System.IO;
-using Microsoft.Extensions.Configuration;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Processes;
@@ -15,12 +14,12 @@ public class SyntheticServerLauncher : ISyntheticServerLauncher
     private readonly Func<string> _missionsRoot;
     private readonly Func<string> _apiUrl;
 
-    public SyntheticServerLauncher(IProcessUtilities processUtilities, IVariablesService variablesService, IConfiguration configuration) : this(
+    public SyntheticServerLauncher(IProcessUtilities processUtilities, IVariablesService variablesService, IGameServerHelpers gameServerHelpers) : this(
         processUtilities,
         () => variablesService.GetVariable("SERVER_PATH_PROFILES").AsString(),
         () => variablesService.GetVariable("SERVER_PATH_CONFIGS").AsString(),
         () => variablesService.GetVariable("MISSIONS_PATH").AsString(),
-        () => configuration["Kestrel:Endpoints:Http:Url"]
+        () => gameServerHelpers.ApiUrl
     ) { }
 
     internal SyntheticServerLauncher(

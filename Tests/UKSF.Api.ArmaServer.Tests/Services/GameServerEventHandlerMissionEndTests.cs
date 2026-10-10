@@ -113,7 +113,8 @@ public class GameServerEventHandlerMissionEndTests
             {
                 { "key", "k" },
                 { "sessionId", "s1" },
-                { "partial", true }
+                { "partial", true },
+                { "data", new Dictionary<string, object>() }
             },
             "persistence_save"
         );

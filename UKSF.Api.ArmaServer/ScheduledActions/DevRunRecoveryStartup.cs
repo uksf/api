@@ -1,12 +1,13 @@
 using Microsoft.Extensions.Hosting;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Processes;
 
 namespace UKSF.Api.ArmaServer.ScheduledActions;
 
-public class DevRunRecoveryStartup(IProcessUtilities processUtilities, IDevRunsContext context, IUksfLogger logger) : IHostedService
+public class DevRunRecoveryStartup(IGameServerHelpers helpers, IProcessUtilities processUtilities, IDevRunsContext context, IUksfLogger logger) : IHostedService
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -27,7 +28,7 @@ public class DevRunRecoveryStartup(IProcessUtilities processUtilities, IDevRunsC
     {
         foreach (var process in processUtilities.GetProcessesWithCommandLine("arma3server"))
         {
-            if (!IsDevRunProfile(process.CommandLine)) continue;
+            if (!IsDevRunProfile(process.CommandLine) || !helpers.IsOwnedProcess(process.CommandLine)) continue;
             try
             {
                 var running = processUtilities.FindProcessById(process.ProcessId);
