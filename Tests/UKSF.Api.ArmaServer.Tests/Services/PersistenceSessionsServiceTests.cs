@@ -58,41 +58,31 @@ public class PersistenceSessionsServiceTests
     }
 
     [Fact]
-    public async Task SaveAsync_WithNewKey_CreatesSession()
+    public async Task SaveAsync_PassesStampedSessionToConditionalWrite()
     {
-        var session = new DomainPersistenceSession { Key = "new-key" };
-        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
-
-        await _subject.SaveAsync("new-key", session);
-
-        _mockContext.Verify(x => x.Add(It.Is<DomainPersistenceSession>(s => s.Key == "new-key")), Times.Once);
-        _mockContext.Verify(x => x.Replace(It.IsAny<DomainPersistenceSession>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task SaveAsync_WithExistingKey_ReplacesSession()
-    {
-        var existingSession = new DomainPersistenceSession { Id = "existing-id", Key = "existing-key" };
-        var newSession = new DomainPersistenceSession { Key = "existing-key" };
-        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns(existingSession);
-
-        await _subject.SaveAsync("existing-key", newSession);
-
-        _mockContext.Verify(x => x.Replace(It.Is<DomainPersistenceSession>(s => s.Key == "existing-key" && s.Id == "existing-id")), Times.Once);
-        _mockContext.Verify(x => x.Add(It.IsAny<DomainPersistenceSession>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task SaveAsync_SetsSavedAtToUtcNow()
-    {
-        var session = new DomainPersistenceSession { Key = "key" };
-        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
-
+        var enqueuedAt = new DateTime(2026, 10, 9, 18, 14, 21, DateTimeKind.Utc);
         var before = DateTime.UtcNow;
-        await _subject.SaveAsync("key", session);
-        var after = DateTime.UtcNow;
+        DomainPersistenceSession written = null;
+        _mockContext.Setup(x => x.SaveIfNewer(It.IsAny<DomainPersistenceSession>(), "session-1"))
+                    .Callback<DomainPersistenceSession, string>((s, _) => written = s)
+                    .ReturnsAsync(true);
 
-        _mockContext.Verify(x => x.Add(It.Is<DomainPersistenceSession>(s => s.SavedAt >= before && s.SavedAt <= after)), Times.Once);
+        var applied = await _subject.SaveAsync("new-key", new DomainPersistenceSession(), "session-1", enqueuedAt);
+
+        applied.Should().BeTrue();
+        written.Key.Should().Be("new-key");
+        written.SaveEnqueuedAt.Should().Be(enqueuedAt);
+        written.SavedAt.Should().BeOnOrAfter(before);
+    }
+
+    [Fact]
+    public async Task SaveAsync_WhenStoredSaveIsNewer_ReturnsFalse()
+    {
+        _mockContext.Setup(x => x.SaveIfNewer(It.IsAny<DomainPersistenceSession>(), It.IsAny<string>())).ReturnsAsync(false);
+
+        var applied = await _subject.SaveAsync("key", new DomainPersistenceSession(), "session-1", DateTime.UtcNow);
+
+        applied.Should().BeFalse();
     }
 
     [Fact]
@@ -105,11 +95,9 @@ public class PersistenceSessionsServiceTests
             ["mapMarkers"] = new List<object>()
         };
 
-        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
-
         await _subject.HandleSaveAsync("save-key", string.Empty, sessionData);
 
-        _mockContext.Verify(x => x.Add(It.Is<DomainPersistenceSession>(s => s.Key == "save-key")), Times.Once);
+        _mockContext.Verify(x => x.SaveIfNewer(It.Is<DomainPersistenceSession>(s => s.Key == "save-key"), string.Empty), Times.Once);
     }
 
     [Fact]
@@ -126,12 +114,10 @@ public class PersistenceSessionsServiceTests
                             """;
         var sessionData = JsonToDict(json);
 
-        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
-
         DomainPersistenceSession savedSession = null;
-        _mockContext.Setup(x => x.Add(It.IsAny<DomainPersistenceSession>()))
-                    .Callback<DomainPersistenceSession>(s => savedSession = s)
-                    .Returns(Task.CompletedTask);
+        _mockContext.Setup(x => x.SaveIfNewer(It.IsAny<DomainPersistenceSession>(), It.IsAny<string>()))
+                    .Callback<DomainPersistenceSession, string>((s, _) => savedSession = s)
+                    .ReturnsAsync(true);
 
         await _subject.HandleSaveAsync("preserve-key", string.Empty, sessionData);
 
@@ -145,12 +131,12 @@ public class PersistenceSessionsServiceTests
     }
 
     [Fact]
-    public async Task HandleSaveAsync_WithEmptyData_DoesNotSave()
+    public async Task HandleSaveAsync_WithEmptyData_RejectsWithoutSaving()
     {
-        await _subject.HandleSaveAsync("bad-key", string.Empty, new Dictionary<string, object>());
+        var act = () => _subject.HandleSaveAsync("bad-key", string.Empty, new Dictionary<string, object>());
 
-        _mockContext.Verify(x => x.Add(It.IsAny<DomainPersistenceSession>()), Times.Never);
-        _mockContext.Verify(x => x.Replace(It.IsAny<DomainPersistenceSession>()), Times.Never);
+        await act.Should().ThrowAsync<PersistenceSaveRejectedException>().WithMessage("*empty*bad-key*");
+        _mockContext.Verify(x => x.SaveIfNewer(It.IsAny<DomainPersistenceSession>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
@@ -639,7 +625,6 @@ public class PersistenceSessionsServiceTests
     [Fact]
     public void RoundTrip_StandardMarker_PreservesData()
     {
-        // Standard marker: [name, type, pos, shape, color, alpha, size, dir, text, brush]
         var marker = new List<object>
         {
             "marker_1",
@@ -673,7 +658,6 @@ public class PersistenceSessionsServiceTests
     [Fact]
     public void RoundTrip_PolylineMarker_PreservesData()
     {
-        // Polyline marker: [name, type, polyline, color, alpha, text]
         var marker = new List<object>
         {
             "polyline_1",
@@ -907,7 +891,6 @@ public class PersistenceSessionsServiceTests
         state.AdditionalData.Should().ContainKey("ace_medical_future_field");
         state.AdditionalData.Should().ContainKey("ace_medical_another_new_thing");
 
-        // Verify round-trip preserves additional data
         var reserialized = JsonSerializer.Serialize(state);
         reserialized.Should().Contain("ace_medical_future_field");
         reserialized.Should().Contain("ace_medical_another_new_thing");
@@ -984,8 +967,6 @@ public class PersistenceSessionsServiceTests
     [Fact]
     public void BsonDeserialize_LegacyWound_AmountOfStoredAsInt32_ReadsAsDouble()
     {
-        // Pre-fix saves stored amountOf as BSON Int32. After widening the field to double,
-        // loading those existing documents must still succeed.
         var bson = new MongoDB.Bson.BsonDocument
         {
             { "classComplex", 31 },
@@ -1116,7 +1097,6 @@ public class PersistenceSessionsServiceTests
     [Fact]
     public async Task HandleSaveAsync_WithHashmapFormat_SavesViaConverter()
     {
-        // Build a hashmap JSON with plain keys and nested players
         const string rawJson = """
                                {
                                    "objects": [
@@ -1129,12 +1109,10 @@ public class PersistenceSessionsServiceTests
                                }
                                """;
 
-        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
-
         DomainPersistenceSession savedSession = null;
-        _mockContext.Setup(x => x.Add(It.IsAny<DomainPersistenceSession>()))
-                    .Callback<DomainPersistenceSession>(s => savedSession = s)
-                    .Returns(Task.CompletedTask);
+        _mockContext.Setup(x => x.SaveIfNewer(It.IsAny<DomainPersistenceSession>(), It.IsAny<string>()))
+                    .Callback<DomainPersistenceSession, string>((s, _) => savedSession = s)
+                    .ReturnsAsync(true);
 
         await _subject.HandleSaveAsync("raw-key", "session-1", JsonToDict(rawJson));
 
@@ -1153,8 +1131,6 @@ public class PersistenceSessionsServiceTests
     [Fact]
     public async Task HandleSaveAsync_WithSqfNotationPayload_SavesParsedSession()
     {
-        // Engine-native str() output of a session HashMap as produced by fnc_saveDataApi.
-        // HashMaps become [["k",v],...] pair-lists, identical syntax to nested arrays.
         const string sqfPayload = "[[\"dateTime\",[2026,5,2,14,18]]," +
                                   "[\"deletedObjects\",[\"obsolete-1\"]]," +
                                   "[\"mapMarkers\",[]]," +
@@ -1193,12 +1169,10 @@ public class PersistenceSessionsServiceTests
                                   "]]]]" +
                                   "]";
 
-        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
-
         DomainPersistenceSession savedSession = null;
-        _mockContext.Setup(x => x.Add(It.IsAny<DomainPersistenceSession>()))
-                    .Callback<DomainPersistenceSession>(s => savedSession = s)
-                    .Returns(Task.CompletedTask);
+        _mockContext.Setup(x => x.SaveIfNewer(It.IsAny<DomainPersistenceSession>(), It.IsAny<string>()))
+                    .Callback<DomainPersistenceSession, string>((s, _) => savedSession = s)
+                    .ReturnsAsync(true);
 
         await _subject.HandleSaveAsync("sqf-key", "session-id", SqfToDict(sqfPayload));
 
@@ -1218,14 +1192,11 @@ public class PersistenceSessionsServiceTests
     }
 
     [Fact]
-    public async Task HandleSaveAsync_WithUnexpectedDataType_LogsErrorAndDoesNotSave()
+    public async Task HandleSaveAsync_WithUnexpectedDataType_RejectsWithoutSaving()
     {
-        // sessionData should be a hashmap (Dict / pair-list). Anything else means the
-        // wire contract drifted — must be loud, not a silent empty-save warning.
-        await _subject.HandleSaveAsync("bad-key", string.Empty, 42L);
+        var act = () => _subject.HandleSaveAsync("bad-key", string.Empty, 42L);
 
-        _mockContext.Verify(x => x.Add(It.IsAny<DomainPersistenceSession>()), Times.Never);
-        _mockContext.Verify(x => x.Replace(It.IsAny<DomainPersistenceSession>()), Times.Never);
-        _mockLogger.Verify(x => x.LogError(It.Is<string>(s => s.Contains("unexpected type") && s.Contains("bad-key")), It.IsAny<Exception>()), Times.Once);
+        await act.Should().ThrowAsync<PersistenceSaveRejectedException>().WithMessage("*unexpected type*bad-key*");
+        _mockContext.Verify(x => x.SaveIfNewer(It.IsAny<DomainPersistenceSession>(), It.IsAny<string>()), Times.Never);
     }
 }

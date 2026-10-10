@@ -108,13 +108,62 @@ public class GameServerEventsControllerTests
     }
 
     [Fact]
-    public async Task ReceiveEvent_RejectsMalformedSqf()
+    public async Task ReceiveEvent_MalformedSqfFromLegacyExtension_Returns200SoTheQueueIsNotBlocked()
     {
-        SetRequest("not valid sqf", 2303);
+        SetRequest(@"[""persistence_save"",[[""key"",""k""]", 2303);
 
         var result = await _sut.ReceiveEvent();
 
-        result.Should().BeOfType<BadRequestObjectResult>();
+        result.Should().BeOfType<OkResult>();
         _mockEventHandler.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [InlineData(@"[""persistence_save"",[[""key"",""k""]")]
+    [InlineData(@"[""persistence_save""]")]
+    public async Task ReceiveEvent_MalformedSqfFromAcknowledgingExtension_Returns422(string body)
+    {
+        SetRequest(body, 2303);
+        _sut.ControllerContext.HttpContext.Request.Headers["X-Uksf-Protocol"] = "2";
+
+        var result = await _sut.ReceiveEvent();
+
+        result.Should().BeOfType<UnprocessableEntityObjectResult>();
+        _mockEventHandler.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task ReceiveEvent_RejectedSaveFromAcknowledgingExtension_Returns422()
+    {
+        SetRequest(@"[""persistence_save"",[[""key"",""k""]]]", 2303);
+        _sut.ControllerContext.HttpContext.Request.Headers["X-Uksf-Protocol"] = "2";
+        _mockEventHandler.Setup(x => x.HandleEventAsync(It.IsAny<GameServerEvent>())).ThrowsAsync(new PersistenceSaveRejectedException("empty save"));
+
+        var result = await _sut.ReceiveEvent();
+
+        result.Should().BeOfType<UnprocessableEntityObjectResult>().Which.Value.Should().Be("empty save");
+    }
+
+    [Fact]
+    public async Task ReceiveEvent_RejectedSaveFromLegacyExtension_Returns200SoTheQueueIsNotBlocked()
+    {
+        SetRequest(@"[""persistence_save"",[[""key"",""k""]]]", 2303);
+        _mockEventHandler.Setup(x => x.HandleEventAsync(It.IsAny<GameServerEvent>())).ThrowsAsync(new PersistenceSaveRejectedException("empty save"));
+
+        var result = await _sut.ReceiveEvent();
+
+        result.Should().BeOfType<OkResult>();
+    }
+
+    [Fact]
+    public async Task ReceiveEvent_SaveStorageFailure_Propagates()
+    {
+        SetRequest(@"[""persistence_save"",[[""key"",""k""]]]", 2303);
+        _sut.ControllerContext.HttpContext.Request.Headers["X-Uksf-Protocol"] = "2";
+        _mockEventHandler.Setup(x => x.HandleEventAsync(It.IsAny<GameServerEvent>())).ThrowsAsync(new TimeoutException("mongo down"));
+
+        var act = () => _sut.ReceiveEvent();
+
+        await act.Should().ThrowAsync<TimeoutException>();
     }
 }

@@ -18,18 +18,10 @@ namespace UKSF.Api.ArmaServer.Controllers;
 [LocalhostOnly]
 public class GameServerEventsController(IGameServerEventHandler eventHandler, IServiceScopeFactory scopeFactory, IUksfLogger logger) : ControllerBase
 {
-    // Loopback-only endpoint receiving SQF event bodies from the extension.
-    // persistence_save payloads can grow into the tens-of-MB range for large
-    // sessions; default Kestrel cap (30MB) would 413 silently before the
-    // controller is reached and the extension's fire-and-forget retry would
-    // eventually drop the event. Lift the cap to keep large saves intact.
     [HttpPost]
     [DisableRequestSizeLimit]
     public async Task<IActionResult> ReceiveEvent()
     {
-        // Wire format is engine-native SQF str() output: `[<type>,<data>]`.
-        // Extension forwards verbatim and stamps the X-Api-Port / X-Enqueued-At
-        // headers — both are inside the extension's knowledge, not the game's.
         using var reader = new StreamReader(Request.Body);
         var body = await reader.ReadToEndAsync();
         if (string.IsNullOrWhiteSpace(body))
@@ -51,7 +43,8 @@ public class GameServerEventsController(IGameServerEventHandler eventHandler, IS
             var parsed = SqfNotationParser.ParseAndNormalize(body);
             if (parsed is not List<object> envelope || envelope.Count != 2 || envelope[0] is not string parsedType)
             {
-                return BadRequest("expected [type, data] envelope");
+                logger.LogError($"SQF event body is not a [type, data] envelope: {body[..Math.Min(body.Length, 200)]}");
+                return Undeliverable("expected [type, data] envelope");
             }
 
             type = parsedType;
@@ -60,12 +53,9 @@ public class GameServerEventsController(IGameServerEventHandler eventHandler, IS
         catch (FormatException exception)
         {
             logger.LogError($"Failed to parse SQF event body: {body[..Math.Min(body.Length, 200)]}", exception);
-            return BadRequest("malformed SQF body");
+            return Undeliverable("malformed SQF body");
         }
 
-        // Inject enqueueAt into data so existing handler logic continues to read it from there.
-        // The header is the source of truth (extension stamps at queue time); warn loudly if the
-        // game side ever sends its own value so a contract drift doesn't slip through silently.
         if (!string.IsNullOrEmpty(enqueueAt))
         {
             if (data.ContainsKey("enqueueAt"))
@@ -83,13 +73,17 @@ public class GameServerEventsController(IGameServerEventHandler eventHandler, IS
             Data = data
         };
 
-        // persistence_save must finish before the ack so a failed write is retried by the
-        // extension. Everything else (npc_turn included) acks immediately — the extension's
-        // HTTP client times out at 5s, and a brain+TTS turn routinely exceeds that, which
-        // caused retries, connection storms, and silent drops.
         if (type == "persistence_save")
         {
-            await eventHandler.HandleEventAsync(gameServerEvent);
+            try
+            {
+                await eventHandler.HandleEventAsync(gameServerEvent);
+            }
+            catch (PersistenceSaveRejectedException exception)
+            {
+                return Undeliverable(exception.Message);
+            }
+
             return Ok();
         }
 
@@ -109,5 +103,10 @@ public class GameServerEventsController(IGameServerEventHandler eventHandler, IS
         );
 
         return Accepted();
+    }
+
+    private IActionResult Undeliverable(string reason)
+    {
+        return Request.Headers["X-Uksf-Protocol"] == "2" ? UnprocessableEntity(reason) : Ok();
     }
 }

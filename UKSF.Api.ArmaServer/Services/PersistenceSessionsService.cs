@@ -9,86 +9,78 @@ namespace UKSF.Api.ArmaServer.Services;
 public interface IPersistenceSessionsService
 {
     DomainPersistenceSession Load(string key);
-    Task SaveAsync(string key, DomainPersistenceSession session, string sessionId = "");
-    Task HandleSaveAsync(string key, string sessionId, object sessionData);
+    Task<bool> SaveAsync(string key, DomainPersistenceSession session, string sessionId = "", DateTime? enqueuedAt = null);
+    Task HandleSaveAsync(string key, string sessionId, object sessionData, DateTime? enqueuedAt = null);
 }
+
+public class PersistenceSaveRejectedException(string message, Exception innerException = null) : Exception(message, innerException);
 
 public class PersistenceSessionsService(IPersistenceSessionsContext context, IUksfLogger logger) : IPersistenceSessionsService
 {
+    private static readonly string[] ListFields = ["objects", "deletedObjects", "dateTime", "mapMarkers"];
+
     public DomainPersistenceSession Load(string key)
     {
         return context.GetSingle(x => x.Key == key);
     }
 
-    public async Task SaveAsync(string key, DomainPersistenceSession session, string sessionId = "")
+    public async Task<bool> SaveAsync(string key, DomainPersistenceSession session, string sessionId = "", DateTime? enqueuedAt = null)
     {
         session.Key = key;
         session.SavedAt = DateTime.UtcNow;
+        session.SaveEnqueuedAt = enqueuedAt;
 
-        var existing = context.GetSingle(x => x.Key == key);
-
-        // Track which mission sessions have saved to this persistence key
-        if (!string.IsNullOrEmpty(sessionId))
+        var applied = await context.SaveIfNewer(session, sessionId);
+        if (!applied)
         {
-            var sessionIds = existing?.MissionSessionIds ?? [];
-            if (!sessionIds.Contains(sessionId))
-            {
-                sessionIds.Add(sessionId);
-            }
-
-            session.MissionSessionIds = sessionIds;
-        }
-        else if (existing is not null)
-        {
-            session.MissionSessionIds = existing.MissionSessionIds;
+            logger.LogInfo($"persistence_save for key '{key}' enqueued at {enqueuedAt:O} is not newer than the stored save; ignored");
         }
 
-        if (existing is not null)
-        {
-            session.Id = existing.Id;
-            await context.Replace(session);
-        }
-        else
-        {
-            await context.Add(session);
-        }
+        return applied;
     }
 
-    public async Task HandleSaveAsync(string key, string sessionId, object sessionData)
+    public async Task HandleSaveAsync(string key, string sessionId, object sessionData, DateTime? enqueuedAt = null)
     {
-        // Fail loud on shape drift: ToDict's catch-all silently returns an empty dict for any
-        // unexpected type. Type-narrow first so a wire mismatch can't masquerade as "empty save".
         if (sessionData is not Dictionary<string, object> and not List<object>)
         {
-            logger.LogError(
-                $"persistence_save data has unexpected type '{sessionData?.GetType().FullName ?? "null"}' for key '{key}'",
-                new InvalidOperationException("persistence_save data must be a hashmap (dict or pair-list)")
+            throw new PersistenceSaveRejectedException(
+                $"persistence_save data has unexpected type '{sessionData?.GetType().FullName ?? "null"}' for key '{key}'"
             );
-            return;
         }
 
+        DomainPersistenceSession session;
         try
         {
             var rawDict = ToDict(sessionData);
             if (rawDict.Count == 0)
             {
-                logger.LogWarning($"persistence_save data was empty for key '{key}'");
-                return;
+                throw new PersistenceSaveRejectedException($"persistence_save data was empty for key '{key}'");
             }
 
-            var session = PersistenceConverter.FromHashmap(rawDict);
-            if (session is not null)
+            RejectMistypedFields(key, rawDict);
+            session = PersistenceConverter.FromHashmap(rawDict);
+        }
+        catch (Exception exception) when (exception is not PersistenceSaveRejectedException)
+        {
+            throw new PersistenceSaveRejectedException($"Failed to deserialize persistence session for key '{key}'", exception);
+        }
+
+        await SaveAsync(key, session, sessionId, enqueuedAt);
+    }
+
+    private static void RejectMistypedFields(string key, Dictionary<string, object> rawDict)
+    {
+        foreach (var field in ListFields)
+        {
+            if (rawDict.TryGetValue(field, out var value) && value is not List<object> and not object[])
             {
-                await SaveAsync(key, session, sessionId);
-            }
-            else
-            {
-                logger.LogWarning($"Failed to deserialize persistence session for key '{key}'");
+                throw new PersistenceSaveRejectedException($"persistence_save field '{field}' is not a list for key '{key}'");
             }
         }
-        catch (FormatException exception)
+
+        if (rawDict.TryGetValue("players", out var players) && players is not Dictionary<string, object> and not List<object>)
         {
-            logger.LogError($"Failed to deserialize persistence session for key '{key}'", exception);
+            throw new PersistenceSaveRejectedException($"persistence_save field 'players' is not a hashmap for key '{key}'");
         }
     }
 }

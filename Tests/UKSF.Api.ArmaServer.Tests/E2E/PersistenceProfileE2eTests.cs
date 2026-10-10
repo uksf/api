@@ -18,22 +18,6 @@ using static UKSF.Api.ArmaServer.Converters.PersistenceConversionHelpers;
 
 namespace UKSF.Api.ArmaServer.Tests.E2E;
 
-/// <summary>
-/// End-to-end test driven by a real captured save payload from a synthetic Arma 3
-/// run seeded with profile vars from the Main dedi. Stage 1 (out-of-process) extracts
-/// one persistence key from the DeRap'd Main.vars.Arma3Profile, runs the same
-/// hashmap-build path as fnc_saveDataApi inside a dev-test-server, and writes the
-/// captured SQF str payload to D:/Arma/persistence-e2e/captured/stage1.json.
-///
-/// This test consumes that file and asserts:
-///   1. The API parses the payload without error.
-///   2. The DomainPersistenceSession has no shape leaks (no "System.Object[]" leaks,
-///      no untyped container items, all weapons routed to Type="weapon").
-///   3. SqfNotationWriter round-trip is parser-stable (write → parse → equivalent).
-///   4. Counts match the in-game capture (player + object).
-///
-/// Skipped automatically if stage1.json is missing — run tools/run-stage1.js first.
-/// </summary>
 public class PersistenceProfileE2eTests
 {
     private const string CapturePath = @"D:\Arma\persistence-e2e\captured\stage1.json";
@@ -57,7 +41,6 @@ public class PersistenceProfileE2eTests
         var resultStr = doc.RootElement.GetProperty("result").GetString();
         resultStr.Should().NotBeNullOrEmpty();
 
-        // Outer hashmap ([[k,v],...]) wrapping the captured payload + metadata.
         var outer = ToDict(SqfNotationParser.ParseAndNormalize(resultStr!));
         var payload = outer.GetValueOrDefault("payload")?.ToString();
         var key = outer.GetValueOrDefault("key")?.ToString();
@@ -71,15 +54,11 @@ public class PersistenceProfileE2eTests
 
         _output.WriteLine($"captured payload: {payload!.Length} chars, {capturedPlayerCount} players, {capturedObjectCount} objects, key='{key}'");
 
-        // Drive the save path with a mocked context — we want to assert on the parsed
-        // session, not on mongo persistence (which is independently tested).
         DomainPersistenceSession captured = null;
         var mockContext = new Mock<IPersistenceSessionsContext>();
-        mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
-        mockContext.Setup(x => x.Add(It.IsAny<DomainPersistenceSession>())).Callback<DomainPersistenceSession>(s => captured = s).Returns(Task.CompletedTask);
-        mockContext.Setup(x => x.Replace(It.IsAny<DomainPersistenceSession>()))
-                   .Callback<DomainPersistenceSession>(s => captured = s)
-                   .Returns(Task.CompletedTask);
+        mockContext.Setup(x => x.SaveIfNewer(It.IsAny<DomainPersistenceSession>(), It.IsAny<string>()))
+                   .Callback<DomainPersistenceSession, string>((s, _) => captured = s)
+                   .ReturnsAsync(true);
 
         var loggerErrors = new List<string>();
         var mockLogger = new Mock<IUksfLogger>();
@@ -94,7 +73,6 @@ public class PersistenceProfileE2eTests
         loggerErrors.Should().BeEmpty("HandleSaveAsync must not log errors or warnings on a real profile snapshot");
         captured.Should().NotBeNull("HandleSaveAsync must persist the session");
 
-        // ===== Shape leak detection =====
         var leaks = new List<string>();
 
         foreach (var (uid, player) in captured!.Players)
@@ -106,11 +84,9 @@ public class PersistenceProfileE2eTests
 
         leaks.Should().BeEmpty("no container item should ToString-leak as 'System.Object[]' or hit the unknown-shape path");
 
-        // ===== Count parity =====
         captured.Players.Count.Should().Be(capturedPlayerCount, "API player count should match in-game capture");
         captured.Objects.Count.Should().Be(capturedObjectCount, "API object count should match in-game capture");
 
-        // ===== Round-trip via SqfNotationWriter =====
         var roundTripHashmap = PersistenceConverter.ToHashmap(captured);
         var roundTripSqf = SqfNotationWriter.Write(roundTripHashmap);
         roundTripSqf.Should().StartWith("[", "writer must emit SQF array notation");
@@ -123,7 +99,6 @@ public class PersistenceProfileE2eTests
         reConverted.DeletedObjects.Should().BeEquivalentTo(captured.DeletedObjects);
         reConverted.ArmaDateTime.Should().BeEquivalentTo(captured.ArmaDateTime);
 
-        // Spot-check one player's loadout survives the round trip
         if (captured.Players.Count > 0)
         {
             var (uid, original) = captured.Players.First();

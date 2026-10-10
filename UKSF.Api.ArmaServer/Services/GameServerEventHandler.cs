@@ -255,12 +255,20 @@ public partial class GameServerEventHandler(
 
         if (string.IsNullOrEmpty(key) || sessionData is null)
         {
-            logger.LogWarning($"persistence_save event missing key or data (key='{key}', hasData={sessionData is not null})");
-            return;
+            throw new PersistenceSaveRejectedException($"persistence_save event missing key or data (key='{key}', hasData={sessionData is not null})");
         }
 
-        await persistenceSessionsService.HandleSaveAsync(key, sessionId, sessionData);
+        await persistenceSessionsService.HandleSaveAsync(key, sessionId, sessionData, ParseEnqueueAt(data));
         logger.LogInfo($"persistence_save handled: key='{key}'");
+    }
+
+    private static DateTime? ParseEnqueueAt(Dictionary<string, object> data)
+    {
+        return data.TryGetValue("enqueueAt", out var value) &&
+               value is string text &&
+               DateTime.TryParse(text, null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed)
+            ? parsed
+            : null;
     }
 
     private static List<int> ToIntList(object value)
