@@ -63,6 +63,8 @@ public partial class GameServerProcessManager
                         await CheckServer(server);
                     }
 
+                    KillLongUntrackedProcesses(serversWithProcess, DateTime.UtcNow);
+
                     var interval = CalculateTickInterval(serversWithProcess);
                     await Task.Delay(interval);
                     continue;
@@ -116,9 +118,10 @@ public partial class GameServerProcessManager
                     }
                 }
 
-                if (gameServersContext.Get().Any(s => s.ProcessId is not null))
+                var serverLaunchedDuringDrain = gameServersContext.Get().Any(s => s.ProcessId is not null);
+                if (serverLaunchedDuringDrain)
                 {
-                    continue; // a server was launched during the drain; reconcile it instead of exiting
+                    continue;
                 }
 
                 break;
@@ -247,7 +250,7 @@ public partial class GameServerProcessManager
             {
                 { StopPhase: not StopPhase.None } => TimeSpan.FromSeconds(1),
                 { Launching: true }               => TimeSpan.FromSeconds(2),
-                _                                  => TimeSpan.FromSeconds(30)
+                _                                 => TimeSpan.FromSeconds(30)
             };
 
             if (interval < minInterval)
