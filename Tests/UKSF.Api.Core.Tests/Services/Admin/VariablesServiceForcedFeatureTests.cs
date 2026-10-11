@@ -73,4 +73,24 @@ public class VariablesServiceForcedFeatureTests
         subject.GetFeatureState("NPC_BROKER").Should().BeTrue();
         subject.GetFeatureState("DISCORD").Should().BeFalse();
     }
+
+    [Theory]
+    [InlineData("TEAMSPEAK")]
+    [InlineData("DISCORD")]
+    public void GetFeatureState_ReturnsFalse_ForIntegrationStoredTrueInVerifyMode(string featureKey)
+    {
+        GivenStoredFeature(featureKey, true);
+
+        CreateSubject(null, "NOTIFICATIONS", true).GetFeatureState(featureKey).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("TEAMSPEAK")]
+    [InlineData("DISCORD")]
+    public void GetFeatureState_ReturnsTrue_ForIntegrationStoredTrueOutsideVerifyMode(string featureKey)
+    {
+        GivenStoredFeature(featureKey, true);
+
+        CreateSubject(null, null, false).GetFeatureState(featureKey).Should().BeTrue();
+    }
 }

@@ -7,7 +7,9 @@ public sealed class FeatureOverrides(string? disabledFeatures, string? forcedOnF
 
     private static readonly IReadOnlySet<string> ForceableInVerifyMode = new HashSet<string> { "NOTIFICATIONS" };
 
-    public IReadOnlySet<string> Disabled { get; } = Parse(disabledFeatures);
+    private static readonly IReadOnlySet<string> AlwaysOffInVerifyMode = new HashSet<string> { "TEAMSPEAK", "DISCORD" };
+
+    public IReadOnlySet<string> Disabled { get; } = verifyMode ? Parse(disabledFeatures).Union(AlwaysOffInVerifyMode).ToHashSet() : Parse(disabledFeatures);
 
     public IReadOnlySet<string> ForcedOn { get; } = verifyMode ? Parse(forcedOnFeatures).Where(ForceableInVerifyMode.Contains).ToHashSet() : new HashSet<string>();
 
