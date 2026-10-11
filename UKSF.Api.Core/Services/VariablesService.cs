@@ -19,6 +19,6 @@ public class VariablesService(IVariablesContext context, FeatureOverrides featur
 
     public bool GetFeatureState(string featureKey)
     {
-        return !featureOverrides.IsDisabled(featureKey) && context.GetSingle($"FEATURE_{featureKey}").AsBoolWithDefault(false);
+        return !featureOverrides.IsDisabled(featureKey) && (featureOverrides.IsForcedOn(featureKey) || context.GetSingle($"FEATURE_{featureKey}").AsBoolWithDefault(false));
     }
 }

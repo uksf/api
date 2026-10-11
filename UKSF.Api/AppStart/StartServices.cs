@@ -38,6 +38,12 @@ public static class StartServices
             if (serviceProvider.GetRequiredService<VerifyMode>().Enabled)
             {
                 Console.Out.WriteLine(VerifyModeServices.DatabaseDescription(serviceProvider.GetRequiredService<IMongoDatabase>()));
+                var overrides = serviceProvider.GetRequiredService<FeatureOverrides>();
+                if (overrides.ForcedOn.Count > 0)
+                {
+                    Console.Out.WriteLine(VerifyModeServices.ForcedFeaturesDescription(overrides));
+                }
+
                 Console.Out.WriteLine("verify mode: database migrations are not run");
                 return;
             }

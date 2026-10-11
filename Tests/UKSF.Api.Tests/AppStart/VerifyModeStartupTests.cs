@@ -62,6 +62,7 @@ public class VerifyModeStartupTests
         _discord.Setup(x => x.Deactivate()).Returns(Task.CompletedTask);
         _migrations.Setup(x => x.GetSingle(It.IsAny<Func<Migration, bool>>())).Returns(new Migration());
         return new ServiceCollection().AddSingleton(new VerifyMode(verifyFlag, null))
+                                      .AddSingleton(new FeatureOverrides(null))
                                       .AddSingleton(new MongoClient("mongodb://db.example:52005/").GetDatabase("devLocal"))
                                       .AddSingleton(_teamspeak.Object)
                                       .AddSingleton(_discord.Object)
@@ -129,6 +130,12 @@ public class VerifyModeStartupTests
         var database = new MongoClient("mongodb://db.example:52005/").GetDatabase("devLocal");
 
         VerifyModeServices.DatabaseDescription(database).Should().Be("verify mode: database devLocal at db.example:52005");
+    }
+
+    [Fact]
+    public void ForcedFeaturesDescription_ListsTheForcedFeatures()
+    {
+        VerifyModeServices.ForcedFeaturesDescription(new FeatureOverrides(null, "notifications", true)).Should().Be("verify mode: features forced on: NOTIFICATIONS");
     }
 
     [Fact]
