@@ -5,6 +5,7 @@ using UKSF.Api.ArmaServer.ScheduledActions;
 using UKSF.Api.ArmaServer.Services;
 using MongoDB.Driver;
 using UKSF.Api.Backups.Services;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Extensions;
 
@@ -28,6 +29,11 @@ public static class VerifyModeServices
     {
         var server = database.Client.Settings.Server;
         return $"verify mode: database {database.DatabaseNamespace.DatabaseName} at {server.Host}:{server.Port}";
+    }
+
+    public static string ForcedFeaturesDescription(FeatureOverrides overrides)
+    {
+        return $"verify mode: features forced on: {string.Join(',', overrides.ForcedOn.Order())}";
     }
 
     extension(IServiceCollection services)
