@@ -62,7 +62,12 @@ public class GameServerEventHandlerTests
     [Fact]
     public async Task HandleEventAsync_ShutdownEnding_DelegatesToProcessManager()
     {
-        var evt = new GameServerEvent { Type = "shutdown_ending", ApiPort = 2303, Data = new Dictionary<string, object>() };
+        var evt = new GameServerEvent
+        {
+            Type = "shutdown_ending",
+            ApiPort = 2303,
+            Data = new Dictionary<string, object>()
+        };
         await _sut.HandleEventAsync(evt);
         _mockProcessManager.Verify(x => x.HandleStopEndingAsync(2303), Times.Once);
     }
@@ -70,7 +75,12 @@ public class GameServerEventHandlerTests
     [Fact]
     public async Task HandleEventAsync_ShutdownSaving_DelegatesToProcessManager()
     {
-        var evt = new GameServerEvent { Type = "shutdown_saving", ApiPort = 2303, Data = new Dictionary<string, object>() };
+        var evt = new GameServerEvent
+        {
+            Type = "shutdown_saving",
+            ApiPort = 2303,
+            Data = new Dictionary<string, object>()
+        };
         await _sut.HandleEventAsync(evt);
         _mockProcessManager.Verify(x => x.HandleStopSavingAsync(2303), Times.Once);
     }
@@ -78,15 +88,12 @@ public class GameServerEventHandlerTests
     [Fact]
     public async Task HandleEventAsync_ShutdownStopping_DelegatesToProcessManager()
     {
-        var evt = new GameServerEvent { Type = "shutdown_stopping", ApiPort = 2303, Data = new Dictionary<string, object>() };
-        await _sut.HandleEventAsync(evt);
-        _mockProcessManager.Verify(x => x.HandleStopStoppingAsync(2303), Times.Once);
-    }
-
-    [Fact]
-    public async Task HandleEventAsync_LegacyShutdownComplete_DelegatesToStopStopping()
-    {
-        var evt = new GameServerEvent { Type = "shutdown_complete", ApiPort = 2303, Data = new Dictionary<string, object>() };
+        var evt = new GameServerEvent
+        {
+            Type = "shutdown_stopping",
+            ApiPort = 2303,
+            Data = new Dictionary<string, object>()
+        };
         await _sut.HandleEventAsync(evt);
         _mockProcessManager.Verify(x => x.HandleStopStoppingAsync(2303), Times.Once);
     }
@@ -138,7 +145,12 @@ public class GameServerEventHandlerTests
     [Fact]
     public async Task HandleEventAsync_ShutdownFromSyntheticApiPort_IsSilentlyDropped()
     {
-        var evt = new GameServerEvent { Type = "shutdown_stopping", ApiPort = SyntheticApiPorts.GameDataExport, Data = new Dictionary<string, object>() };
+        var evt = new GameServerEvent
+        {
+            Type = "shutdown_stopping",
+            ApiPort = SyntheticApiPorts.GameDataExport,
+            Data = new Dictionary<string, object>()
+        };
         await _sut.HandleEventAsync(evt);
         _mockProcessManager.Verify(x => x.HandleStopStoppingAsync(It.IsAny<int>()), Times.Never);
     }
@@ -175,7 +187,8 @@ public class GameServerEventHandlerTests
         var mockPlayerStatsContext = new Mock<IPlayerMissionStatsContext>();
 
         var session = new MissionSession { SessionId = "test-session-id", MissionStarted = DateTime.UtcNow.AddMinutes(-5) };
-        mockSessionsContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>())).Returns(session);
+        mockSessionsContext.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>()))
+                           .Returns(session);
         mockPlayerStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<PlayerMissionStats, bool>>())).Returns((PlayerMissionStats)null);
 
         var realPerformanceService = new PerformanceService(mockSessionsContext.Object, mockPlayerStatsContext.Object);

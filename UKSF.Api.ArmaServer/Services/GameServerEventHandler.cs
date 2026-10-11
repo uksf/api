@@ -51,7 +51,6 @@ public partial class GameServerEventHandler(
                     if (!hasNoGameServerRow) await processManager.HandleStopDeliveringAsync(gameServerEvent.ApiPort);
                     break;
                 case "shutdown_stopping":
-                case "shutdown_complete":
                     ReportUnstoredShutdownSave(gameServerEvent.ApiPort, gameServerEvent.Data);
                     if (!hasNoGameServerRow) await processManager.HandleStopStoppingAsync(gameServerEvent.ApiPort);
                     break;
