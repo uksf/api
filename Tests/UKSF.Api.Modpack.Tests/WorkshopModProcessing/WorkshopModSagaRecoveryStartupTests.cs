@@ -87,7 +87,8 @@ public class WorkshopModSagaRecoveryStartupTests
                           WorkshopModId = "mod1",
                           OperationType = WorkshopModOperationType.Update,
                           SelectedPbos = ["a.pbo"],
-                          SelectedExtensions = ["b.dll"]
+                          SelectedExtensions = ["b.dll"],
+                          Resumed = true
                       }
                   );
     }
@@ -99,7 +100,7 @@ public class WorkshopModSagaRecoveryStartupTests
 
         await Start();
 
-        _published.Should().ContainSingle().Which.Should().BeEquivalentTo(new WorkshopModUninstallInternalCommand { WorkshopModId = "mod1" });
+        _published.Should().ContainSingle().Which.Should().BeEquivalentTo(new WorkshopModUninstallInternalCommand { WorkshopModId = "mod1", Resumed = true });
     }
 
     [Fact]
@@ -128,11 +129,21 @@ public class WorkshopModSagaRecoveryStartupTests
     [Fact]
     public async Task StartAsync_LeavesSagaAwaitingInterventionAlone()
     {
-        GivenSagas(Saga("AwaitingIntervention", "mod1"));
+        GivenSagas(Saga("AwaitingIntervention", "waiting"), Saga("Downloading", "mod2"));
 
         await Start();
 
-        _published.Should().BeEmpty();
+        _published.Cast<WorkshopModDownloadCommand>().Select(x => x.WorkshopModId).Should().Equal("mod2");
+    }
+
+    [Fact]
+    public async Task StartAsync_LogsWhenSagaQueryFails()
+    {
+        _query.Setup(x => x.Find(It.IsAny<ISagaQuery<WorkshopModInstanceState>>())).ThrowsAsync(new InvalidOperationException("mongo down"));
+
+        await Start();
+
+        _logger.Verify(x => x.LogError(It.Is<Exception>(ex => ex.Message == "mongo down")), Times.Once);
     }
 
     [Fact]

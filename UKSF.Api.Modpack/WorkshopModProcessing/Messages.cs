@@ -12,7 +12,6 @@ public interface IWorkshopModCommand
     string WorkshopModId { get; }
 }
 
-// Initial Commands (Entry points - kept separate for distinct API surface)
 public class WorkshopModInstallCommand : IWorkshopModCommand
 {
     public string WorkshopModId { get; init; }
@@ -35,7 +34,6 @@ public class WorkshopModInterventionResolved : IWorkshopModCommand
     public List<string> SelectedExtensions { get; init; }
 }
 
-// Unified Internal Commands
 public class WorkshopModDownloadCommand : IWorkshopModCommand
 {
     public string WorkshopModId { get; init; }
@@ -54,11 +52,13 @@ public class WorkshopModExecuteCommand : IWorkshopModCommand
     public WorkshopModOperationType OperationType { get; init; }
     public List<string> SelectedPbos { get; init; }
     public List<string> SelectedExtensions { get; init; }
+    public bool Resumed { get; init; }
 }
 
 public class WorkshopModUninstallInternalCommand : IWorkshopModCommand
 {
     public string WorkshopModId { get; init; }
+    public bool Resumed { get; init; }
 }
 
 public class WorkshopModCleanupCommand : IWorkshopModCommand
@@ -68,7 +68,6 @@ public class WorkshopModCleanupCommand : IWorkshopModCommand
     public string WorkshopModName { get; init; }
 }
 
-// Unified Events (Completions)
 public class WorkshopModDownloadComplete : IWorkshopModCommand
 {
     public string WorkshopModId { get; init; }
@@ -93,7 +92,6 @@ public class WorkshopModUninstallComplete : IWorkshopModCommand
     public string WorkshopModId { get; init; }
     public bool FilesChanged { get; init; }
 
-    /// <summary>Read before the uninstall, because a mod that was never released is deleted by it.</summary>
     public string WorkshopModName { get; init; }
 }
 
@@ -102,7 +100,6 @@ public class WorkshopModCleanupComplete : IWorkshopModCommand
     public string WorkshopModId { get; init; }
 }
 
-// Fault Events
 public class WorkshopModOperationFaulted : IWorkshopModCommand
 {
     public string WorkshopModId { get; init; }

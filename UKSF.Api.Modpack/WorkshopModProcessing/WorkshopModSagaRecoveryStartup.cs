@@ -14,26 +14,38 @@ public class WorkshopModSagaRecoveryStartup(
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        var sagaIds = await querySagaRepository.Find(new AllSagas());
-        foreach (var sagaId in sagaIds)
+        try
         {
-            try
+            var sagaIds = await querySagaRepository.Find(new AllSagas());
+            foreach (var sagaId in sagaIds)
             {
-                var saga = await loadSagaRepository.Load(sagaId);
-                var command = PendingCommand(saga);
-                if (command is null) continue;
-
-                await bus.Publish(command, cancellationToken);
-                logger.LogInfo($"Workshop mod {saga.WorkshopModId}: resumed {saga.Operation} in state {saga.CurrentState} after restart");
+                await ResumeAsync(sagaId, cancellationToken);
             }
-            catch (Exception exception)
-            {
-                logger.LogError(exception);
-            }
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception);
         }
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    private async Task ResumeAsync(Guid sagaId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var saga = await loadSagaRepository.Load(sagaId);
+            var command = PendingCommand(saga);
+            if (command is null) return;
+
+            await bus.Publish(command, cancellationToken);
+            logger.LogInfo($"Workshop mod {saga.WorkshopModId}: resumed {saga.Operation} in state {saga.CurrentState} after restart");
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception);
+        }
+    }
 
     private static object PendingCommand(WorkshopModInstanceState saga) =>
         saga.CurrentState switch
@@ -51,9 +63,10 @@ public class WorkshopModSagaRecoveryStartup(
                 WorkshopModId = saga.WorkshopModId,
                 OperationType = saga.OperationType!.Value,
                 SelectedPbos = saga.SelectedPbos,
-                SelectedExtensions = saga.SelectedExtensions
+                SelectedExtensions = saga.SelectedExtensions,
+                Resumed = true
             },
-            nameof(WorkshopModStateMachine.Uninstalling) => new WorkshopModUninstallInternalCommand { WorkshopModId = saga.WorkshopModId },
+            nameof(WorkshopModStateMachine.Uninstalling) => new WorkshopModUninstallInternalCommand { WorkshopModId = saga.WorkshopModId, Resumed = true },
             nameof(WorkshopModStateMachine.Cleanup) => new WorkshopModCleanupCommand
             {
                 WorkshopModId = saga.WorkshopModId,
