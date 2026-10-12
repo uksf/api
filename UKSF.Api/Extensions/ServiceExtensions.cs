@@ -158,14 +158,12 @@ public static class ServiceExtensions
                 {
                     x.AddConsumer<ProcessMissionStatsBatchConsumer>(cfg => cfg.ConcurrentMessageLimit = 1);
 
-                    // Workshop mod steps share SteamCMD and the workshop content directory, so they must never overlap:
-                    // concurrent SteamCMD logins get throttled (download requests revoked) and concurrent downloads break
-                    // shared-depot file reuse. One message at a time per step serialises the whole pipeline.
-                    x.AddConsumer<WorkshopModDownloadConsumer>(cfg => cfg.ConcurrentMessageLimit = 1);
-                    x.AddConsumer<WorkshopModCheckConsumer>(cfg => cfg.ConcurrentMessageLimit = 1);
-                    x.AddConsumer<WorkshopModExecuteConsumer>(cfg => cfg.ConcurrentMessageLimit = 1);
-                    x.AddConsumer<WorkshopModUninstallConsumer>(cfg => cfg.ConcurrentMessageLimit = 1);
-                    x.AddConsumer<WorkshopModCleanupConsumer>(cfg => cfg.ConcurrentMessageLimit = 1);
+                    const int SharedSteamCmdAllowsOneStepAtATime = 1;
+                    x.AddConsumer<WorkshopModDownloadConsumer>(cfg => cfg.ConcurrentMessageLimit = SharedSteamCmdAllowsOneStepAtATime);
+                    x.AddConsumer<WorkshopModCheckConsumer>(cfg => cfg.ConcurrentMessageLimit = SharedSteamCmdAllowsOneStepAtATime);
+                    x.AddConsumer<WorkshopModExecuteConsumer>(cfg => cfg.ConcurrentMessageLimit = SharedSteamCmdAllowsOneStepAtATime);
+                    x.AddConsumer<WorkshopModUninstallConsumer>(cfg => cfg.ConcurrentMessageLimit = SharedSteamCmdAllowsOneStepAtATime);
+                    x.AddConsumer<WorkshopModCleanupConsumer>(cfg => cfg.ConcurrentMessageLimit = SharedSteamCmdAllowsOneStepAtATime);
 
                     x.AddSagaStateMachine<WorkshopModStateMachine, WorkshopModInstanceState>()
                      .MongoDbRepository(r =>
@@ -185,6 +183,7 @@ public static class ServiceExtensions
 
                     x.Configure<MassTransitHostOptions>(options =>
                         {
+                            options.WaitUntilStarted = true;
                             options.StopTimeout = TimeSpan.FromSeconds(5);
                             options.ConsumerStopTimeout = TimeSpan.FromSeconds(2);
                         }
