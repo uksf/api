@@ -28,6 +28,9 @@ public class PersistenceSaveValidationTests
     [InlineData("""[["objects",[[]]],["players",[]]]""", "*'objects' holds an entry*")]
     [InlineData("""[["unexpected",1]]""", "*no 'objects' field*")]
     [InlineData("""[["objects",[]],["players",[["765",7]]]]""", "*'players' holds an entry*")]
+    [InlineData("""[["objects",[]],["players",[42]]]""", "*'players' holds an entry*")]
+    [InlineData("""[["objects",[]],["players",[["765",[["name","a"]]],42]]]""", "*'players' holds an entry*")]
+    [InlineData("""[["objects",[[["type","Box"],42]]],["players",[]]]""", "*'objects' holds an entry*")]
     public async Task HandleSaveAsync_WithMalformedNestedData_RejectsWithoutSaving(string sqf, string message)
     {
         var act = () => _subject.HandleSaveAsync("bad-key", "session", Sqf(sqf));

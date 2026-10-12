@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core.Exceptions;
 
@@ -42,7 +43,12 @@ public partial class GameServerProcessManager
                 locks.Add(serverLock);
             }
 
-            var current = gameServers.Select(s => gameServersContext.GetSingle(s.Id) ?? s).ToList();
+            var current = gameServersContext.Get().OrderBy(s => s.Id).ToList();
+            if (!current.Select(s => s.Id).SequenceEqual(gameServers.Select(s => s.Id)))
+            {
+                throw new BadRequestException("The server list changed while preparing to kill all servers. Reload the page and try again");
+            }
+
             var saving = current.Where(s => StopPhaseWatchdog.SaveNotYetStored(s.Status.StopPhase)).Select(s => s.Name).ToList();
             if (saving.Count > 0 && !confirmDataLoss)
             {
@@ -113,7 +119,7 @@ public partial class GameServerProcessManager
             var process = processUtilities.FindProcessById(processId);
             if (process is not null && IsServerProcess(server, process))
             {
-                await KillProcessAndWaitAsync(processId);
+                await KillProcessAndWaitAsync(process);
             }
             else if (process is not null)
             {
@@ -132,7 +138,20 @@ public partial class GameServerProcessManager
         }
 
         var process = processUtilities.FindProcessById(processId);
-        if (process is { HasExited: false })
+        if (process is not null)
+        {
+            await KillProcessAndWaitAsync(process);
+        }
+    }
+
+    private async Task KillProcessAndWaitAsync(Process process)
+    {
+        if (!gameServerHelpers.IsOwnedProcessId(process.Id))
+        {
+            return;
+        }
+
+        if (!process.HasExited)
         {
             try
             {

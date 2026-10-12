@@ -136,6 +136,7 @@ public partial class GameServerProcessManager(
         await serverLock.WaitAsync();
         try
         {
+            server = gameServersContext.GetSingle(server.Id) ?? server;
             if (StopPhaseWatchdog.Rank(server.Status.StopPhase) > 0)
             {
                 logger.LogWarning($"Ignoring stop for '{server.Name}': it is already stopping in phase {server.Status.StopPhase}");

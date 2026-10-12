@@ -70,6 +70,47 @@ public class GameServerProcessManagerKillGuardTests : GameServerProcessManagerTe
     }
 
     [Fact]
+    public async Task KillServer_AfterVerifyingTheProcess_ChecksOwnershipOfThatProcessOnce()
+    {
+        var process = Process.GetCurrentProcess();
+        var server = Server(StopPhase.None);
+        server.ProcessId = process.Id;
+        server.ProcessStartedAt = process.StartTime.ToUniversalTime();
+        _mockContext.Setup(x => x.GetSingle("s1")).Returns(server);
+        _mockProcessUtilities.Setup(x => x.FindProcessById(process.Id)).Returns(process);
+        _mockHelpers.Setup(x => x.IsOwnedProcessId(process.Id)).Returns(false);
+
+        await _sut.KillServerAsync(server);
+
+        _mockHelpers.Verify(x => x.IsOwnedProcessId(process.Id), Times.Once);
+        server.ProcessId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task KillAll_WhenAServerWasAddedWhileWaitingForLocks_RefusesAndKillsNothing()
+    {
+        _mockContext.SetupSequence(x => x.Get())
+                    .Returns(new List<DomainGameServer> { Server(StopPhase.None) })
+                    .Returns(
+                        new List<DomainGameServer>
+                        {
+                            Server(StopPhase.None),
+                            new()
+                            {
+                                Id = "s2",
+                                Name = "New",
+                                Status = new GameServerStatus { StopPhase = StopPhase.Saving }
+                            }
+                        }
+                    );
+
+        var act = () => _sut.KillAllAsync(confirmDataLoss: false);
+
+        await act.Should().ThrowAsync<BadRequestException>().WithMessage("*server list changed*");
+        _mockHelpers.Verify(x => x.GetGameServerArmaProcesses(), Times.Never);
+    }
+
+    [Fact]
     public async Task KillAll_WhenAServerIsSavingUnderTheLock_RefusesWithoutConfirmationAndKillsNothing()
     {
         _mockContext.Setup(x => x.Get()).Returns(new List<DomainGameServer> { Server(StopPhase.Delivering) });
@@ -104,5 +145,19 @@ public class GameServerProcessManagerKillGuardTests : GameServerProcessManagerTe
         server.ProcessId.Should().Be(999999);
         server.Status.StopPhase.Should().Be(StopPhase.Saving);
         _mockContext.Verify(x => x.Replace(It.IsAny<DomainGameServer>()), Times.Never);
+        _mockLogger.Verify(x => x.LogWarning(It.Is<string>(m => m.Contains("already stopping"))), Times.Once);
+    }
+
+    [Fact]
+    public async Task Stop_WhenTheStoredServerMovedToSavingAfterTheControllerRead_DoesNotKillIt()
+    {
+        var current = Server(StopPhase.Saving, running: false);
+        _mockContext.Setup(x => x.GetSingle("s1")).Returns(current);
+
+        await _sut.StopServerAsync(Server(StopPhase.None, running: false));
+
+        current.ProcessId.Should().Be(999999);
+        _mockContext.Verify(x => x.Replace(It.IsAny<DomainGameServer>()), Times.Never);
+        _mockLogger.Verify(x => x.LogWarning(It.Is<string>(m => m.Contains("already stopping"))), Times.Once);
     }
 }

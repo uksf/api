@@ -88,14 +88,22 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
             throw new PersistenceSaveRejectedException($"persistence_save has no 'objects' field for key '{key}'");
         }
 
-        if (ToList(objects).Any(entry => ToDict(entry).Count == 0))
+        if (ToList(objects).Any(entry => !IsHashmap(entry) || ToDict(entry).Count == 0))
         {
             throw new PersistenceSaveRejectedException($"persistence_save field 'objects' holds an entry that is not a hashmap for key '{key}'");
         }
 
-        if (players is not null && ToDict(players).Values.Any(entry => ToDict(entry).Count == 0))
+        if (players is not null && (!IsHashmap(players) || ToDict(players).Values.Any(entry => !IsHashmap(entry) || ToDict(entry).Count == 0)))
         {
             throw new PersistenceSaveRejectedException($"persistence_save field 'players' holds an entry that is not a hashmap for key '{key}'");
         }
     }
+
+    private static bool IsHashmap(object value) =>
+        value switch
+        {
+            Dictionary<string, object> => true,
+            List<object> list          => list.All(entry => entry is List<object> { Count: 2 } pair && pair[0] is string),
+            _                          => false
+        };
 }
