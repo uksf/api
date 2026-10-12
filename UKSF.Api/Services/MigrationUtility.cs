@@ -1,4 +1,5 @@
 using MongoDB.Driver;
+using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
@@ -7,10 +8,7 @@ namespace UKSF.Api.Services;
 
 public class MigrationUtility(IMigrationContext migrationContext, IMongoDatabase database, IUksfLogger logger)
 {
-    // When bumping Version and adding a new MigrateXxx step, delete the migrations from the previous version —
-    // they have already run on every active db (the version marker prevents them re-running) and operate on
-    // collections/fields that may no longer exist. Keep only the migration(s) introduced for the current Version.
-    private const int Version = 13;
+    private const int Version = 14;
 
     public async Task RunMigrations()
     {
@@ -34,14 +32,13 @@ public class MigrationUtility(IMigrationContext migrationContext, IMongoDatabase
 
     private async Task ExecuteMigrations()
     {
-        await MigrateRemoveOperationCollections();
+        await MigrateStructuredPersistenceMarkers();
         logger.LogInfo("All migrations completed successfully");
     }
 
-    private async Task MigrateRemoveOperationCollections()
+    private async Task MigrateStructuredPersistenceMarkers()
     {
-        await database.DropCollectionAsync("opord");
-        await database.DropCollectionAsync("oprep");
-        logger.LogInfo("MigrateRemoveOperationCollections: dropped opord and oprep collections");
+        var migrated = await PersistenceMarkerMigration.MigrateAsync(database);
+        logger.LogInfo($"MigrateStructuredPersistenceMarkers: converted markers in {migrated} persistence sessions");
     }
 }

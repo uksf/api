@@ -100,22 +100,7 @@ public class PersistenceConverterTests
             ],
             DeletedObjects = ["del_1", "del_2"],
             ArmaDateTime = [2038, 6, 20, 2, 44],
-            Markers =
-            [
-                new List<object>
-                {
-                    "marker_1",
-                    new List<object> { 100.0, 200.0 },
-                    "RECTANGLE",
-                    "hd_dot",
-                    "Solid",
-                    new List<object> { 50.0, 50.0 },
-                    "ColorRed",
-                    1.0,
-                    0.0,
-                    "FOB Alpha"
-                }
-            ],
+            Markers = [new PersistenceMarker { Name = "marker_1", Position = [100, 200], Shape = "RECTANGLE", Type = "hd_dot", Brush = "Solid", Size = [50, 50], Colour = "ColorRed", Alpha = 1, Direction = 0, Text = "FOB Alpha" }],
             Players = new Dictionary<string, PlayerRedeployData>
             {
                 {
@@ -193,62 +178,14 @@ public class PersistenceConverterTests
     [Fact]
     public void RoundTrip_WithMarkers_ShouldPreserveBothFormats()
     {
-        var standardMarker = new List<object>
-        {
-            "marker_1",
-            new List<object> { 100.0, 200.0 },
-            "RECTANGLE",
-            "hd_dot",
-            "Solid",
-            new List<object> { 50.0, 50.0 },
-            "ColorRed",
-            1.0,
-            0.0,
-            "FOB Alpha"
-        };
-
-        var polylineMarker = new List<object>
-        {
-            "marker_2",
-            new List<object>
-            {
-                0.0,
-                0.0,
-                0.0
-            },
-            "POLYLINE",
-            "ColorBlue",
-            0.8,
-            new List<object>
-            {
-                new List<object>
-                {
-                    100.0,
-                    200.0,
-                    0.0
-                },
-                new List<object>
-                {
-                    300.0,
-                    400.0,
-                    0.0
-                }
-            }
-        };
-
+        var standardMarker = new List<object> { "marker_1", new List<object> { 100.0, 200.0 }, "RECTANGLE", "hd_dot", "Solid", new List<object> { 50.0, 50.0 }, "ColorRed", 1.0, 0.0, "FOB Alpha" };
+        var polylineMarker = new List<object> { "marker_2", new List<object> { 0.0, 0.0, 0.0 }, "POLYLINE", "ColorBlue", 0.8, new List<object> { 100.0, 200.0, 300.0, 400.0 } };
         var raw = BuildMinimalSessionHashmap();
         raw["mapMarkers"] = new List<object> { standardMarker, polylineMarker };
 
-        var session = PersistenceConverter.FromHashmap(raw);
-        var rawRoundTripped = PersistenceConverter.ToHashmap(session);
-        var finalSession = PersistenceConverter.FromHashmap(rawRoundTripped);
+        var rawRoundTripped = PersistenceConverter.ToHashmap(PersistenceConverter.FromHashmap(raw));
 
-        finalSession.Markers.Should().HaveCount(2);
-        finalSession.Markers[0].Should().HaveCount(10);
-        finalSession.Markers[0][0].Should().Be("marker_1");
-        finalSession.Markers[1].Should().HaveCount(6);
-        finalSession.Markers[1][0].Should().Be("marker_2");
-        finalSession.Markers[1][2].Should().Be("POLYLINE");
+        rawRoundTripped["mapMarkers"].Should().BeEquivalentTo(new List<object> { standardMarker, polylineMarker }, o => o.WithStrictOrdering());
     }
 
     [Fact]

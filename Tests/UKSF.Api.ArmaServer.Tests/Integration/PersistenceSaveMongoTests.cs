@@ -35,21 +35,13 @@ public sealed class PersistenceSaveMongoTests : IDisposable
 
     public void Dispose() => _runner.Dispose();
 
+    private static readonly PersistenceMarker Marker = new() { Name = "marker_1", Position = [1.5, 2.5, 0], Shape = "ICON", Type = "hd_dot", Brush = "Solid", Size = [1, 1], Colour = "ColorRed", Alpha = 1, Direction = 0, Text = "" };
+
     private static DomainPersistenceSession Save(string marker) =>
         new()
         {
             DeletedObjects = [marker],
-            Markers =
-            [
-                [
-                    "marker_1", "hd_dot", new List<object>
-                    {
-                        1.5,
-                        2.5,
-                        0.0
-                    }
-                ]
-            ],
+            Markers = [Marker],
             CustomData = new Dictionary<string, object>
             {
                 ["marker"] = marker,
@@ -156,24 +148,7 @@ public sealed class PersistenceSaveMongoTests : IDisposable
 
         var stored = _subject.Load("k");
 
-        stored.Markers.Should()
-        .BeEquivalentTo(
-            new List<List<object>>
-            {
-                new()
-                {
-                    "marker_1",
-                    "hd_dot",
-                    new List<object>
-                    {
-                        1.5,
-                        2.5,
-                        0.0
-                    }
-                }
-            },
-            o => o.WithStrictOrdering()
-        );
+        stored.Markers.Should().ContainSingle().Which.Should().BeEquivalentTo(Marker);
         stored.CustomData["nested"]
         .Should()
         .BeEquivalentTo(

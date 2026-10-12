@@ -623,105 +623,17 @@ public class PersistenceSessionsServiceTests
     }
 
     [Fact]
-    public void RoundTrip_StandardMarker_PreservesData()
+    public void RoundTrip_TypedMarkers_PreservesData()
     {
-        var marker = new List<object>
-        {
-            "marker_1",
-            "hd_dot",
-            new List<object>
-            {
-                1000.0,
-                2000.0,
-                0.0
-            },
-            "ICON",
-            "ColorRed",
-            1.0,
-            new List<object> { 1.0, 1.0 },
-            0.0,
-            "Target Alpha",
-            ""
-        };
+        List<PersistenceMarker> markers =
+        [
+            new() { Name = "icon", Position = [1000, 2000, 0], Shape = "ICON", Type = "hd_dot", Brush = "Solid", Size = [1, 1], Colour = "ColorRed", Alpha = 1, Direction = 45, Text = "Target" },
+            new() { Name = "line", Position = [0, 0, 0], Shape = "POLYLINE", Colour = "ColorBlue", Alpha = 0.8, Polyline = [100, 200, 300, 400] }
+        ];
 
-        var session = new DomainPersistenceSession { Key = "marker-test", Markers = [marker] };
+        var json = JsonSerializer.Serialize(new DomainPersistenceSession { Key = "markers", Markers = markers });
 
-        var json = JsonSerializer.Serialize(session);
-        var deserialized = JsonSerializer.Deserialize<DomainPersistenceSession>(json);
-
-        deserialized.Should().NotBeNull();
-        deserialized!.Markers.Should().HaveCount(1);
-        deserialized.Markers[0].Should().HaveCount(marker.Count);
-        JsonSerializer.Serialize(deserialized.Markers[0]).Should().Be(JsonSerializer.Serialize(marker));
-    }
-
-    [Fact]
-    public void RoundTrip_PolylineMarker_PreservesData()
-    {
-        var marker = new List<object>
-        {
-            "polyline_1",
-            "hd_polyline",
-            new List<object>
-            {
-                new List<object> { 100.0, 200.0 },
-                new List<object> { 300.0, 400.0 },
-                new List<object> { 500.0, 600.0 }
-            },
-            "ColorBlue",
-            0.8,
-            "Route Alpha"
-        };
-
-        var session = new DomainPersistenceSession { Key = "polyline-test", Markers = [marker] };
-
-        var json = JsonSerializer.Serialize(session);
-        var deserialized = JsonSerializer.Deserialize<DomainPersistenceSession>(json);
-
-        deserialized.Should().NotBeNull();
-        deserialized!.Markers.Should().HaveCount(1);
-        JsonSerializer.Serialize(deserialized.Markers[0]).Should().Be(JsonSerializer.Serialize(marker));
-    }
-
-    [Fact]
-    public void RoundTrip_MixedMarkers_PreservesData()
-    {
-        var standardMarker = new List<object>
-        {
-            "marker_1",
-            "hd_dot",
-            new List<object>
-            {
-                1000.0,
-                2000.0,
-                0.0
-            },
-            "ICON",
-            "ColorRed",
-            1.0,
-            new List<object> { 1.0, 1.0 },
-            0.0,
-            "Target",
-            ""
-        };
-        var polylineMarker = new List<object>
-        {
-            "polyline_1",
-            "hd_polyline",
-            new List<object> { new List<object> { 100.0, 200.0 }, new List<object> { 300.0, 400.0 } },
-            "ColorBlue",
-            0.8,
-            "Route"
-        };
-
-        var session = new DomainPersistenceSession { Key = "mixed-markers", Markers = [standardMarker, polylineMarker] };
-
-        var json = JsonSerializer.Serialize(session);
-        var deserialized = JsonSerializer.Deserialize<DomainPersistenceSession>(json);
-
-        deserialized.Should().NotBeNull();
-        deserialized!.Markers.Should().HaveCount(2);
-        JsonSerializer.Serialize(deserialized.Markers).Should().Be(JsonSerializer.Serialize(session.Markers));
+        JsonSerializer.Deserialize<DomainPersistenceSession>(json)!.Markers.Should().BeEquivalentTo(markers, o => o.WithStrictOrdering());
     }
 
     [Fact]
@@ -780,27 +692,7 @@ public class PersistenceSessionsServiceTests
                     Animation = "AmovPercMstpSlowWrflDnon"
                 }
             },
-            Markers =
-            [
-                new List<object>
-                {
-                    "marker_1",
-                    "hd_dot",
-                    new List<object>
-                    {
-                        1000.0,
-                        2000.0,
-                        0.0
-                    },
-                    "ICON",
-                    "ColorRed",
-                    1.0,
-                    new List<object> { 1.0, 1.0 },
-                    0.0,
-                    "Target",
-                    ""
-                }
-            ],
+            Markers = [new PersistenceMarker { Name = "marker_1", Position = [1000, 2000, 0], Shape = "ICON", Type = "hd_dot", Brush = "Solid", Size = [1, 1], Colour = "ColorRed", Alpha = 1, Direction = 0, Text = "Target" }],
             ArmaDateTime = [2035, 6, 15, 14, 30],
             CustomData = new Dictionary<string, object> { ["weather"] = "clear", ["fogLevel"] = 0.1 },
             SavedAt = new DateTime(2026, 3, 1, 12, 0, 0, DateTimeKind.Utc)

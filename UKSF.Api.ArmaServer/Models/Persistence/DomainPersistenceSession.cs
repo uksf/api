@@ -19,7 +19,7 @@ public class DomainPersistenceSession : MongoObject
     public Dictionary<string, PlayerRedeployData> Players { get; set; } = new();
 
     [JsonPropertyName("markers")]
-    public List<List<object>> Markers { get; set; } = [];
+    public List<PersistenceMarker> Markers { get; set; } = [];
 
     [JsonPropertyName("dateTime")]
     public int[] ArmaDateTime { get; set; } = [];

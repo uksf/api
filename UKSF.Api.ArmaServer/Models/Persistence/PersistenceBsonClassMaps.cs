@@ -16,7 +16,7 @@ public static class PersistenceBsonClassMaps
         BsonClassMap.TryRegisterClassMap<DomainPersistenceSession>(cm =>
             {
                 cm.AutoMap();
-                cm.GetMemberMap(x => x.Markers).SetSerializer(PlainObjectNestedListBsonSerializer.Instance);
+                cm.GetMemberMap(x => x.Markers).SetSerializer(PersistenceMarkerListBsonSerializer.Instance);
                 cm.GetMemberMap(x => x.CustomData).SetSerializer(PlainObjectDictionaryBsonSerializer.Instance);
             }
         );

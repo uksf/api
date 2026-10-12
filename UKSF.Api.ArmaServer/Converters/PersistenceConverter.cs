@@ -14,11 +14,9 @@ public static class PersistenceConverter
             Objects = ToList(raw.GetValueOrDefault("objects")).Select(o => PersistenceObjectConverter.FromHashmap(ToDict(o))).ToList(),
             DeletedObjects = ToList(raw.GetValueOrDefault("deletedObjects")).Select(o => o.ToString()!).ToList(),
             ArmaDateTime = ToList(raw.GetValueOrDefault("dateTime")).Select(ToInt).ToArray(),
-            Markers = ToList(raw.GetValueOrDefault("mapMarkers")).Select(o => ToList(o)).ToList()
+            Markers = ToList(raw.GetValueOrDefault("mapMarkers")).Select(ToList).Where(m => m.Count > 0).Select(PersistenceMarkerConverter.FromList).ToList()
         };
 
-        // Players are nested under a "players" key as a dictionary of UID → data.
-        // Source can be either a Dictionary (from JSON) or a pair-list (from SQF str output).
         if (raw.TryGetValue("players", out var playersObj))
         {
             foreach (var kvp in ToDict(playersObj))
@@ -27,7 +25,6 @@ public static class PersistenceConverter
             }
         }
 
-        // Everything else is custom serialiser data
         foreach (var kvp in raw)
         {
             if (!KnownKeys.Contains(kvp.Key))
@@ -46,7 +43,7 @@ public static class PersistenceConverter
             { "objects", session.Objects.Select(o => (object)PersistenceObjectConverter.ToHashmap(o)).ToList() },
             { "deletedObjects", session.DeletedObjects.Cast<object>().ToList() },
             { "dateTime", session.ArmaDateTime.Select(i => (object)(long)i).ToList() },
-            { "mapMarkers", session.Markers.Select(m => (object)m).ToList() },
+            { "mapMarkers", session.Markers.Select(m => (object)PersistenceMarkerConverter.ToList(m)).ToList() },
             { "players", session.Players.ToDictionary(kvp => kvp.Key, kvp => (object)PersistencePlayerConverter.ToHashmap(kvp.Value)) }
         };
 
