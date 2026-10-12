@@ -6,6 +6,7 @@ using UKSF.Api.ArmaServer.Services;
 using MongoDB.Driver;
 using UKSF.Api.Backups.Services;
 using UKSF.Api.Core.Services;
+using UKSF.Api.Modpack.WorkshopModProcessing;
 
 namespace UKSF.Api.Extensions;
 
@@ -22,7 +23,8 @@ public static class VerifyModeServices
         typeof(NpcWarmKeeper),
         typeof(NpcTraceMaintenance),
         typeof(NpcIndexes),
-        typeof(MissionStatsIndexes)
+        typeof(MissionStatsIndexes),
+        typeof(WorkshopModSagaRecoveryStartup)
     ];
 
     public static string DatabaseDescription(IMongoDatabase database)

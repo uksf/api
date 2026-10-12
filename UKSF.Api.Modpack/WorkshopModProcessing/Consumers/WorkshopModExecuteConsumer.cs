@@ -27,7 +27,9 @@ public class WorkshopModExecuteConsumer(
                 context.Message.SelectedExtensions,
                 context.CancellationToken
             ),
-            result => context.Publish(new WorkshopModExecuteComplete { WorkshopModId = context.Message.WorkshopModId, FilesChanged = result.FilesChanged }),
+            result => context.Publish(
+                new WorkshopModExecuteComplete { WorkshopModId = context.Message.WorkshopModId, FilesChanged = result.FilesChanged || context.Message.Resumed }
+            ),
             processingService,
             workshopModsContext,
             logger

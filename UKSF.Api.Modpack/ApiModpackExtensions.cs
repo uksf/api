@@ -6,6 +6,7 @@ using UKSF.Api.Modpack.EventHandlers;
 using UKSF.Api.Modpack.ScheduledActions;
 using UKSF.Api.Modpack.Services;
 using UKSF.Api.Modpack.Signalr.Hubs;
+using UKSF.Api.Modpack.WorkshopModProcessing;
 using UKSF.Api.Modpack.WorkshopModProcessing.Operations;
 
 namespace UKSF.Api.Modpack;
@@ -63,7 +64,8 @@ public static class ApiModpackExtensions
                            .AddTransient<IWorkshopModRootFilesService, WorkshopModRootFilesService>()
                            .AddTransient<IInstallOperation, InstallOperation>()
                            .AddTransient<IUpdateOperation, UpdateOperation>()
-                           .AddTransient<IUninstallOperation, UninstallOperation>();
+                           .AddTransient<IUninstallOperation, UninstallOperation>()
+                           .AddHostedService<WorkshopModSagaRecoveryStartup>();
         }
 
         private IServiceCollection AddActions()
