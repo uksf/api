@@ -43,17 +43,11 @@ internal sealed class CampaignHierarchyMongoHarness : IDisposable
         FileMissions.Setup(x => x.FindMissionFilePath("m.Altis.pbo")).Returns("/tmp/m.Altis.pbo");
         Launch.Setup(x => x.LaunchAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync([]);
 
-        CampaignMissionsService = new CampaignMissionsService(
-            GameServers.Object,
-            FileMissions.Object,
-            Missions,
-            IntelPages,
-            Launch.Object
-        );
+        CampaignMissionsService = new CampaignMissionsService(GameServers.Object, FileMissions.Object, Missions, IntelPages, Launch.Object);
         OperationsService = new OperationsService(Operations, Missions, CampaignMissionsService, IntelPages);
 
         CampaignsController = new CampaignsController(Campaigns, Operations, IntelPages, OperationsService, Http.Object, Logger.Object);
-        OperationsController = new OperationsController(Operations, Campaigns, OperationsService, Http.Object, Logger.Object);
+        OperationsController = new OperationsController(Operations, Campaigns, Missions, OperationsService, Http.Object, Logger.Object);
         CampaignMissionsController = new CampaignMissionsController(
             Missions,
             Operations,

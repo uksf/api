@@ -28,7 +28,7 @@ public class CampaignMissionsController(
     {
         RequireVisibleCampaign(campaignId);
         var operationIds = operationsContext.Get(x => x.CampaignId == campaignId).Select(x => x.Id).ToHashSet();
-        return campaignMissionsContext.Get(x => operationIds.Contains(x.OperationId)).Select(campaignMissionsService.ToDto);
+        return campaignMissionsContext.Get(x => operationIds.Contains(x.OperationId)).OrderBy(x => x.ScheduledTime).Select(campaignMissionsService.ToDto);
     }
 
     [HttpGet]
@@ -36,7 +36,7 @@ public class CampaignMissionsController(
     public IEnumerable<MissionDto> Get([FromRoute] string campaignId, [FromRoute] string operationId)
     {
         RequireOperation(campaignId, operationId);
-        return campaignMissionsContext.Get(x => x.OperationId == operationId).Select(campaignMissionsService.ToDto);
+        return campaignMissionsContext.Get(x => x.OperationId == operationId).OrderBy(x => x.ScheduledTime).Select(campaignMissionsService.ToDto);
     }
 
     [HttpGet("{missionId}")]
@@ -64,12 +64,7 @@ public class CampaignMissionsController(
 
     [HttpPut("{missionId}")]
     [Permissions(Permissions.Command)]
-    public async Task Put(
-        [FromRoute] string campaignId,
-        [FromRoute] string operationId,
-        [FromRoute] string missionId,
-        [FromBody] DomainMission mission
-    )
+    public async Task Put([FromRoute] string campaignId, [FromRoute] string operationId, [FromRoute] string missionId, [FromBody] DomainMission mission)
     {
         var stored = RequireMission(campaignId, operationId, missionId);
         if (!string.IsNullOrEmpty(mission.Id) && mission.Id != missionId)
@@ -99,11 +94,7 @@ public class CampaignMissionsController(
 
     [HttpPost("{missionId}/launch")]
     [Permissions(Permissions.Nco, Permissions.Servers, Permissions.Command)]
-    public async Task<List<ValidationReport>> Launch(
-        [FromRoute] string campaignId,
-        [FromRoute] string operationId,
-        [FromRoute] string missionId
-    )
+    public async Task<List<ValidationReport>> Launch([FromRoute] string campaignId, [FromRoute] string operationId, [FromRoute] string missionId)
     {
         var mission = RequireMission(campaignId, operationId, missionId);
         var reports = await campaignMissionsService.LaunchMissionAsync(mission, httpContextService.GetUserId());

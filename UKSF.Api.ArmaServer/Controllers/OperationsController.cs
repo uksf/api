@@ -14,6 +14,7 @@ namespace UKSF.Api.ArmaServer.Controllers;
 public class OperationsController(
     IOperationsContext operationsContext,
     ICampaignsContext campaignsContext,
+    ICampaignMissionsContext campaignMissionsContext,
     IOperationsService operationsService,
     IHttpContextService httpContextService,
     IUksfLogger logger
@@ -24,7 +25,12 @@ public class OperationsController(
     public IEnumerable<DomainOperation> Get([FromRoute] string campaignId)
     {
         RequireVisibleCampaign(campaignId);
-        return operationsContext.Get(x => x.CampaignId == campaignId);
+        var operations = operationsContext.Get(x => x.CampaignId == campaignId).ToList();
+        var operationIds = operations.Select(x => x.Id).ToHashSet();
+        var firstMissionTimes = campaignMissionsContext.Get(x => operationIds.Contains(x.OperationId))
+                                                       .GroupBy(x => x.OperationId)
+                                                       .ToDictionary(x => x.Key, x => x.Min(mission => mission.ScheduledTime));
+        return operations.OrderBy(x => firstMissionTimes.GetValueOrDefault(x.Id, DateTime.MaxValue));
     }
 
     [HttpGet("{operationId}")]
