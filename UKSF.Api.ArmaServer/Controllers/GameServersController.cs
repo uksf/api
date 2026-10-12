@@ -134,7 +134,11 @@ public class GameServersController(
         logger.LogAudit($"Game server killed '{gameServer.Name}' in stop phase {gameServer.Status.StopPhase}");
         try
         {
-            await processManager.KillServerAsync(gameServer);
+            await processManager.KillServerAsync(gameServer, confirmDataLoss);
+        }
+        catch (BadRequestException)
+        {
+            throw;
         }
         catch (Exception exception)
         {
@@ -155,7 +159,7 @@ public class GameServersController(
             );
         }
 
-        var killed = await processManager.KillAllAsync();
+        var killed = await processManager.KillAllAsync(confirmDataLoss);
 
         logger.LogAudit($"Killed {killed} Arma instances");
         await processManager.PushAllServersUpdateAsync();

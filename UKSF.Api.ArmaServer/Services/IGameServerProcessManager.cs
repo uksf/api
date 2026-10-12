@@ -6,8 +6,8 @@ public interface IGameServerProcessManager
 {
     Task LaunchServerAsync(DomainGameServer server, string missionName, string launchedBy, int playerCount);
     Task StopServerAsync(DomainGameServer server);
-    Task KillServerAsync(DomainGameServer server);
-    Task<int> KillAllAsync();
+    Task KillServerAsync(DomainGameServer server, bool confirmDataLoss = false);
+    Task<int> KillAllAsync(bool confirmDataLoss = false);
     int GetInstanceCount();
     Task<List<DomainGameServer>> GetAllServerStatusesAsync();
     Task HandleStopEndingAsync(int apiPort);

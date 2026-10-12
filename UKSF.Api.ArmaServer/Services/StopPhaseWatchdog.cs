@@ -34,7 +34,7 @@ public static class StopPhaseWatchdog
 
     public static bool WatchdogExceeded(GameServerStatus status, DateTime nowUtc)
     {
-        if (status.StopPhase == StopPhase.None)
+        if (status.StopPhase == StopPhase.None || status.StopPhase is StopPhase.Ending or StopPhase.Saving)
         {
             return false;
         }
@@ -43,8 +43,6 @@ public static class StopPhaseWatchdog
         {
             TimeSpan? ceiling = status.StopPhase switch
             {
-                StopPhase.Ending     => null,
-                StopPhase.Saving     => null,
                 StopPhase.Delivering => DeliveringCeiling,
                 StopPhase.Stopping   => StoppingCeiling,
                 _                    => BackstopCeiling

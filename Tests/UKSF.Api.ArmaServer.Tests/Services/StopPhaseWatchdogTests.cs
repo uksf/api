@@ -30,14 +30,17 @@ public class StopPhaseWatchdogTests
     }
 
     [Theory]
-    [InlineData(179, false)]
-    [InlineData(181, true)]
-    public void WatchdogExceeded_WithoutGameEvents_UsesBackstopFromStopRequest(int secondsSinceRequested, bool expected)
+    [InlineData(StopPhase.Ending, 181, false)]
+    [InlineData(StopPhase.Ending, 10000, false)]
+    [InlineData(StopPhase.Saving, 10000, false)]
+    [InlineData(StopPhase.Stopping, 179, false)]
+    [InlineData(StopPhase.Stopping, 181, true)]
+    public void WatchdogExceeded_WithoutGameEvents_UsesBackstopOnlyAfterTheSaveIsStored(StopPhase phase, int secondsSinceRequested, bool expected)
     {
         var now = DateTime.UtcNow;
         var status = new GameServerStatus
         {
-            StopPhase = StopPhase.Ending,
+            StopPhase = phase,
             StopPhaseEnteredAt = null,
             StopRequestedAt = now.AddSeconds(-secondsSinceRequested)
         };

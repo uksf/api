@@ -190,7 +190,7 @@ public class GameServersControllerTests
 
         await _sut.KillServer("s1", confirmDataLoss: true);
 
-        _mockProcessManager.Verify(x => x.KillServerAsync(gameServer), Times.Once);
+        _mockProcessManager.Verify(x => x.KillServerAsync(gameServer, true), Times.Once);
     }
 
     [Fact]
@@ -213,7 +213,7 @@ public class GameServersControllerTests
 
         await _sut.KillAllArmaProcesses(confirmDataLoss: true);
 
-        _mockProcessManager.Verify(x => x.KillAllAsync(), Times.Once);
+        _mockProcessManager.Verify(x => x.KillAllAsync(true), Times.Once);
     }
 
     [Fact]

@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.ComponentModel;
 using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
@@ -137,6 +136,12 @@ public partial class GameServerProcessManager(
         await serverLock.WaitAsync();
         try
         {
+            if (StopPhaseWatchdog.Rank(server.Status.StopPhase) > 0)
+            {
+                logger.LogWarning($"Ignoring stop for '{server.Name}': it is already stopping in phase {server.Status.StopPhase}");
+                return;
+            }
+
             if (!server.Status.Running)
             {
                 await KillServerCoreAsync(server);
@@ -166,111 +171,6 @@ public partial class GameServerProcessManager(
         }
 
         EnsureMonitorRunning();
-    }
-
-    public async Task KillServerAsync(DomainGameServer server)
-    {
-        var serverLock = GetServerLock(server.Id);
-        await serverLock.WaitAsync();
-        try
-        {
-            await KillServerCoreAsync(server);
-            await PushServerUpdateAsync(server);
-        }
-        finally
-        {
-            serverLock.Release();
-        }
-    }
-
-    public async Task<int> KillAllAsync()
-    {
-        var processes = gameServerHelpers.GetGameServerArmaProcesses()
-                                         .Select(p => processUtilities.FindProcessById(p.ProcessId))
-                                         .Where(p => p is not null)
-                                         .ToList();
-        foreach (var process in processes)
-        {
-            try
-            {
-                processUtilities.KillProcess(process);
-            }
-            catch (InvalidOperationException) { }
-            catch (Win32Exception) { }
-        }
-
-        await Task.WhenAll(
-            processes.Select(async process =>
-                {
-                    try
-                    {
-                        await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
-                    }
-                    catch (TimeoutException) { }
-                    catch (InvalidOperationException) { }
-                }
-            )
-        );
-
-        var gameServers = gameServersContext.Get().OrderBy(s => s.Id).ToList();
-
-        foreach (var gameServer in gameServers)
-        {
-            var serverLock = GetServerLock(gameServer.Id);
-            await serverLock.WaitAsync();
-            try
-            {
-                if (!string.IsNullOrEmpty(gameServer.Status.CurrentMissionSessionId))
-                {
-                    await TryFinaliseKilledSessionAsync(gameServer.Status.CurrentMissionSessionId);
-                }
-
-                gameServer.ProcessId = null;
-                gameServer.ProcessStartedAt = null;
-                gameServer.LaunchedBy = null;
-                gameServer.Status = new GameServerStatus();
-                gameServer.HeadlessClientProcessIds.Clear();
-                StatusCache.TryRemove(gameServer.Id, out _);
-                await gameServersContext.Replace(gameServer);
-            }
-            finally
-            {
-                serverLock.Release();
-            }
-        }
-
-        return processes.Count;
-    }
-
-    private async Task KillServerCoreAsync(DomainGameServer server)
-    {
-        if (server.ProcessId is not null)
-        {
-            await KillProcessAndWaitAsync(server.ProcessId.Value);
-        }
-
-        await ResetServerToDeadAsync(server, push: false);
-    }
-
-    private async Task KillProcessAndWaitAsync(int processId)
-    {
-        if (!gameServerHelpers.IsOwnedProcessId(processId))
-        {
-            return;
-        }
-
-        var process = processUtilities.FindProcessById(processId);
-        if (process is { HasExited: false })
-        {
-            try
-            {
-                process.Kill(true);
-                await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
-            }
-            catch (TimeoutException) { }
-            catch (InvalidOperationException) { }
-            catch (Win32Exception) { }
-        }
     }
 
     private async Task SendShutdownAsync(int port, string context)
