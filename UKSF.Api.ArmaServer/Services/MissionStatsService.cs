@@ -80,7 +80,9 @@ public partial class MissionStatsService(
                                                         .Inc(x => x.DistanceInVehicle, updates.DistanceInVehicle)
                                                         .Inc(x => x.TotalFuelLitres, updates.TotalFuelLitres)
                                                         .Inc(x => x.ExplosivesPlaced, updates.ExplosivesPlaced)
-                                                        .Inc(x => x.TimesUnconscious, updates.TimesUnconscious);
+                                                        .Inc(x => x.TimesUnconscious, updates.TimesUnconscious)
+                                                        .Inc(x => x.TimesInCardiacArrest, updates.TimesInCardiacArrest)
+                                                        .Inc(x => x.TimesInComa, updates.TimesInComa);
 
         foreach (var (bodyPart, count) in updates.BodyPartHits)
         {
