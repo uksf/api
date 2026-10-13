@@ -13,8 +13,10 @@ public class DevRunRecoveryStartup(IGameServerHelpers helpers, IProcessUtilities
     {
         try
         {
-            KillOrphanProcesses();
-            await MarkStuckRecordsFailed();
+            var devRunProcesses = processUtilities.GetProcessesWithCommandLine("arma3server").Where(x => IsDevRunProfile(x.CommandLine)).ToList();
+            KillOrphanProcesses(devRunProcesses.Where(x => helpers.IsOwnedProcess(x.CommandLine)));
+            var liveForeignProfileIds = devRunProcesses.Where(x => !helpers.IsOwnedProcess(x.CommandLine)).Select(x => ProfileId(x.CommandLine)).ToList();
+            await MarkStuckRecordsFailed(liveForeignProfileIds);
         }
         catch (Exception ex)
         {
@@ -24,11 +26,10 @@ public class DevRunRecoveryStartup(IGameServerHelpers helpers, IProcessUtilities
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-    private void KillOrphanProcesses()
+    private void KillOrphanProcesses(IEnumerable<ProcessCommandLineInfo> ownedDevRunProcesses)
     {
-        foreach (var process in processUtilities.GetProcessesWithCommandLine("arma3server"))
+        foreach (var process in ownedDevRunProcesses)
         {
-            if (!IsDevRunProfile(process.CommandLine) || !helpers.IsOwnedProcess(process.CommandLine)) continue;
             try
             {
                 var running = processUtilities.FindProcessById(process.ProcessId);
@@ -45,13 +46,20 @@ public class DevRunRecoveryStartup(IGameServerHelpers helpers, IProcessUtilities
         }
     }
 
-    private static bool IsDevRunProfile(string commandLine) =>
-        !string.IsNullOrEmpty(commandLine) &&
-        System.Text.RegularExpressions.Regex.IsMatch(commandLine, @"-profiles=""?[^\s""]*[/\\]DevRun_", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+    private static readonly System.Text.RegularExpressions.Regex DevRunProfile = new(
+        @"-profiles=""?[^\s""]*[/\\]DevRun_(\w+)",
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase
+    );
 
-    private async Task MarkStuckRecordsFailed()
+    private static bool IsDevRunProfile(string commandLine) => !string.IsNullOrEmpty(commandLine) && DevRunProfile.IsMatch(commandLine);
+
+    private static string ProfileId(string commandLine) => DevRunProfile.Match(commandLine).Groups[1].Value;
+
+    private async Task MarkStuckRecordsFailed(List<string> liveForeignProfileIds)
     {
-        var stuck = context.Get(x => x.Status == DevRunStatus.Running).ToList();
+        var stuck = context.Get(x => x.Status == DevRunStatus.Running)
+                           .Where(x => !liveForeignProfileIds.Any(id => x.RunId?.StartsWith(id, StringComparison.OrdinalIgnoreCase) == true))
+                           .ToList();
         foreach (var record in stuck)
         {
             await context.Update(record.Id, x => x.Status, DevRunStatus.FailedLaunch);
