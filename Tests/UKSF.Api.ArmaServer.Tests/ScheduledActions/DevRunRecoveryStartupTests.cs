@@ -99,6 +99,52 @@ public class DevRunRecoveryStartupTests
     }
 
     [Fact]
+    public async Task StartAsync_DoesNotFailRunningRecordOfAnotherApisLiveDevRun()
+    {
+        var foreign = new ProcessCommandLineInfo(789, "-profiles=\"C:/x/DevRun_583d478a\" -port=3304 -apiUrl=\"theirs\"");
+        _processUtilities.Setup(x => x.GetProcessesWithCommandLine("arma3server")).Returns(new[] { foreign });
+        _context.Setup(x => x.Get(It.IsAny<Func<DomainDevRun, bool>>()))
+                .Returns(
+                    new[]
+                    {
+                        new DomainDevRun
+                        {
+                            Id = "id1",
+                            RunId = "583d478a4b1e4c2f9d0e7a6b5c4d3e2f",
+                            Status = DevRunStatus.Running
+                        }
+                    }
+                );
+
+        await CreateSut().StartAsync(CancellationToken.None);
+
+        _context.Verify(x => x.Update("id1", It.IsAny<Expression<Func<DomainDevRun, DevRunStatus>>>(), It.IsAny<DevRunStatus>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task StartAsync_FailsRunningRecordWhoseOwnDevRunProcessWasKilled()
+    {
+        var own = new ProcessCommandLineInfo(123, "-profiles=\"C:/x/DevRun_583d478a\" -port=3304 -apiUrl=\"mine\"");
+        _processUtilities.Setup(x => x.GetProcessesWithCommandLine("arma3server")).Returns(new[] { own });
+        _context.Setup(x => x.Get(It.IsAny<Func<DomainDevRun, bool>>()))
+                .Returns(
+                    new[]
+                    {
+                        new DomainDevRun
+                        {
+                            Id = "id1",
+                            RunId = "583d478a4b1e4c2f9d0e7a6b5c4d3e2f",
+                            Status = DevRunStatus.Running
+                        }
+                    }
+                );
+
+        await CreateSut().StartAsync(CancellationToken.None);
+
+        _context.Verify(x => x.Update("id1", It.IsAny<Expression<Func<DomainDevRun, DevRunStatus>>>(), DevRunStatus.FailedLaunch), Times.Once);
+    }
+
+    [Fact]
     public async Task StartAsync_DoesNotKillNonDevRunProcess()
     {
         var unrelated = new ProcessCommandLineInfo(456, "-profiles=C:/x/GameDataExport -port=3302");
