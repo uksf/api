@@ -39,6 +39,39 @@ public class PersistenceSaveValidationTests
         _mockContext.Verify(x => x.SaveIfNewer(It.IsAny<DomainPersistenceSession>(), It.IsAny<string>()), Times.Never);
     }
 
+    [Theory]
+    [InlineData("""[["junk",true]]""")]
+    [InlineData("""[["type","Box"],["position",[1,2,3]],["vectorDirUp",[[0,1,0],[0,0,1]]]]""")]
+    [InlineData("""[["id",""],["type","Box"],["position",[1,2,3]],["vectorDirUp",[[0,1,0],[0,0,1]]]]""")]
+    [InlineData("""[["id","box_1"],["position",[1,2,3]],["vectorDirUp",[[0,1,0],[0,0,1]]]]""")]
+    [InlineData("""[["id","box_1"],["type","Box"],["position",[1,2]],["vectorDirUp",[[0,1,0],[0,0,1]]]]""")]
+    [InlineData("""[["id","box_1"],["type","Box"],["position",[1,2,3]]]""")]
+    [InlineData("""[["id","box_1"],["type","Box"],["position",[1,2,3]],["vectorDirUp",[[0,1,0],[0,0]]]]""")]
+    public async Task HandleSaveAsync_WithAnObjectMissingItsIdentityOrPlacement_RejectsWithoutSaving(string objectSqf)
+    {
+        var act = () => _subject.HandleSaveAsync("bad-key", "session", Sqf($"""[["objects",[{objectSqf}]],["players",[]]]"""));
+
+        await act.Should().ThrowAsync<PersistenceSaveRejectedException>().WithMessage("*'objects'*");
+        _mockContext.Verify(x => x.SaveIfNewer(It.IsAny<DomainPersistenceSession>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task HandleSaveAsync_WithAPlacedObject_Saves()
+    {
+        _mockContext.Setup(x => x.SaveIfNewer(It.IsAny<DomainPersistenceSession>(), "session")).ReturnsAsync(true);
+
+        await _subject.HandleSaveAsync(
+            "key",
+            "session",
+            Sqf("""[["objects",[[["id","box_1"],["type","Box"],["position",[1,2,3]],["vectorDirUp",[[0,1,0],[0,0,1]]]]]],["players",[]]]""")
+        );
+
+        _mockContext.Verify(
+            x => x.SaveIfNewer(It.Is<DomainPersistenceSession>(s => s.Objects.Count == 1 && s.Objects[0].Id == "box_1"), "session"),
+            Times.Once
+        );
+    }
+
     [Fact]
     public async Task HandleSaveAsync_WithNoObjectsAndNoPlayers_Saves()
     {
