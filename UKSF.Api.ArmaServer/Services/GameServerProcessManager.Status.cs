@@ -69,7 +69,9 @@ public partial class GameServerProcessManager
         await serverLock.WaitAsync();
         try
         {
-            if (StopPhaseWatchdog.Rank(phase) < StopPhaseWatchdog.Rank(gameServer.Status.StopPhase))
+            var rank = StopPhaseWatchdog.Rank(phase);
+            var currentRank = StopPhaseWatchdog.Rank(gameServer.Status.StopPhase);
+            if (rank < currentRank || (rank == currentRank && gameServer.Status.StopPhaseEnteredAt is not null))
             {
                 return;
             }
