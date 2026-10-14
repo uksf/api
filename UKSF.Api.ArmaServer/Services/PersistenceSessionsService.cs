@@ -17,8 +17,6 @@ public class PersistenceSaveRejectedException(string message, Exception innerExc
 
 public class PersistenceSessionsService(IPersistenceSessionsContext context, IUksfLogger logger) : IPersistenceSessionsService
 {
-    private static readonly string[] ListFields = ["objects", "deletedObjects", "dateTime", "mapMarkers"];
-
     public DomainPersistenceSession Load(string key)
     {
         return context.GetSingle(x => x.Key == key);
@@ -57,7 +55,7 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
                 throw new PersistenceSaveRejectedException($"persistence_save data was empty for key '{key}'");
             }
 
-            RejectMistypedFields(key, rawDict);
+            PersistenceSaveValidator.Validate(key, rawDict);
             session = PersistenceConverter.FromHashmap(rawDict);
         }
         catch (Exception exception) when (exception is not PersistenceSaveRejectedException)
@@ -67,43 +65,4 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
 
         await SaveAsync(key, session, sessionId, enqueuedAt);
     }
-
-    private static void RejectMistypedFields(string key, Dictionary<string, object> rawDict)
-    {
-        foreach (var field in ListFields)
-        {
-            if (rawDict.TryGetValue(field, out var value) && value is not List<object> and not object[])
-            {
-                throw new PersistenceSaveRejectedException($"persistence_save field '{field}' is not a list for key '{key}'");
-            }
-        }
-
-        if (rawDict.TryGetValue("players", out var players) && players is not Dictionary<string, object> and not List<object>)
-        {
-            throw new PersistenceSaveRejectedException($"persistence_save field 'players' is not a hashmap for key '{key}'");
-        }
-
-        if (!rawDict.TryGetValue("objects", out var objects))
-        {
-            throw new PersistenceSaveRejectedException($"persistence_save has no 'objects' field for key '{key}'");
-        }
-
-        if (ToList(objects).Any(entry => !IsHashmap(entry) || ToDict(entry).Count == 0))
-        {
-            throw new PersistenceSaveRejectedException($"persistence_save field 'objects' holds an entry that is not a hashmap for key '{key}'");
-        }
-
-        if (players is not null && (!IsHashmap(players) || ToDict(players).Values.Any(entry => !IsHashmap(entry) || ToDict(entry).Count == 0)))
-        {
-            throw new PersistenceSaveRejectedException($"persistence_save field 'players' holds an entry that is not a hashmap for key '{key}'");
-        }
-    }
-
-    private static bool IsHashmap(object value) =>
-        value switch
-        {
-            Dictionary<string, object> => true,
-            List<object> list          => list.All(entry => entry is List<object> { Count: 2 } pair && pair[0] is string),
-            _                          => false
-        };
 }

@@ -28,7 +28,10 @@ public class PersistenceSaveRejectionTests
     [InlineData("[[\"objects\",42],[\"players\",[]]]", "*'objects' is not a list*")]
     [InlineData("[[\"objects\",[]],[\"players\",42]]", "*'players' is not a hashmap*")]
     [InlineData("[[\"objects\",[]],[\"dateTime\",[[2035]]]]", "*Failed to deserialize*")]
-    [InlineData("[[\"objects\",[[[\"turretWeapons\",[[]]]]]]]", "*Failed to deserialize*")]
+    [InlineData(
+        "[[\"objects\",[[[\"id\",\"b\"],[\"type\",\"Box\"],[\"position\",[1,2,3]],[\"vectorDirUp\",[[0,1,0],[0,0,1]]],[\"turretWeapons\",[[]]]]]]]",
+        "*Failed to deserialize*"
+    )]
     public async Task HandleSaveAsync_WithMalformedFields_RejectsWithoutSaving(string sqf, string expectedMessage)
     {
         var act = () => _subject.HandleSaveAsync("bad-key", string.Empty, SqfToDict(sqf));

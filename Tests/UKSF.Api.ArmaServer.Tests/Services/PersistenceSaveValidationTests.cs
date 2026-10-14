@@ -55,6 +55,54 @@ public class PersistenceSaveValidationTests
         _mockContext.Verify(x => x.SaveIfNewer(It.IsAny<DomainPersistenceSession>(), It.IsAny<string>()), Times.Never);
     }
 
+    private const string ValidPlayer =
+        """[["position",[1,2,3]],["vehicleState",["","",-1]],["direction",90],["animation",""],["loadout",[[],[],[],[],[],[],"","",[],[]]],["damage",0.2],["aceMedical",[]],["earplugs",false],["attachedItems",[]],["radios",[]],["diveState",[false]]]""";
+
+    [Theory]
+    [InlineData("position", "[1,2]")]
+    [InlineData("vehicleState", "[\"\",\"cargo\",0]")]
+    [InlineData("vehicleState", "[\"veh_1\",\"\",0]")]
+    [InlineData("direction", "\"north\"")]
+    [InlineData("damage", "2")]
+    [InlineData("loadout", "[[],[]]")]
+    [InlineData("aceMedical", "\"{not json\"")]
+    [InlineData("earplugs", "1")]
+    [InlineData("attachedItems", "[1]")]
+    [InlineData("diveState", "[]")]
+    public async Task HandleSaveAsync_WithAMalformedPlayerField_RejectsWithoutSaving(string field, string value)
+    {
+        var player = ValidPlayer.Replace($"[\"{field}\",", $"[\"{field}\",{value}],[\"_{field}\",");
+
+        var act = () => _subject.HandleSaveAsync("bad-key", "session", Sqf($"""[["objects",[]],["players",[["765",{player}]]]]"""));
+
+        await act.Should().ThrowAsync<PersistenceSaveRejectedException>().WithMessage($"*{field}*");
+        _mockContext.Verify(x => x.SaveIfNewer(It.IsAny<DomainPersistenceSession>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData("""["","",-1]""")]
+    [InlineData("""["veh_1","cargo",2]""")]
+    [InlineData("""["veh_1","turret",[0,1]]""")]
+    public async Task HandleSaveAsync_WithAValidPlayer_Saves(string vehicleState)
+    {
+        _mockContext.Setup(x => x.SaveIfNewer(It.IsAny<DomainPersistenceSession>(), "session")).ReturnsAsync(true);
+        var player = ValidPlayer.Replace("""["vehicleState",["","",-1]]""", $"""["vehicleState",{vehicleState}]""");
+
+        await _subject.HandleSaveAsync("key", "session", Sqf($"""[["objects",[]],["players",[["765",{player}]]]]"""));
+
+        _mockContext.Verify(x => x.SaveIfNewer(It.Is<DomainPersistenceSession>(s => s.Players.ContainsKey("765")), "session"), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleSaveAsync_WithTwoObjectsSharingAnId_RejectsWithoutSaving()
+    {
+        const string box = """[["id","box_1"],["type","Box"],["position",[1,2,3]],["vectorDirUp",[[0,1,0],[0,0,1]]]]""";
+
+        var act = () => _subject.HandleSaveAsync("bad-key", "session", Sqf($"""[["objects",[{box},{box}]],["players",[]]]"""));
+
+        await act.Should().ThrowAsync<PersistenceSaveRejectedException>().WithMessage("*box_1*more than once*");
+    }
+
     [Fact]
     public async Task HandleSaveAsync_WithAPlacedObject_Saves()
     {
