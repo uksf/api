@@ -41,7 +41,8 @@ public partial class GameServerEventHandler(
             switch (gameServerEvent.Type)
             {
                 case "server_status":
-                    if (!hasNoGameServerRow) await processManager.HandleServerStatusAsync(gameServerEvent.ApiPort, gameServerEvent.Data);
+                    if (!hasNoGameServerRow)
+                        await processManager.HandleServerStatusAsync(gameServerEvent.ApiPort, gameServerEvent.Data, EnqueueTime(gameServerEvent.Data));
                     break;
                 case "shutdown_ending":
                     if (!hasNoGameServerRow) await processManager.HandleStopEndingAsync(gameServerEvent.ApiPort, EnqueueTime(gameServerEvent.Data));

@@ -92,7 +92,8 @@ public partial class GameServerProcessManager
             "server_status",
             async gameServer =>
             {
-                if (gameServer.Status.StopPhase != StopPhase.None)
+                var noTrackedProcess = gameServer.ProcessId is null && !gameServer.Status.Launching;
+                if (gameServer.Status.StopPhase != StopPhase.None || noTrackedProcess || PredatesProcess(gameServer, enqueuedAt))
                 {
                     return;
                 }
