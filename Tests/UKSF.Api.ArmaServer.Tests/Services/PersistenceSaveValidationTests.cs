@@ -62,6 +62,7 @@ public class PersistenceSaveValidationTests
     [InlineData("position", "[1,2]")]
     [InlineData("vehicleState", "[\"\",\"cargo\",0]")]
     [InlineData("vehicleState", "[\"veh_1\",\"\",0]")]
+    [InlineData("vehicleState", "[\"veh_1\",\"cargo\",1.5]")]
     [InlineData("direction", "\"north\"")]
     [InlineData("damage", "2")]
     [InlineData("loadout", "[[],[]]")]
@@ -83,6 +84,9 @@ public class PersistenceSaveValidationTests
     [InlineData("""["","",-1]""")]
     [InlineData("""["veh_1","cargo",2]""")]
     [InlineData("""["veh_1","turret",[0,1]]""")]
+    [InlineData("""["","",-1.000000]""")]
+    [InlineData("""["veh_1","cargo",2.000000]""")]
+    [InlineData("""["veh_1","turret",[0.000000,1.000000]]""")]
     public async Task HandleSaveAsync_WithAValidPlayer_Saves(string vehicleState)
     {
         _mockContext.Setup(x => x.SaveIfNewer(It.IsAny<DomainPersistenceSession>(), "session")).ReturnsAsync(true);
