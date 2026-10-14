@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using FluentAssertions;
 using MassTransit;
 using Moq;
 using UKSF.Api.ArmaServer.DataContext;
@@ -76,5 +77,19 @@ public class GameServerEventHandlerSessionTests
 
         _processManager.Verify(x => x.RecordMissionSessionAsync(2303, "old", false, It.IsAny<DateTime?>()), Times.Once);
         _gameServers.Verify(x => x.Update(It.IsAny<string>(), It.IsAny<MongoDB.Driver.UpdateDefinition<DomainGameServer>>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData("mission_ended")]
+    [InlineData("shutdown_saving")]
+    public async Task AcknowledgedEvent_WhenHandlingFails_PropagatesTheFailure(string type)
+    {
+        _processManager.Setup(x => x.RecordMissionSessionAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<DateTime?>()))
+                       .ThrowsAsync(new TimeoutException("mongo"));
+        _processManager.Setup(x => x.HandleStopSavingAsync(It.IsAny<int>(), It.IsAny<DateTime?>())).ThrowsAsync(new TimeoutException("mongo"));
+
+        var act = () => Send(type, "old");
+
+        await act.Should().ThrowAsync<TimeoutException>();
     }
 }

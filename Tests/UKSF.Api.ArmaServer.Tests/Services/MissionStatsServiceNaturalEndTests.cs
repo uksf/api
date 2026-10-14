@@ -26,6 +26,7 @@ public class MissionStatsServiceNaturalEndTests
     private readonly Mock<IRawEventStore> _rawEventStore = new();
     private readonly Mock<IPerformanceService> _performance = new();
     private readonly MissionStatsService _subject;
+
     private readonly MissionSession _stored = new()
     {
         Id = "id-1",
@@ -40,7 +41,9 @@ public class MissionStatsServiceNaturalEndTests
         _sessions.Setup(x => x.FindFirst(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<Expression<Func<MissionSession, object>>>()))
                  .Returns(() => Snapshot());
         _sessions.Setup(x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()))
-                 .Returns<Expression<Func<MissionSession, bool>>, UpdateDefinition<MissionSession>>((filter, update) => Task.FromResult(ClaimAndApply(filter, update)));
+                 .Returns<Expression<Func<MissionSession, bool>>, UpdateDefinition<MissionSession>>((filter, update) =>
+                                                                                                        Task.FromResult(ClaimAndApply(filter, update))
+                 );
         _sessions.Setup(x => x.Update(It.IsAny<string>(), It.IsAny<UpdateDefinition<MissionSession>>()))
                  .Returns<string, UpdateDefinition<MissionSession>>((_, update) =>
                      {
@@ -141,5 +144,18 @@ public class MissionStatsServiceNaturalEndTests
 
         _stored.MissionEnded.Should().Be(NaturalEnd);
         _performance.Verify(x => x.ComputeFinalFpsStatsAsync("session-1"), Times.Once);
+    }
+
+    [Fact]
+    public async Task NaturalEnd_WhenFinalFpsFailsOnce_TheRetryComputesItAndEndsTheSession()
+    {
+        _performance.SetupSequence(x => x.ComputeFinalFpsStatsAsync("session-1")).ThrowsAsync(new TimeoutException("mongo")).Returns(Task.CompletedTask);
+
+        var first = () => _subject.HandleMissionEndedAsync("session-1", NaturalDuration, NaturalEnd);
+        await first.Should().ThrowAsync<TimeoutException>();
+        await _subject.HandleMissionEndedAsync("session-1", NaturalDuration, NaturalEnd);
+
+        _stored.MissionEnded.Should().Be(NaturalEnd);
+        _performance.Verify(x => x.ComputeFinalFpsStatsAsync("session-1"), Times.Exactly(2));
     }
 }
