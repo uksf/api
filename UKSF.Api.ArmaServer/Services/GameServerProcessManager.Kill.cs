@@ -9,25 +9,21 @@ public partial class GameServerProcessManager
 {
     private const string DataLossRefusal = "Killing now loses persistence data the API has not stored. Reload the page and confirm the kill";
 
-    public async Task KillServerAsync(DomainGameServer server, bool confirmDataLoss = false)
+    public async Task KillServerAsync(DomainGameServer requested, bool confirmDataLoss = false)
     {
-        var serverLock = GetServerLock(server.Id);
-        await serverLock.WaitAsync();
-        try
-        {
-            var current = gameServersContext.GetSingle(server.Id) ?? server;
-            if (StopPhaseWatchdog.SaveNotYetStored(current.Status.StopPhase) && !confirmDataLoss)
+        await WithCurrentServerAsync(
+            requested.Id,
+            async server =>
             {
-                throw new BadRequestException(DataLossRefusal);
-            }
+                if (StopPhaseWatchdog.SaveNotYetStored(server.Status.StopPhase) && !confirmDataLoss)
+                {
+                    throw new BadRequestException(DataLossRefusal);
+                }
 
-            await KillServerCoreAsync(current);
-            await PushServerUpdateAsync(current);
-        }
-        finally
-        {
-            serverLock.Release();
-        }
+                await KillServerCoreAsync(server);
+                await PushServerUpdateAsync(server);
+            }
+        );
     }
 
     public async Task<int> KillAllAsync(bool confirmDataLoss = false)
@@ -67,8 +63,9 @@ public partial class GameServerProcessManager
                 gameServer.ProcessStartedAt = null;
                 gameServer.LaunchedBy = null;
                 gameServer.Status = new GameServerStatus();
-                gameServer.HeadlessClientProcessIds.Clear();
+                gameServer.HeadlessClients.Clear();
                 StatusCache.TryRemove(gameServer.Id, out _);
+                _shutdownSentAt.TryRemove(gameServer.Id, out _);
                 await gameServersContext.Replace(gameServer);
             }
 
@@ -83,32 +80,10 @@ public partial class GameServerProcessManager
     private async Task<int> KillOwnedArmaProcessesAsync()
     {
         var processes = gameServerHelpers.GetGameServerArmaProcesses()
-                                         .Select(p => processUtilities.FindProcessById(p.ProcessId))
-                                         .Where(p => p is not null)
+                                         .Select(listed => TryOpenOwnedProcess(Track(listed.ProcessId)))
+                                         .Where(process => process is not null)
                                          .ToList();
-        foreach (var process in processes)
-        {
-            try
-            {
-                processUtilities.KillProcess(process);
-            }
-            catch (InvalidOperationException) { }
-            catch (Win32Exception) { }
-        }
-
-        await Task.WhenAll(
-            processes.Select(async process =>
-                {
-                    try
-                    {
-                        await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
-                    }
-                    catch (TimeoutException) { }
-                    catch (InvalidOperationException) { }
-                }
-            )
-        );
-
+        await Task.WhenAll(processes.Select(KillProcessAndWaitAsync));
         return processes.Count;
     }
 
@@ -116,51 +91,33 @@ public partial class GameServerProcessManager
     {
         if (server.ProcessId is { } processId)
         {
-            var process = processUtilities.FindProcessById(processId);
-            if (process is not null && IsServerProcess(server, process))
+            if (TryOpenOwnedProcess(ServerProcessOf(server)) is { } process)
             {
                 await KillProcessAndWaitAsync(process);
             }
-            else if (process is not null)
+            else
             {
-                logger.LogWarning($"Not killing PID {processId} for '{server.Name}': the process started at a different time, so the PID was reused");
+                logger.LogWarning($"Not killing PID {processId} for '{server.Name}': it is gone, not owned by this API, or a different process reused the PID");
             }
         }
 
         await ResetServerToDeadAsync(server, push: false);
     }
 
-    private async Task KillProcessAndWaitAsync(int processId)
-    {
-        if (!gameServerHelpers.IsOwnedProcessId(processId))
-        {
-            return;
-        }
-
-        var process = processUtilities.FindProcessById(processId);
-        if (process is not null)
-        {
-            await KillProcessAndWaitAsync(process);
-        }
-    }
-
     private async Task KillProcessAndWaitAsync(Process process)
     {
-        if (!gameServerHelpers.IsOwnedProcessId(process.Id))
+        try
         {
-            return;
-        }
-
-        if (!process.HasExited)
-        {
-            try
+            if (process.HasExited)
             {
-                process.Kill(true);
-                await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                return;
             }
-            catch (TimeoutException) { }
-            catch (InvalidOperationException) { }
-            catch (Win32Exception) { }
+
+            processUtilities.KillProcess(process);
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
         }
+        catch (TimeoutException) { }
+        catch (InvalidOperationException) { }
+        catch (Win32Exception) { }
     }
 }

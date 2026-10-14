@@ -5,6 +5,7 @@ using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Signalr.Clients;
 using UKSF.Api.ArmaServer.Signalr.Hubs;
 using UKSF.Api.Core;
+using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Processes;
 using UKSF.Api.Core.Services;
 
@@ -30,12 +31,54 @@ public partial class GameServerProcessManager(
     private const string SqfShutdownCommandEnvelope = "[\"shutdown\"]";
     private static readonly TimeSpan OrphanKillCeiling = TimeSpan.FromMinutes(5);
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _serverLocks = new();
+    private readonly ConcurrentDictionary<string, DateTime> _shutdownSentAt = new();
     private readonly Lock _monitorLock = new();
     private bool _monitorRunning;
 
     private SemaphoreSlim GetServerLock(string serverId)
     {
         return _serverLocks.GetOrAdd(serverId, _ => new SemaphoreSlim(1, 1));
+    }
+
+    private async Task<bool> WithCurrentServerAsync(string serverId, Func<DomainGameServer, Task> action, bool waitForLock = true)
+    {
+        var serverLock = GetServerLock(serverId);
+        if (waitForLock)
+        {
+            await serverLock.WaitAsync();
+        }
+        else if (!await serverLock.WaitAsync(0))
+        {
+            return false;
+        }
+
+        try
+        {
+            var current = gameServersContext.GetSingle(serverId);
+            if (current is null)
+            {
+                return false;
+            }
+
+            await action(current);
+            return true;
+        }
+        finally
+        {
+            serverLock.Release();
+        }
+    }
+
+    private Task<bool> WithCurrentServerAsync(int apiPort, string eventName, Func<DomainGameServer, Task> action)
+    {
+        var serverId = gameServersContext.GetSingle(x => x.ApiPort == apiPort)?.Id;
+        if (serverId is null)
+        {
+            logger.LogWarning($"Received {eventName} but no server matches apiPort {apiPort}");
+            return Task.FromResult(false);
+        }
+
+        return WithCurrentServerAsync(serverId, action);
     }
 
     public int GetInstanceCount()
@@ -67,111 +110,122 @@ public partial class GameServerProcessManager(
         await serversHub.Clients.All.ReceiveServersUpdate(update);
     }
 
-    public async Task LaunchServerAsync(DomainGameServer server, string missionName, string launchedBy, int playerCount)
+    public async Task LaunchServerAsync(DomainGameServer requested, string missionName, string launchedBy, int playerCount)
     {
-        var serverLock = GetServerLock(server.Id);
-        await serverLock.WaitAsync();
-        try
+        var launched = await WithCurrentServerAsync(requested.Id, server => LaunchCurrentServerAsync(server, missionName, launchedBy, playerCount));
+        if (!launched)
         {
-            await File.WriteAllTextAsync(
-                gameServerHelpers.GetGameServerConfigPath(server),
-                gameServerHelpers.FormatGameServerConfig(server, playerCount, missionName)
-            );
-
-            server.Status = new GameServerStatus { Launching = true };
-            server.HeadlessClientProcessIds.Clear();
-            StatusCache.TryRemove(server.Id, out _);
-
-            if (missionName is not null)
-            {
-                var fileName = Path.GetFileName(missionName);
-                var nameWithoutExtension = fileName.EndsWith(".pbo", StringComparison.OrdinalIgnoreCase) ? fileName[..^4] : fileName;
-                var lastDot = nameWithoutExtension.LastIndexOf('.');
-                if (lastDot > 0)
-                {
-                    server.Status.Mission = nameWithoutExtension[..lastDot];
-                    server.Status.Map = nameWithoutExtension[(lastDot + 1)..];
-                }
-                else
-                {
-                    server.Status.Mission = nameWithoutExtension;
-                }
-            }
-
-            if (launchedBy is not null)
-            {
-                server.LaunchedBy = launchedBy;
-            }
-
-            var launchArguments = gameServerHelpers.FormatGameServerLaunchArguments(server);
-            server.ProcessId = processUtilities.LaunchManagedProcess(gameServerHelpers.GetGameServerExecutablePath(server), launchArguments);
-            server.ProcessStartedAt = StartTimeOfProcessId(server.ProcessId);
-
-            await Task.Delay(TimeSpan.FromMilliseconds(50));
-
-            for (var index = 0; index < server.NumberHeadlessClients; index++)
-            {
-                launchArguments = gameServerHelpers.FormatHeadlessClientLaunchArguments(server, index);
-                server.HeadlessClientProcessIds.Add(
-                    processUtilities.LaunchManagedProcess(gameServerHelpers.GetGameServerExecutablePath(server), launchArguments)
-                );
-
-                await Task.Delay(TimeSpan.FromMilliseconds(50));
-            }
-
-            await gameServersContext.Replace(server);
-            await PushServerUpdateAsync(server);
-        }
-        finally
-        {
-            serverLock.Release();
+            throw new BadRequestException($"Server '{requested.Name}' no longer exists");
         }
 
         EnsureMonitorRunning();
     }
 
-    public async Task StopServerAsync(DomainGameServer server)
+    private async Task LaunchCurrentServerAsync(DomainGameServer server, string missionName, string launchedBy, int playerCount)
     {
-        var serverLock = GetServerLock(server.Id);
-        await serverLock.WaitAsync();
-        try
+        if (server.Status.Running || server.Status.Launching || TryOpenOwnedProcess(ServerProcessOf(server)) is not null)
         {
-            server = gameServersContext.GetSingle(server.Id) ?? server;
-            if (StopPhaseWatchdog.Rank(server.Status.StopPhase) > 0)
+            throw new BadRequestException($"Server '{server.Name}' is already running");
+        }
+
+        await File.WriteAllTextAsync(
+            gameServerHelpers.GetGameServerConfigPath(server),
+            gameServerHelpers.FormatGameServerConfig(server, playerCount, missionName)
+        );
+
+        server.Status = new GameServerStatus { Launching = true };
+        server.HeadlessClients.Clear();
+        StatusCache.TryRemove(server.Id, out _);
+
+        if (missionName is not null)
+        {
+            var fileName = Path.GetFileName(missionName);
+            var nameWithoutExtension = fileName.EndsWith(".pbo", StringComparison.OrdinalIgnoreCase) ? fileName[..^4] : fileName;
+            var lastDot = nameWithoutExtension.LastIndexOf('.');
+            if (lastDot > 0)
             {
-                logger.LogWarning($"Ignoring stop for '{server.Name}': it is already stopping in phase {server.Status.StopPhase}");
-                return;
+                server.Status.Mission = nameWithoutExtension[..lastDot];
+                server.Status.Map = nameWithoutExtension[(lastDot + 1)..];
+            }
+            else
+            {
+                server.Status.Mission = nameWithoutExtension;
+            }
+        }
+
+        if (launchedBy is not null)
+        {
+            server.LaunchedBy = launchedBy;
+        }
+
+        var launchArguments = gameServerHelpers.FormatGameServerLaunchArguments(server);
+        server.ProcessId = processUtilities.LaunchManagedProcess(gameServerHelpers.GetGameServerExecutablePath(server), launchArguments);
+        server.ProcessStartedAt = Track(server.ProcessId.Value)?.StartedAt;
+
+        await Task.Delay(TimeSpan.FromMilliseconds(50));
+
+        for (var index = 0; index < server.NumberHeadlessClients; index++)
+        {
+            launchArguments = gameServerHelpers.FormatHeadlessClientLaunchArguments(server, index);
+            var headlessClient = Track(processUtilities.LaunchManagedProcess(gameServerHelpers.GetGameServerExecutablePath(server), launchArguments));
+            if (headlessClient is not null)
+            {
+                server.HeadlessClients.Add(headlessClient);
             }
 
-            if (!server.Status.Running)
-            {
-                await KillServerCoreAsync(server);
-                await PushServerUpdateAsync(server);
-                return;
-            }
+            await Task.Delay(TimeSpan.FromMilliseconds(50));
+        }
 
+        await gameServersContext.Replace(server);
+        await PushServerUpdateAsync(server);
+    }
+
+    public async Task StopServerAsync(DomainGameServer requested)
+    {
+        await WithCurrentServerAsync(requested.Id, StopCurrentServerAsync);
+        EnsureMonitorRunning();
+    }
+
+    private async Task StopCurrentServerAsync(DomainGameServer server)
+    {
+        if (StopPhaseWatchdog.Rank(server.Status.StopPhase) > 0 && !ShutdownUnacknowledged(server.Status))
+        {
+            logger.LogWarning($"Ignoring stop for '{server.Name}': it is already stopping in phase {server.Status.StopPhase}");
+            return;
+        }
+
+        if (!server.Status.Running)
+        {
+            await KillServerCoreAsync(server);
+            await PushServerUpdateAsync(server);
+            return;
+        }
+
+        if (server.Status.StopPhase == StopPhase.None)
+        {
             server.Status.StopPhase = StopPhase.Ending;
             server.Status.StopRequestedAt = DateTime.UtcNow;
             server.Status.StopPhaseEnteredAt = null;
             server.Status.KillAllowedAt = StopPhaseWatchdog.KillOfferAt(server.Status);
             await gameServersContext.Replace(server);
-            if (gameServerHelpers.IsOwnedApiPort(server.ApiPort))
-            {
-                await SendShutdownAsync(server.ApiPort, $"game server '{server.Name}'");
-            }
-            else
-            {
-                logger.LogWarning($"Not sending shutdown for '{server.Name}': no process launched by this API listens on API port {server.ApiPort}");
-            }
-
-            await PushServerUpdateAsync(server);
         }
-        finally
+
+        await SendShutdownCommandAsync(server);
+        await PushServerUpdateAsync(server);
+    }
+
+    private static bool ShutdownUnacknowledged(GameServerStatus status) => status.StopPhase == StopPhase.Ending && status.StopPhaseEnteredAt is null;
+
+    private async Task SendShutdownCommandAsync(DomainGameServer server)
+    {
+        _shutdownSentAt[server.Id] = DateTime.UtcNow;
+        if (!gameServerHelpers.IsOwnedApiPort(server.ApiPort))
         {
-            serverLock.Release();
+            logger.LogWarning($"Not sending shutdown for '{server.Name}': no process launched by this API listens on API port {server.ApiPort}");
+            return;
         }
 
-        EnsureMonitorRunning();
+        await SendShutdownAsync(server.ApiPort, $"game server '{server.Name}'");
     }
 
     private async Task SendShutdownAsync(int port, string context)

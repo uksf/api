@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using UKSF.Api.ArmaServer.Models;
 
 namespace UKSF.Api.ArmaServer.Services;
 
@@ -30,9 +31,13 @@ public partial class GameServerProcessManager
                 return owned.Count;
             }
 
-            var tracked = servers.SelectMany(server => server.HeadlessClientProcessIds.Append(server.ProcessId ?? 0)).ToHashSet();
-            var orphans = owned.Where(process => !tracked.Contains(process.ProcessId))
-                               .Select(process => (process.ProcessId, StartedAt: StartTimeOfProcessId(process.ProcessId)))
+            var tracked = servers.SelectMany(server => server.HeadlessClients.Append(server.ServerProcess)).Where(process => process is not null).ToHashSet();
+            var trackedWithoutStartTime = servers.Where(server => server.ProcessStartedAt is null && server.ProcessId is not null)
+                                                 .Select(server => server.ProcessId.Value)
+                                                 .ToHashSet();
+            var orphans = owned.Where(process => !trackedWithoutStartTime.Contains(process.ProcessId))
+                               .Select(process => (process.ProcessId, StartedAt: Track(process.ProcessId)?.StartedAt))
+                               .Where(process => process.StartedAt is not { } startedAt || !tracked.Contains(new TrackedProcess(process.ProcessId, startedAt)))
                                .ToHashSet();
 
             foreach (var gone in _orphanFirstSeen.Keys.Where(key => !orphans.Contains(key)).ToList())
@@ -71,13 +76,7 @@ public partial class GameServerProcessManager
 
     private void KillOrphan((int ProcessId, DateTime? StartedAt) orphan)
     {
-        if (orphan.StartedAt is null || !gameServerHelpers.IsOwnedProcessId(orphan.ProcessId))
-        {
-            return;
-        }
-
-        var process = processUtilities.FindProcessById(orphan.ProcessId);
-        if (process is not { HasExited: false } || StartTimeOf(process) != orphan.StartedAt)
+        if (orphan.StartedAt is not { } startedAt || TryOpenOwnedProcess(new TrackedProcess(orphan.ProcessId, startedAt)) is not { } process)
         {
             return;
         }

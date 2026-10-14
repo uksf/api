@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core.Processes;
 using Xunit;
 
@@ -15,7 +16,6 @@ public class GameServerProcessManagerOrphanTests : GameServerProcessManagerTestB
     private const int OrphanPid = 4001;
     private readonly Process _process = Process.GetCurrentProcess();
     private readonly DateTime _now = DateTime.UtcNow;
-    private readonly List<DomainGameServer> _servers = [];
 
     public GameServerProcessManagerOrphanTests()
     {
@@ -69,7 +69,7 @@ public class GameServerProcessManagerOrphanTests : GameServerProcessManagerTestB
             {
                 Id = "s1",
                 ProcessId = 1,
-                HeadlessClientProcessIds = [OrphanPid]
+                HeadlessClients = [new(OrphanPid, GameServerProcessManager.CanonicalStartTime(_process.StartTime))]
             }
         );
 

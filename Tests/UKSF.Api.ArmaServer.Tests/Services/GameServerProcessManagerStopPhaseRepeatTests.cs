@@ -28,6 +28,7 @@ public class GameServerProcessManagerStopPhaseRepeatTests : GameServerProcessMan
                 StopPhaseEnteredAt = enteredAt
             }
         };
+        _servers.Add(server);
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
         _mockContext.Setup(x => x.GetSingle("s1")).Returns(server);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);

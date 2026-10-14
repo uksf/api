@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
@@ -23,6 +24,7 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
             ApiPort = 2303,
             Status = new GameServerStatus { Running = true }
         };
+        _servers.Add(server);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
         await _sut.StopServerAsync(server);
@@ -44,6 +46,7 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
             ApiPort = 2303,
             Status = new GameServerStatus { Running = true }
         };
+        _servers.Add(server);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
         var httpClient = new HttpClient(new MockHttpMessageHandler(HttpStatusCode.OK));
         _mockHttpClientFactory.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(httpClient);
@@ -61,9 +64,10 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
             Id = "s1",
             Name = "Test",
             ProcessId = 1234,
-            HeadlessClientProcessIds = [],
+            HeadlessClients = [],
             Status = new GameServerStatus { Running = false, Launching = true }
         };
+        _servers.Add(server);
         _mockProcessUtilities.Setup(x => x.FindProcessById(1234)).Returns((Process)null);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
@@ -83,9 +87,10 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
             Name = "Test",
             ApiPort = 2303,
             ProcessId = 1234,
-            HeadlessClientProcessIds = [5001],
+            HeadlessClients = [new(5001, HeadlessClientStart)],
             Status = new GameServerStatus { Running = true, CurrentMissionSessionId = "sess-1" }
         };
+        _servers.Add(server);
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
@@ -95,7 +100,7 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
         server.Status.StopPhaseEnteredAt.Should().NotBeNull();
         server.Status.StopRequestedAt.Should().NotBeNull();
         server.ProcessId.Should().Be(1234);
-        server.HeadlessClientProcessIds.Should().Contain(5001);
+        server.HeadlessClients.Select(x => x.ProcessId).Should().Contain(5001);
         server.Status.CurrentMissionSessionId.Should().Be("sess-1");
         _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync(It.IsAny<string>()), Times.Never);
         _mockContext.Verify(x => x.Replace(server), Times.Once);
@@ -112,6 +117,7 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
             ApiPort = 2303,
             Status = new GameServerStatus { StopPhase = StopPhase.Ending, StopRequestedAt = requested }
         };
+        _servers.Add(server);
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
@@ -136,6 +142,7 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
                 StopRequestedAt = enteredAt
             }
         };
+        _servers.Add(server);
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
@@ -155,7 +162,7 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
             Id = "s1",
             ApiPort = 2303,
             ProcessId = 1234,
-            HeadlessClientProcessIds = [5001],
+            HeadlessClients = [new(5001, HeadlessClientStart)],
             Status = new GameServerStatus
             {
                 StopPhase = StopPhase.Ending,
@@ -163,6 +170,7 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
                 CurrentMissionSessionId = "sess-1"
             }
         };
+        _servers.Add(server);
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
@@ -171,7 +179,7 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
         server.Status.StopPhase.Should().Be(StopPhase.Saving);
         server.Status.StopPhaseEnteredAt.Should().NotBeNull();
         server.ProcessId.Should().Be(1234);
-        server.HeadlessClientProcessIds.Should().Contain(5001);
+        server.HeadlessClients.Select(x => x.ProcessId).Should().Contain(5001);
         server.Status.CurrentMissionSessionId.Should().Be("sess-1");
         _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync(It.IsAny<string>()), Times.Never);
     }
@@ -184,7 +192,7 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
             Id = "s1",
             ApiPort = 2303,
             ProcessId = 1234,
-            HeadlessClientProcessIds = [5001],
+            HeadlessClients = [new(5001, HeadlessClientStart)],
             Status = new GameServerStatus
             {
                 StopPhase = StopPhase.Saving,
@@ -192,6 +200,7 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
                 CurrentMissionSessionId = "sess-1"
             }
         };
+        _servers.Add(server);
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
@@ -200,7 +209,7 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
         server.Status.StopPhase.Should().Be(StopPhase.Stopping);
         server.Status.StopPhaseEnteredAt.Should().NotBeNull();
         server.ProcessId.Should().Be(1234);
-        server.HeadlessClientProcessIds.Should().Contain(5001);
+        server.HeadlessClients.Select(x => x.ProcessId).Should().Contain(5001);
         server.Status.CurrentMissionSessionId.Should().Be("sess-1");
         _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync(It.IsAny<string>()), Times.Never);
         _mockOpSessionCaptureService.Verify(x => x.CaptureEndedAsync(It.IsAny<string>()), Times.Never);
@@ -226,6 +235,7 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
             ApiPort = 2303,
             Status = new GameServerStatus { StopPhase = StopPhase.Saving, StopPhaseEnteredAt = DateTime.UtcNow }
         };
+        _servers.Add(server);
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
@@ -245,6 +255,7 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
             ApiPort = 2303,
             Status = new GameServerStatus { StopPhase = StopPhase.Stopping, StopPhaseEnteredAt = enteredAt }
         };
+        _servers.Add(server);
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
@@ -264,6 +275,7 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
             ApiPort = 2303,
             Status = new GameServerStatus { StopPhase = StopPhase.Delivering, StopPhaseEnteredAt = DateTime.UtcNow }
         };
+        _servers.Add(server);
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 

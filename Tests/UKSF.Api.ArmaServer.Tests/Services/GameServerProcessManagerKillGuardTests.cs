@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core.Exceptions;
 using Xunit;
 
@@ -58,14 +59,14 @@ public class GameServerProcessManagerKillGuardTests : GameServerProcessManagerTe
         var process = Process.GetCurrentProcess();
         var server = Server(StopPhase.None);
         server.ProcessId = process.Id;
-        server.ProcessStartedAt = process.StartTime.ToUniversalTime().AddMinutes(-10);
+        server.ProcessStartedAt = GameServerProcessManager.CanonicalStartTime(process.StartTime).AddMinutes(-10);
         _mockContext.Setup(x => x.GetSingle("s1")).Returns(server);
         _mockProcessUtilities.Setup(x => x.FindProcessById(process.Id)).Returns(process);
         _mockHelpers.Setup(x => x.IsOwnedProcessId(It.IsAny<int>())).Returns(false);
 
         await _sut.KillServerAsync(server);
 
-        _mockHelpers.Verify(x => x.IsOwnedProcessId(It.IsAny<int>()), Times.Never);
+        _mockProcessUtilities.Verify(x => x.KillProcess(It.IsAny<Process>(), It.IsAny<bool>()), Times.Never);
         server.ProcessId.Should().BeNull();
     }
 
@@ -75,7 +76,7 @@ public class GameServerProcessManagerKillGuardTests : GameServerProcessManagerTe
         var process = Process.GetCurrentProcess();
         var server = Server(StopPhase.None);
         server.ProcessId = process.Id;
-        server.ProcessStartedAt = process.StartTime.ToUniversalTime();
+        server.ProcessStartedAt = GameServerProcessManager.CanonicalStartTime(process.StartTime);
         _mockContext.Setup(x => x.GetSingle("s1")).Returns(server);
         _mockProcessUtilities.Setup(x => x.FindProcessById(process.Id)).Returns(process);
         _mockHelpers.Setup(x => x.IsOwnedProcessId(process.Id)).Returns(false);
@@ -139,6 +140,7 @@ public class GameServerProcessManagerKillGuardTests : GameServerProcessManagerTe
     public async Task Stop_WhenTheServerIsAlreadySavingAndNotRunning_DoesNotKillIt()
     {
         var server = Server(StopPhase.Saving, running: false);
+        _servers.Add(server);
 
         await _sut.StopServerAsync(server);
 

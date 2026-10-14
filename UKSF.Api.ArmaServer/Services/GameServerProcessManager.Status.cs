@@ -19,125 +19,133 @@ public partial class GameServerProcessManager
         }
 
         var armaProcesses = gameServerHelpers.GetGameServerArmaProcesses();
-        if (armaProcesses.Count == 0)
-        {
-            await Task.WhenAll(gameServers.Select(server => ReconcileServerSafely(server, () => ResetServerToDeadAsync(server, push: false))));
-            return gameServers;
-        }
-
-        await Task.WhenAll(gameServers.Select(server => ReconcileServerSafely(server, () => UpdateServerStatus(server, armaProcesses))));
-        return gameServers;
+        await Task.WhenAll(gameServers.Select(server => ReconcileServerSafely(server, armaProcesses)));
+        return gameServers.Select(server => gameServersContext.GetSingle(server.Id) ?? server).ToList();
     }
 
-    private async Task ReconcileServerSafely(DomainGameServer gameServer, Func<Task> reconcile)
+    private async Task ReconcileServerSafely(DomainGameServer snapshot, IReadOnlyList<ProcessCommandLineInfo> armaProcesses)
     {
-        var serverLock = GetServerLock(gameServer.Id);
-        if (!await serverLock.WaitAsync(0))
-        {
-            return;
-        }
-
         try
         {
-            await reconcile();
+            await WithCurrentServerAsync(
+                snapshot.Id,
+                server => armaProcesses.Count == 0 ? ResetServerToDeadAsync(server, push: false, armaProcesses) : UpdateServerStatus(server, armaProcesses),
+                waitForLock: false
+            );
         }
         catch (Exception exception)
         {
-            logger.LogError($"Error reconciling status for server '{gameServer.Name}'", exception);
-        }
-        finally
-        {
-            serverLock.Release();
+            logger.LogError($"Error reconciling status for server '{snapshot.Name}'", exception);
         }
     }
 
-    public Task HandleStopEndingAsync(int apiPort) => AdvanceStopPhaseAsync(apiPort, StopPhase.Ending, "shutdown_ending");
-    public Task HandleStopSavingAsync(int apiPort) => AdvanceStopPhaseAsync(apiPort, StopPhase.Saving, "shutdown_saving");
-    public Task HandleStopDeliveringAsync(int apiPort) => AdvanceStopPhaseAsync(apiPort, StopPhase.Delivering, "shutdown_delivering");
-    public Task HandleStopStoppingAsync(int apiPort) => AdvanceStopPhaseAsync(apiPort, StopPhase.Stopping, "shutdown_stopping");
+    public Task HandleStopEndingAsync(int apiPort, DateTime? enqueuedAt = null) =>
+        AdvanceStopPhaseAsync(apiPort, StopPhase.Ending, "shutdown_ending", enqueuedAt);
 
-    private async Task AdvanceStopPhaseAsync(int apiPort, StopPhase phase, string eventName)
-    {
-        var gameServer = gameServersContext.GetSingle(x => x.ApiPort == apiPort);
-        if (gameServer is null)
-        {
-            logger.LogWarning($"Received {eventName} but no server matches apiPort {apiPort}");
-            return;
-        }
+    public Task HandleStopSavingAsync(int apiPort, DateTime? enqueuedAt = null) =>
+        AdvanceStopPhaseAsync(apiPort, StopPhase.Saving, "shutdown_saving", enqueuedAt);
 
-        var serverLock = GetServerLock(gameServer.Id);
-        await serverLock.WaitAsync();
-        try
-        {
-            var rank = StopPhaseWatchdog.Rank(phase);
-            var currentRank = StopPhaseWatchdog.Rank(gameServer.Status.StopPhase);
-            if (rank < currentRank || (rank == currentRank && gameServer.Status.StopPhaseEnteredAt is not null))
+    public Task HandleStopDeliveringAsync(int apiPort, DateTime? enqueuedAt = null) =>
+        AdvanceStopPhaseAsync(apiPort, StopPhase.Delivering, "shutdown_delivering", enqueuedAt);
+
+    public Task HandleStopStoppingAsync(int apiPort, DateTime? enqueuedAt = null) =>
+        AdvanceStopPhaseAsync(apiPort, StopPhase.Stopping, "shutdown_stopping", enqueuedAt);
+
+    private Task AdvanceStopPhaseAsync(int apiPort, StopPhase phase, string eventName, DateTime? enqueuedAt) =>
+        WithCurrentServerAsync(
+            apiPort,
+            eventName,
+            async gameServer =>
             {
-                return;
+                if (PredatesProcess(gameServer, enqueuedAt))
+                {
+                    logger.LogWarning($"Ignoring {eventName} for '{gameServer.Name}': it was sent before the current process started");
+                    return;
+                }
+
+                var rank = StopPhaseWatchdog.Rank(phase);
+                var currentRank = StopPhaseWatchdog.Rank(gameServer.Status.StopPhase);
+                if (rank < currentRank || (rank == currentRank && gameServer.Status.StopPhaseEnteredAt is not null))
+                {
+                    return;
+                }
+
+                var now = DateTime.UtcNow;
+                gameServer.Status.StopRequestedAt ??= now;
+                gameServer.Status.StopPhase = phase;
+                gameServer.Status.StopPhaseEnteredAt = now;
+                gameServer.Status.KillAllowedAt = StopPhaseWatchdog.KillOfferAt(gameServer.Status);
+                await gameServersContext.Replace(gameServer);
+                await PushServerUpdateAsync(gameServer);
             }
+        );
 
-            var now = DateTime.UtcNow;
-            gameServer.Status.StopRequestedAt ??= now;
-            gameServer.Status.StopPhase = phase;
-            gameServer.Status.StopPhaseEnteredAt = now;
-            gameServer.Status.KillAllowedAt = StopPhaseWatchdog.KillOfferAt(gameServer.Status);
-            await gameServersContext.Replace(gameServer);
-            await PushServerUpdateAsync(gameServer);
-        }
-        finally
-        {
-            serverLock.Release();
-        }
-    }
-
-    public async Task HandleServerStatusAsync(int apiPort, Dictionary<string, object> data)
-    {
-        var gameServer = gameServersContext.GetSingle(x => x.ApiPort == apiPort);
-        if (gameServer is null)
-        {
-            logger.LogWarning($"Received server_status but no server matches apiPort {apiPort}");
-            return;
-        }
-
-        var serverLock = GetServerLock(gameServer.Id);
-        await serverLock.WaitAsync();
-        try
-        {
-            var status = StatusCache.GetOrAdd(gameServer.Id, _ => gameServer.Status ?? new GameServerStatus());
-            if (gameServer.Status.StopPhase != StopPhase.None)
+    public Task RecordMissionSessionAsync(int apiPort, string sessionId, bool started, DateTime? enqueuedAt = null) =>
+        WithCurrentServerAsync(
+            apiPort,
+            started ? "mission_started" : "mission_ended",
+            async gameServer =>
             {
-                return;
+                if (PredatesProcess(gameServer, enqueuedAt))
+                {
+                    return;
+                }
+
+                var current = gameServer.Status.CurrentMissionSessionId;
+                var next = started       ? sessionId :
+                    current == sessionId ? null : current;
+                if (next == current)
+                {
+                    return;
+                }
+
+                gameServer.Status.CurrentMissionSessionId = next;
+                if (StatusCache.TryGetValue(gameServer.Id, out var cached))
+                {
+                    cached.CurrentMissionSessionId = next;
+                }
+
+                await gameServersContext.Replace(gameServer);
             }
+        );
 
-            ApplyStatusFields(status, data);
-
-            if (!(data.TryGetValue("players", out var playersRaw) && playersRaw is List<object>))
+    public Task HandleServerStatusAsync(int apiPort, Dictionary<string, object> data) =>
+        WithCurrentServerAsync(
+            apiPort,
+            "server_status",
+            async gameServer =>
             {
-                logger.LogWarning($"server_status 'players' missing or not a list. Keys: {string.Join(", ", data.Keys)}");
+                if (gameServer.Status.StopPhase != StopPhase.None)
+                {
+                    return;
+                }
+
+                var status = StatusCache.GetOrAdd(gameServer.Id, _ => gameServer.Status ?? new GameServerStatus());
+                ApplyStatusFields(status, data);
+
+                if (!(data.TryGetValue("players", out var playersRaw) && playersRaw is List<object>))
+                {
+                    logger.LogWarning($"server_status 'players' missing or not a list. Keys: {string.Join(", ", data.Keys)}");
+                }
+
+                if (status.StartedAt is null &&
+                    data.TryGetValue("uptime", out var uptimeRaw) &&
+                    float.TryParse(uptimeRaw?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var startUptime))
+                {
+                    status.StartedAt = DateTime.UtcNow.AddSeconds(-startUptime);
+                }
+
+                status.Running = true;
+                status.Launching = false;
+                status.MaxPlayers = gameServerHelpers.GetMaxPlayerCountFromConfig(gameServer);
+                status.LastEventReceived = DateTime.UtcNow;
+                status.CurrentMissionSessionId = gameServer.Status.CurrentMissionSessionId;
+
+                gameServer.Status = status;
+                await gameServersContext.Replace(gameServer);
+                await PushServerUpdateAsync(gameServer);
             }
-
-            if (status.StartedAt is null &&
-                data.TryGetValue("uptime", out var uptimeRaw) &&
-                float.TryParse(uptimeRaw?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var startUptime))
-            {
-                status.StartedAt = DateTime.UtcNow.AddSeconds(-startUptime);
-            }
-
-            status.Running = true;
-            status.Launching = false;
-            status.MaxPlayers = gameServerHelpers.GetMaxPlayerCountFromConfig(gameServer);
-            status.LastEventReceived = DateTime.UtcNow;
-
-            gameServer.Status = status;
-            await gameServersContext.Replace(gameServer);
-
-            await PushServerUpdateAsync(gameServer);
-        }
-        finally
-        {
-            serverLock.Release();
-        }
-    }
+        );
 
     private void ApplyStatusFields(GameServerStatus status, IReadOnlyDictionary<string, object> data)
     {
@@ -190,16 +198,27 @@ public partial class GameServerProcessManager
     private async Task UpdateServerStatus(DomainGameServer gameServer, IReadOnlyList<ProcessCommandLineInfo> armaProcesses)
     {
         var matchingProcess = FindMatchingServerProcess(gameServer, armaProcesses);
-        UpdateHeadlessClientProcessIds(gameServer, armaProcesses);
-
         if (matchingProcess is null)
         {
-            await HandleProcessGone(gameServer);
+            await HandleProcessGone(gameServer, armaProcesses);
             return;
         }
 
-        if (gameServer.ProcessId != matchingProcess.ProcessId) gameServer.ProcessStartedAt = StartTimeOfProcessId(matchingProcess.ProcessId);
-        gameServer.ProcessId = matchingProcess.ProcessId;
+        var tracked = gameServer.ProcessId == matchingProcess.ProcessId ? ServerProcessOf(gameServer) : Track(matchingProcess.ProcessId);
+        if (tracked is null)
+        {
+            await HandleProcessGone(gameServer, armaProcesses);
+            return;
+        }
+
+        gameServer.ProcessId = tracked.ProcessId;
+        gameServer.ProcessStartedAt = tracked.StartedAt;
+        gameServer.HeadlessClients = armaProcesses.Where(p => MatchesPort(p, gameServer.Port) && p.CommandLine.Contains("-client"))
+                                                  .Select(p => gameServer.HeadlessClients.FirstOrDefault(known => known.ProcessId == p.ProcessId) ??
+                                                               Track(p.ProcessId)
+                                                  )
+                                                  .Where(process => process is not null)
+                                                  .ToList();
         gameServer.Status.Launching = true;
 
         using var client = httpClientFactory.CreateClient();
@@ -265,13 +284,6 @@ public partial class GameServerProcessManager
     private static ProcessCommandLineInfo FindMatchingServerProcess(DomainGameServer gameServer, IReadOnlyList<ProcessCommandLineInfo> armaProcesses)
     {
         return armaProcesses.FirstOrDefault(p => MatchesPort(p, gameServer.Port) && p.CommandLine.Contains("-config=") && !p.CommandLine.Contains("-client"));
-    }
-
-    private static void UpdateHeadlessClientProcessIds(DomainGameServer gameServer, IReadOnlyList<ProcessCommandLineInfo> armaProcesses)
-    {
-        gameServer.HeadlessClientProcessIds = armaProcesses.Where(p => MatchesPort(p, gameServer.Port) && p.CommandLine.Contains("-client"))
-                                                           .Select(p => p.ProcessId)
-                                                           .ToList();
     }
 
     private static bool MatchesPort(ProcessCommandLineInfo process, int port)

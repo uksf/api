@@ -10,10 +10,11 @@ public interface IGameServerProcessManager
     Task<int> KillAllAsync(bool confirmDataLoss = false);
     int GetInstanceCount();
     Task<List<DomainGameServer>> GetAllServerStatusesAsync();
-    Task HandleStopEndingAsync(int apiPort);
-    Task HandleStopSavingAsync(int apiPort);
-    Task HandleStopDeliveringAsync(int apiPort);
-    Task HandleStopStoppingAsync(int apiPort);
+    Task HandleStopEndingAsync(int apiPort, DateTime? enqueuedAt = null);
+    Task HandleStopSavingAsync(int apiPort, DateTime? enqueuedAt = null);
+    Task HandleStopDeliveringAsync(int apiPort, DateTime? enqueuedAt = null);
+    Task HandleStopStoppingAsync(int apiPort, DateTime? enqueuedAt = null);
+    Task RecordMissionSessionAsync(int apiPort, string sessionId, bool started, DateTime? enqueuedAt = null);
     Task HandleServerStatusAsync(int apiPort, Dictionary<string, object> data);
     Task PushServerUpdateAsync(DomainGameServer server);
     Task PushAllServersUpdateAsync();

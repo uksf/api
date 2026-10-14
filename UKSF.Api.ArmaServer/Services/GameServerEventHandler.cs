@@ -42,23 +42,23 @@ public partial class GameServerEventHandler(
                     if (!hasNoGameServerRow) await processManager.HandleServerStatusAsync(gameServerEvent.ApiPort, gameServerEvent.Data);
                     break;
                 case "shutdown_ending":
-                    if (!hasNoGameServerRow) await processManager.HandleStopEndingAsync(gameServerEvent.ApiPort);
+                    if (!hasNoGameServerRow) await processManager.HandleStopEndingAsync(gameServerEvent.ApiPort, EnqueueTime(gameServerEvent.Data));
                     break;
                 case "shutdown_saving":
-                    if (!hasNoGameServerRow) await processManager.HandleStopSavingAsync(gameServerEvent.ApiPort);
+                    if (!hasNoGameServerRow) await processManager.HandleStopSavingAsync(gameServerEvent.ApiPort, EnqueueTime(gameServerEvent.Data));
                     break;
                 case "shutdown_delivering":
-                    if (!hasNoGameServerRow) await processManager.HandleStopDeliveringAsync(gameServerEvent.ApiPort);
+                    if (!hasNoGameServerRow) await processManager.HandleStopDeliveringAsync(gameServerEvent.ApiPort, EnqueueTime(gameServerEvent.Data));
                     break;
                 case "shutdown_stopping":
                     ReportUnstoredShutdownSave(gameServerEvent.ApiPort, gameServerEvent.Data);
-                    if (!hasNoGameServerRow) await processManager.HandleStopStoppingAsync(gameServerEvent.ApiPort);
+                    if (!hasNoGameServerRow) await processManager.HandleStopStoppingAsync(gameServerEvent.ApiPort, EnqueueTime(gameServerEvent.Data));
                     break;
                 case "mission_stats":   await HandleMissionStatsEvent(gameServerEvent.Data); break;
-                case "mission_started": await HandleMissionLifecycleEvent(gameServerEvent.ApiPort, gameServerEvent.Data, true); break;
+                case "mission_started": await HandleMissionLifecycleEvent(gameServerEvent.ApiPort, gameServerEvent.Data, true, hasNoGameServerRow); break;
                 case "mission_ended":
                     ReportUnsavedMissionEnd(gameServerEvent.Data);
-                    await HandleMissionLifecycleEvent(gameServerEvent.ApiPort, gameServerEvent.Data, false);
+                    await HandleMissionLifecycleEvent(gameServerEvent.ApiPort, gameServerEvent.Data, false, hasNoGameServerRow);
                     break;
                 case "player_connected":    await HandlePlayerPresenceEvent(gameServerEvent.Data, isConnected: true); break;
                 case "player_disconnected": await HandlePlayerPresenceEvent(gameServerEvent.Data, isConnected: false); break;
@@ -122,7 +122,7 @@ public partial class GameServerEventHandler(
         );
     }
 
-    private async Task HandleMissionLifecycleEvent(int apiPort, Dictionary<string, object> data, bool isStart)
+    private async Task HandleMissionLifecycleEvent(int apiPort, Dictionary<string, object> data, bool isStart, bool hasNoGameServerRow)
     {
         var sessionId = data.TryGetValue("sessionId", out var sessionIdValue) ? sessionIdValue.ToString() : string.Empty;
         if (string.IsNullOrEmpty(sessionId))
@@ -131,10 +131,13 @@ public partial class GameServerEventHandler(
         }
 
         var gameServer = gameServersContext.GetSingle(x => x.ApiPort == apiPort);
-        if (gameServer is not null)
+        if (!hasNoGameServerRow && gameServer is not null)
         {
-            var newSessionId = isStart ? sessionId : null;
-            await gameServersContext.Update(gameServer.Id, Builders<DomainGameServer>.Update.Set(x => x.Status.CurrentMissionSessionId, newSessionId));
+            var alreadyEnded = isStart && (await missionStatsService.GetSessionAsync(sessionId))?.MissionEnded is not null;
+            if (!alreadyEnded)
+            {
+                await processManager.RecordMissionSessionAsync(apiPort, sessionId, isStart, EnqueueTime(data));
+            }
         }
 
         if (isStart)
@@ -171,12 +174,14 @@ public partial class GameServerEventHandler(
         }
     }
 
-    private static DateTime EnqueueTimeOr(Dictionary<string, object> data, DateTime fallback) =>
+    private static DateTime EnqueueTimeOr(Dictionary<string, object> data, DateTime fallback) => EnqueueTime(data) ?? fallback;
+
+    private static DateTime? EnqueueTime(Dictionary<string, object> data) =>
         data.TryGetValue("enqueueAt", out var value) &&
         value is string text &&
         DateTime.TryParse(text, null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed)
             ? parsed
-            : fallback;
+            : null;
 
     private async Task HandlePlayerPresenceEvent(Dictionary<string, object> data, bool isConnected)
     {

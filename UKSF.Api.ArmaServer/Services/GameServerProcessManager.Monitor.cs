@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.ComponentModel;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core.Processes;
 
@@ -40,6 +39,7 @@ public partial class GameServerProcessManager
     }
 
     private static readonly TimeSpan MonitorRestartDelay = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan ShutdownResendInterval = TimeSpan.FromSeconds(15);
 
     private async Task MonitorLoop()
     {
@@ -102,60 +102,66 @@ public partial class GameServerProcessManager
         }
     }
 
-    private async Task CheckServer(DomainGameServer server)
+    private async Task CheckServer(DomainGameServer snapshot)
     {
-        var serverLock = GetServerLock(server.Id);
-        if (!await serverLock.WaitAsync(0))
+        try
+        {
+            await WithCurrentServerAsync(snapshot.Id, CheckCurrentServer, waitForLock: false);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"Error checking server '{snapshot.Name}' (ProcessId: {snapshot.ProcessId})", ex);
+        }
+    }
+
+    private async Task CheckCurrentServer(DomainGameServer server)
+    {
+        if (server.ProcessId is null)
         {
             return;
         }
 
-        try
+        var hadStartTime = server.ProcessStartedAt is not null;
+        var process = TryOpenOwnedProcess(ServerProcessOf(server));
+        if (process is null)
         {
-            if (server.ProcessId is null)
-            {
-                return;
-            }
-
-            var process = processUtilities.FindProcessById(server.ProcessId!.Value);
-            if (process is not { HasExited: false } || !IsServerProcess(server, process))
-            {
-                await HandleProcessGone(server);
-                return;
-            }
-
-            if (StopPhaseWatchdog.WatchdogExceeded(server.Status, DateTime.UtcNow))
-            {
-                await ForceKillServer(server, process);
-            }
+            await HandleProcessGone(server);
+            return;
         }
-        catch (Exception ex)
+
+        if (!hadStartTime)
         {
-            logger.LogError($"Error checking server '{server.Name}' (ProcessId: {server.ProcessId})", ex);
+            await gameServersContext.Replace(server);
         }
-        finally
+
+        var now = DateTime.UtcNow;
+        if (StopPhaseWatchdog.WatchdogExceeded(server.Status, now))
         {
-            serverLock.Release();
+            await ForceKillServer(server, process);
+            return;
+        }
+
+        if (ShutdownUnacknowledged(server.Status) && now - _shutdownSentAt.GetValueOrDefault(server.Id) > ShutdownResendInterval)
+        {
+            logger.LogWarning($"'{server.Name}' has not acknowledged shutdown, sending it again");
+            await SendShutdownCommandAsync(server);
         }
     }
 
     private async Task ForceKillServer(DomainGameServer server, Process process)
     {
         logger.LogInfo($"Force-killing server '{server.Name}' after stop watchdog exceeded (phase {server.Status.StopPhase})");
-
-        if (!process.HasExited && gameServerHelpers.IsOwnedProcessId(process.Id))
-        {
-            process.Kill(true);
-        }
-
+        await KillProcessAndWaitAsync(process);
         await HandleProcessGone(server);
     }
 
-    private async Task ResetServerToDeadAsync(DomainGameServer server, bool push)
+    private async Task ResetServerToDeadAsync(DomainGameServer server, bool push, IReadOnlyList<ProcessCommandLineInfo> armaProcesses = null)
     {
         var activeSessionId = server.Status.CurrentMissionSessionId;
 
-        await Task.WhenAll(server.HeadlessClientProcessIds.Select(KillProcessAndWaitAsync));
+        await Task.WhenAll(
+            HeadlessClientsOf(server, armaProcesses).Select(TryOpenOwnedProcess).Where(process => process is not null).Select(KillProcessAndWaitAsync)
+        );
 
         if (!string.IsNullOrEmpty(activeSessionId))
         {
@@ -164,10 +170,11 @@ public partial class GameServerProcessManager
 
         server.ProcessId = null;
         server.ProcessStartedAt = null;
-        server.HeadlessClientProcessIds.Clear();
+        server.HeadlessClients.Clear();
         server.LaunchedBy = null;
         server.Status = new GameServerStatus();
         StatusCache.TryRemove(server.Id, out _);
+        _shutdownSentAt.TryRemove(server.Id, out _);
 
         await gameServersContext.Replace(server);
 
@@ -177,9 +184,9 @@ public partial class GameServerProcessManager
         }
     }
 
-    private async Task HandleProcessGone(DomainGameServer server)
+    private async Task HandleProcessGone(DomainGameServer server, IReadOnlyList<ProcessCommandLineInfo> armaProcesses = null)
     {
-        await ResetServerToDeadAsync(server, push: true);
+        await ResetServerToDeadAsync(server, push: true, armaProcesses);
 
         logger.LogInfo($"Process monitor detected server '{server.Name}' is offline");
     }

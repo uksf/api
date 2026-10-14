@@ -20,6 +20,8 @@ public enum StopPhase
     Delivering = 4
 }
 
+public record TrackedProcess(int ProcessId, DateTime StartedAt);
+
 public class DomainGameServer : MongoObject
 {
     public List<GameServerMod> Mods { get; set; } = [];
@@ -27,7 +29,7 @@ public class DomainGameServer : MongoObject
     public int ApiPort { get; set; }
 
     public GameEnvironment Environment { get; set; }
-    public List<int> HeadlessClientProcessIds { get; set; } = new();
+    public List<TrackedProcess> HeadlessClients { get; set; } = [];
     public string HostName { get; set; }
     public string Name { get; set; }
     public int NumberHeadlessClients { get; set; }
@@ -52,6 +54,9 @@ public class DomainGameServer : MongoObject
 
     [BsonIgnore]
     public List<RptLogSource> LogSources { get; set; } = [];
+
+    [BsonIgnore]
+    public TrackedProcess ServerProcess => ProcessId is { } processId && ProcessStartedAt is { } startedAt ? new TrackedProcess(processId, startedAt) : null;
 
     public override string ToString()
     {

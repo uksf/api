@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using Microsoft.AspNetCore.SignalR;
 using Moq;
 using UKSF.Api.ArmaServer.DataContext;
+using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.ArmaServer.Signalr.Clients;
 using UKSF.Api.ArmaServer.Signalr.Hubs;
@@ -26,6 +30,8 @@ public abstract class GameServerProcessManagerTestBase
     protected readonly Mock<IUksfLogger> _mockLogger = new();
     protected readonly Mock<IServersClient> _mockServersClient;
     protected readonly GameServerProcessManager _sut;
+    protected readonly List<DomainGameServer> _servers = [];
+    protected static readonly DateTime HeadlessClientStart = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
     protected GameServerProcessManagerTestBase()
     {
@@ -35,6 +41,10 @@ public abstract class GameServerProcessManagerTestBase
         _mockServersHub.Setup(x => x.Clients).Returns(mockClients.Object);
         _mockHelpers.Setup(x => x.IsOwnedProcessId(It.IsAny<int>())).Returns(true);
         _mockHelpers.Setup(x => x.IsOwnedApiPort(It.IsAny<int>())).Returns(true);
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<string>()))
+                    .Returns<string>(id => _servers.FirstOrDefault(server => server.Id == id) ??
+                                           _mockContext.Object.Get()?.FirstOrDefault(server => server.Id == id)
+                    );
 
         _sut = new GameServerProcessManager(
             _mockContext.Object,

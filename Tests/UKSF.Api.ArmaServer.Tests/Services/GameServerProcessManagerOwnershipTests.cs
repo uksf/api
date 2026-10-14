@@ -17,9 +17,10 @@ public class GameServerProcessManagerOwnershipTests : GameServerProcessManagerTe
         {
             Id = "s1",
             Name = "Test",
-            HeadlessClientProcessIds = [5001, 5002],
+            HeadlessClients = [new(5001, HeadlessClientStart), new(5002, HeadlessClientStart)],
             Status = new GameServerStatus { Running = true }
         };
+        _servers.Add(server);
         _mockHelpers.Setup(x => x.IsOwnedProcessId(5002)).Returns(false);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
         _mockProcessUtilities.Setup(x => x.FindProcessById(It.IsAny<int>())).Returns((Process)null);
@@ -40,6 +41,7 @@ public class GameServerProcessManagerOwnershipTests : GameServerProcessManagerTe
             ApiPort = 2403,
             Status = new GameServerStatus { Running = true }
         };
+        _servers.Add(server);
         _mockHelpers.Setup(x => x.IsOwnedApiPort(2403)).Returns(false);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
         _mockHttpClientFactory.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(new HttpClient(new MockHttpMessageHandler(HttpStatusCode.OK)));
