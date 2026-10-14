@@ -123,10 +123,10 @@ public static class PersistenceSaveValidator
 
         if (vehicleId.Length == 0)
         {
-            return role.Length == 0 && state[2] is long index && index == -1;
+            return role.Length == 0 && IsWholeNumber(state[2]) && ToDouble(state[2]) == -1;
         }
 
-        return role.Length > 0 && (state[2] is long || (state[2] is List<object> path && path.All(step => step is long)));
+        return role.Length > 0 && (IsWholeNumber(state[2]) || (state[2] is List<object> path && path.All(IsWholeNumber)));
     }
 
     private static bool IsLoadout(object value) =>
@@ -162,6 +162,8 @@ public static class PersistenceSaveValidator
             double number => double.IsFinite(number),
             _             => false
         };
+
+    private static bool IsWholeNumber(object value) => IsFiniteNumber(value) && ToDouble(value) % 1 == 0;
 
     private static bool IsNonBlankString(object value) => value is string text && !string.IsNullOrWhiteSpace(text);
 
