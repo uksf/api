@@ -35,6 +35,13 @@ public partial class MissionStatsService(
         if (existing is not null)
         {
             var update = Builders<MissionSession>.Update.Set(x => x.LastBatchReceived, receivedAt).Inc(x => x.TotalBatchesReceived, 1);
+            if (string.IsNullOrEmpty(existing.Mission) && !string.IsNullOrEmpty(mission))
+            {
+                update = update.Set(x => x.Mission, mission).Set(x => x.Map, map);
+                existing.Mission = mission;
+                existing.Map = map;
+            }
+
             await sessionsContext.Update(existing.Id, update);
             existing.LastBatchReceived = receivedAt;
             existing.TotalBatchesReceived++;
@@ -204,6 +211,10 @@ public partial class MissionStatsService(
         var existing = sessionsContext.FindFirst(s => s.SessionId == sessionId);
         if (existing is null)
         {
+            var endedBeforeStart = Builders<MissionSession>.Update.SetOnInsert(x => x.SessionId, sessionId)
+                                                           .Set(x => x.MissionEnded, timestamp)
+                                                           .Set(x => x.DurationSeconds, durationSeconds);
+            await sessionsContext.Upsert(s => s.SessionId == sessionId, endedBeforeStart);
             return;
         }
 

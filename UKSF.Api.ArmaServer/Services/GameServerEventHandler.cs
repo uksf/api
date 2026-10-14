@@ -133,31 +133,20 @@ public partial class GameServerEventHandler(
         }
 
         var gameServer = gameServersContext.GetSingle(x => x.ApiPort == apiPort);
-        if (!hasNoGameServerRow && gameServer is not null)
-        {
-            var alreadyEnded = isStart && (await missionStatsService.GetSessionAsync(sessionId))?.MissionEnded is not null;
-            if (!alreadyEnded)
-            {
-                await processManager.RecordMissionSessionAsync(apiPort, sessionId, isStart, EnqueueTime(data));
-            }
-        }
-
-        if (isStart)
-        {
-            if (gameServer is not null)
-            {
-                await missionSessionCaptureService.CaptureStartedAsync(gameServer.Id, sessionId);
-            }
-        }
-        else
-        {
-            await missionSessionCaptureService.CaptureEndedAsync(sessionId);
-        }
-
+        var tracked = !hasNoGameServerRow && gameServer is not null;
         var now = DateTime.UtcNow;
 
         if (isStart)
         {
+            var accepted = tracked
+                ? await processManager.RecordMissionSessionAsync(apiPort, sessionId, true, EnqueueTime(data))
+                : (await missionStatsService.GetSessionAsync(sessionId))?.MissionEnded is null;
+            if (!accepted)
+            {
+                logger.LogWarning($"Ignoring mission_started for session '{sessionId}': it already ended or predates the server process");
+                return;
+            }
+
             var mission = data.TryGetValue("mission", out var missionValue) ? missionValue.ToString() : string.Empty;
             var map = data.TryGetValue("map", out var mapValue) ? mapValue.ToString() : string.Empty;
             if (string.IsNullOrEmpty(mission) || string.IsNullOrEmpty(map))
@@ -172,6 +161,12 @@ public partial class GameServerEventHandler(
         {
             var duration = data.TryGetValue("duration", out var durationValue) && double.TryParse(durationValue?.ToString(), out var parsed) ? parsed : 0;
             await missionStatsService.HandleMissionEndedAsync(sessionId, duration, EnqueueTimeOr(data, now));
+            if (tracked)
+            {
+                await processManager.RecordMissionSessionAsync(apiPort, sessionId, false, EnqueueTime(data));
+            }
+
+            await missionSessionCaptureService.CaptureEndedAsync(sessionId);
             await npcBrokerService.HandleMissionEndedAsync(sessionId);
         }
     }

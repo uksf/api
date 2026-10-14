@@ -29,7 +29,13 @@ public partial class GameServerProcessManager
         {
             await WithCurrentServerAsync(
                 snapshot.Id,
-                server => armaProcesses.Count == 0 ? ResetServerToDeadAsync(server, push: false, armaProcesses) : UpdateServerStatus(server, armaProcesses),
+                server =>
+                {
+                    var processes = server.ProcessId is not null && FindMatchingServerProcess(server, armaProcesses) is null
+                        ? gameServerHelpers.GetGameServerArmaProcesses()
+                        : armaProcesses;
+                    return processes.Count == 0 ? ResetServerToDeadAsync(server, push: false, processes) : UpdateServerStatus(server, processes);
+                },
                 waitForLock: false
             );
         }
@@ -77,35 +83,6 @@ public partial class GameServerProcessManager
                 gameServer.Status.KillAllowedAt = StopPhaseWatchdog.KillOfferAt(gameServer.Status);
                 await gameServersContext.Replace(gameServer);
                 await PushServerUpdateAsync(gameServer);
-            }
-        );
-
-    public Task<bool> RecordMissionSessionAsync(int apiPort, string sessionId, bool started, DateTime? enqueuedAt = null) =>
-        WithCurrentServerAsync(
-            apiPort,
-            started ? "mission_started" : "mission_ended",
-            async gameServer =>
-            {
-                if (PredatesProcess(gameServer, enqueuedAt))
-                {
-                    return;
-                }
-
-                var current = gameServer.Status.CurrentMissionSessionId;
-                var next = started       ? sessionId :
-                    current == sessionId ? null : current;
-                if (next == current)
-                {
-                    return;
-                }
-
-                gameServer.Status.CurrentMissionSessionId = next;
-                if (StatusCache.TryGetValue(gameServer.Id, out var cached))
-                {
-                    cached.CurrentMissionSessionId = next;
-                }
-
-                await gameServersContext.Replace(gameServer);
             }
         );
 
