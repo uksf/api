@@ -80,7 +80,7 @@ public partial class GameServerProcessManager
             }
         );
 
-    public Task RecordMissionSessionAsync(int apiPort, string sessionId, bool started, DateTime? enqueuedAt = null) =>
+    public Task<bool> RecordMissionSessionAsync(int apiPort, string sessionId, bool started, DateTime? enqueuedAt = null) =>
         WithCurrentServerAsync(
             apiPort,
             started ? "mission_started" : "mission_ended",

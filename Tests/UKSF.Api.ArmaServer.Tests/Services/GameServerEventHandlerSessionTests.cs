@@ -18,6 +18,7 @@ public class GameServerEventHandlerSessionTests
     private readonly Mock<IMissionStatsService> _missionStats = new();
     private readonly Mock<IGameServerProcessManager> _processManager = new();
     private readonly Mock<IGameServersContext> _gameServers = new();
+    private readonly Mock<IMissionSessionCaptureService> _capture = new();
     private readonly GameServerEventHandler _sut;
 
     public GameServerEventHandlerSessionTests()
@@ -32,7 +33,7 @@ public class GameServerEventHandlerSessionTests
             Mock.Of<IPersistenceSessionsService>(),
             Mock.Of<IUksfLogger>(),
             Mock.Of<INpcBrokerService>(),
-            Mock.Of<IMissionSessionCaptureService>()
+            _capture.Object
         );
     }
 
@@ -53,21 +54,52 @@ public class GameServerEventHandlerSessionTests
         );
 
     [Fact]
-    public async Task MissionStarted_ForASessionThatAlreadyEnded_DoesNotMakeItCurrent()
+    public async Task MissionStarted_WhenTheProcessManagerRejectsIt_SkipsEveryOtherStartEffect()
     {
+        _processManager.Setup(x => x.RecordMissionSessionAsync(2303, "old", true, It.IsAny<DateTime?>())).ReturnsAsync(false);
+
+        await Send("mission_started", "old");
+
+        _missionStats.Verify(x => x.HandleMissionStartedAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>()), Times.Never);
+        _capture.Verify(x => x.CaptureStartedAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task MissionStarted_WithoutAServerRow_ForAnEndedSession_IsSkipped()
+    {
+        _gameServers.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns((DomainGameServer)null);
         _missionStats.Setup(x => x.GetSessionAsync("old")).ReturnsAsync(new MissionSession { SessionId = "old", MissionEnded = DateTime.UtcNow });
 
         await Send("mission_started", "old");
 
-        _processManager.Verify(x => x.RecordMissionSessionAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<DateTime?>()), Times.Never);
+        _missionStats.Verify(x => x.HandleMissionStartedAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>()), Times.Never);
     }
 
     [Fact]
     public async Task MissionStarted_ForANewSession_RecordsItWithItsEnqueueTime()
     {
+        _processManager.Setup(x => x.RecordMissionSessionAsync(2303, "new", true, It.IsAny<DateTime?>())).ReturnsAsync(true);
+
         await Send("mission_started", "new");
 
         _processManager.Verify(x => x.RecordMissionSessionAsync(2303, "new", true, new DateTime(2026, 10, 14, 12, 0, 0, DateTimeKind.Utc)), Times.Once);
+        _missionStats.Verify(x => x.HandleMissionStartedAsync("new", "op", "Altis", It.IsAny<DateTime>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task MissionEnded_EndsTheStatisticsSessionBeforeClearingTheServerSession()
+    {
+        var order = new List<string>();
+        _missionStats.Setup(x => x.HandleMissionEndedAsync("old", It.IsAny<double>(), It.IsAny<DateTime>()))
+                     .Callback(() => order.Add("ended"))
+                     .Returns(Task.CompletedTask);
+        _processManager.Setup(x => x.RecordMissionSessionAsync(2303, "old", false, It.IsAny<DateTime?>()))
+                       .Callback(() => order.Add("cleared"))
+                       .ReturnsAsync(true);
+
+        await Send("mission_ended", "old");
+
+        order.Should().Equal("ended", "cleared");
     }
 
     [Fact]
