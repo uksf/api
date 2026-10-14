@@ -31,6 +31,7 @@ public class GameServerProcessManagerServerStatusTests : GameServerProcessManage
         {
             Id = "s1",
             ApiPort = 2303,
+            ProcessId = 1,
             Status = new GameServerStatus()
         };
         _servers.Add(server);
@@ -78,6 +79,52 @@ public class GameServerProcessManagerServerStatusTests : GameServerProcessManage
     }
 
     [Fact]
+    public async Task HandleServerStatusAsync_AfterTheServerWasReset_DoesNotResurrectRunning()
+    {
+        var server = new DomainGameServer
+        {
+            Id = "s-reset",
+            ApiPort = 2398,
+            Status = new GameServerStatus()
+        };
+        _servers.Add(server);
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
+
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
+        await _sut.HandleServerStatusAsync(2398, new Dictionary<string, object> { { "map", "Altis" }, { "players", new List<object>() } });
+
+        server.Status.Running.Should().BeFalse();
+        _mockContext.Verify(x => x.Replace(It.IsAny<DomainGameServer>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task HandleServerStatusAsync_FromAnOlderProcess_IsIgnored()
+    {
+        var started = new DateTime(2026, 10, 14, 20, 0, 0, DateTimeKind.Utc);
+        var server = new DomainGameServer
+        {
+            Id = "s-old",
+            ApiPort = 2397,
+            ProcessId = 1,
+            ProcessStartedAt = started,
+            Status = new GameServerStatus { Launching = true }
+        };
+        _servers.Add(server);
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
+
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
+        await _sut.HandleServerStatusAsync(
+            2397,
+            new Dictionary<string, object> { { "map", "Altis" }, { "players", new List<object>() } },
+            started.AddMinutes(-1)
+        );
+
+        server.Status.Running.Should().BeFalse();
+        server.Status.Launching.Should().BeTrue();
+        _mockContext.Verify(x => x.Replace(It.IsAny<DomainGameServer>()), Times.Never);
+    }
+
+    [Fact]
     public async Task HandleServerStatusAsync_WhenStopping_DoesNotResurrectRunning()
     {
         var server = new DomainGameServer
@@ -105,6 +152,7 @@ public class GameServerProcessManagerServerStatusTests : GameServerProcessManage
         {
             Id = "s1",
             ApiPort = 2303,
+            ProcessId = 1,
             Status = new GameServerStatus()
         };
         _servers.Add(server);

@@ -111,7 +111,7 @@ public class GameServerEventHandlerTests
 
         await _sut.HandleEventAsync(evt);
 
-        _mockProcessManager.Verify(x => x.HandleServerStatusAsync(2303, data), Times.Once);
+        _mockProcessManager.Verify(x => x.HandleServerStatusAsync(2303, data, It.IsAny<DateTime?>()), Times.Once);
     }
 
     [Fact]
@@ -138,7 +138,7 @@ public class GameServerEventHandlerTests
 
         await _sut.HandleEventAsync(evt);
 
-        _mockProcessManager.Verify(x => x.HandleServerStatusAsync(It.IsAny<int>(), It.IsAny<Dictionary<string, object>>()), Times.Never);
+        _mockProcessManager.Verify(x => x.HandleServerStatusAsync(It.IsAny<int>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<DateTime?>()), Times.Never);
         _mockLogger.Verify(x => x.LogWarning(It.IsAny<string>()), Times.Never);
     }
 

@@ -86,7 +86,7 @@ public partial class GameServerProcessManager
             }
         );
 
-    public Task HandleServerStatusAsync(int apiPort, Dictionary<string, object> data) =>
+    public Task HandleServerStatusAsync(int apiPort, Dictionary<string, object> data, DateTime? enqueuedAt = null) =>
         WithCurrentServerAsync(
             apiPort,
             "server_status",
