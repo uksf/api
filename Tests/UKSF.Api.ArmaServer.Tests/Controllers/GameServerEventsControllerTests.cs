@@ -156,14 +156,14 @@ public class GameServerEventsControllerTests
     }
 
     [Fact]
-    public async Task ReceiveEvent_SaveStorageFailure_Propagates()
+    public async Task ReceiveEvent_SaveStorageFailure_AsksTheExtensionToRetry()
     {
         SetRequest(@"[""persistence_save"",[[""key"",""k""]]]", 2303);
         _sut.ControllerContext.HttpContext.Request.Headers["X-Uksf-Protocol"] = "2";
         _mockEventHandler.Setup(x => x.HandleEventAsync(It.IsAny<GameServerEvent>())).ThrowsAsync(new TimeoutException("mongo down"));
 
-        var act = () => _sut.ReceiveEvent();
+        var result = await _sut.ReceiveEvent();
 
-        await act.Should().ThrowAsync<TimeoutException>();
+        result.Should().BeOfType<StatusCodeResult>().Which.StatusCode.Should().Be(503);
     }
 }

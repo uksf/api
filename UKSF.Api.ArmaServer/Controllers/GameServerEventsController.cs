@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.ArmaServer.Models;
@@ -73,7 +74,7 @@ public class GameServerEventsController(IGameServerEventHandler eventHandler, IS
             Data = data
         };
 
-        if (type == "persistence_save")
+        if (GameServerEventHandler.IsAcknowledged(type))
         {
             try
             {
@@ -82,6 +83,10 @@ public class GameServerEventsController(IGameServerEventHandler eventHandler, IS
             catch (PersistenceSaveRejectedException exception)
             {
                 return Undeliverable(exception.Message);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable);
             }
 
             return Ok();

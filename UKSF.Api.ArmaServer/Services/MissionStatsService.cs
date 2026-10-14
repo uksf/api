@@ -207,13 +207,12 @@ public partial class MissionStatsService(
             return;
         }
 
-        var naturalEnd = Builders<MissionSession>.Update.Set(x => x.MissionEnded, timestamp).Set(x => x.DurationSeconds, durationSeconds);
-        if (await sessionsContext.FindAndUpdate(s => s.SessionId == sessionId && s.MissionEnded == null, naturalEnd))
+        if (existing.MissionEnded is null)
         {
             await performanceService.ComputeFinalFpsStatsAsync(sessionId);
-            return;
         }
 
+        var naturalEnd = Builders<MissionSession>.Update.Set(x => x.MissionEnded, timestamp).Set(x => x.DurationSeconds, durationSeconds);
         await sessionsContext.Update(existing.Id, naturalEnd);
     }
 }

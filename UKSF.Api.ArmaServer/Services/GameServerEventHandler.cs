@@ -30,6 +30,8 @@ public partial class GameServerEventHandler(
     INpcTraceMissions npcTraceMissions = null
 ) : IGameServerEventHandler
 {
+    public static bool IsAcknowledged(string type) => type is "persistence_save" or "mission_ended" || type.StartsWith("shutdown_");
+
     public async Task HandleEventAsync(GameServerEvent gameServerEvent)
     {
         var hasNoGameServerRow = SyntheticApiPorts.IsSynthetic(gameServerEvent.ApiPort);
@@ -77,7 +79,7 @@ public partial class GameServerEventHandler(
         catch (Exception ex)
         {
             logger.LogError($"Error handling game server event: {gameServerEvent.Type}", ex);
-            if (gameServerEvent.Type == "persistence_save")
+            if (IsAcknowledged(gameServerEvent.Type))
             {
                 throw;
             }
