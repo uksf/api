@@ -4,17 +4,17 @@ public partial class GameServerProcessManager
 {
     public async Task<bool> RecordMissionSessionAsync(int apiPort, string sessionId, bool started, DateTime? enqueuedAt, Func<Task> effects)
     {
-        if (!started)
-        {
-            await effects();
-        }
-
         var accepted = true;
-        await WithCurrentServerAsync(
+        var handled = await WithCurrentServerAsync(
             apiPort,
             started ? "mission_started" : "mission_ended",
             async gameServer =>
             {
+                if (!started)
+                {
+                    await effects();
+                }
+
                 if (PredatesProcess(gameServer, enqueuedAt) || started && (await missionStatsService.GetSessionAsync(sessionId))?.MissionEnded is not null)
                 {
                     accepted = false;
@@ -32,6 +32,7 @@ public partial class GameServerProcessManager
                 if (started)
                 {
                     await missionSessionCaptureService.CaptureStartedAsync(gameServer.Id, sessionId);
+                    await effects();
                 }
 
                 gameServer.Status.CurrentMissionSessionId = next;
@@ -43,8 +44,13 @@ public partial class GameServerProcessManager
                 await gameServersContext.Replace(gameServer);
             }
         );
-        if (started && accepted)
+        if (!handled)
         {
+            if (started && (await missionStatsService.GetSessionAsync(sessionId))?.MissionEnded is not null)
+            {
+                return false;
+            }
+
             await effects();
         }
 

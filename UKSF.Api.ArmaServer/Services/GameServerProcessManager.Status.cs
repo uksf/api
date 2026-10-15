@@ -31,7 +31,7 @@ public partial class GameServerProcessManager
                 snapshot.Id,
                 server =>
                 {
-                    var processes = server.ProcessId is not null && FindMatchingServerProcess(server, armaProcesses) is null
+                    var processes = server.ProcessId is not null && FindMatchingServerProcess(server, armaProcesses)?.ProcessId != server.ProcessId
                         ? gameServerHelpers.GetGameServerArmaProcesses()
                         : armaProcesses;
                     return processes.Count == 0 ? ResetServerToDeadAsync(server, push: false, processes) : UpdateServerStatus(server, processes);

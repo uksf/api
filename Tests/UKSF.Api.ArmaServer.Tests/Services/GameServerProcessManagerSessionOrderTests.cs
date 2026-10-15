@@ -110,6 +110,27 @@ public class GameServerProcessManagerSessionOrderTests : GameServerProcessManage
     }
 
     [Fact]
+    public async Task MissionEnd_ForAServerWhoseRecordIsGone_StillEndsTheStatistics()
+    {
+        _servers.Clear();
+        var ended = false;
+
+        await _sut.RecordMissionSessionAsync(
+            2303,
+            "B",
+            started: false,
+            null,
+            () =>
+            {
+                ended = true;
+                return Task.CompletedTask;
+            }
+        );
+
+        ended.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task RecordMissionStart_ForASessionThatAlreadyEnded_IsRejectedWithoutSideEffects()
     {
         _mockMissionStatsService.Setup(x => x.GetSessionAsync("A")).ReturnsAsync(new MissionSession { SessionId = "A", MissionEnded = DateTime.UtcNow });
