@@ -14,7 +14,7 @@ public interface IGameServerProcessManager
     Task HandleStopSavingAsync(int apiPort, DateTime? enqueuedAt = null);
     Task HandleStopDeliveringAsync(int apiPort, DateTime? enqueuedAt = null);
     Task HandleStopStoppingAsync(int apiPort, DateTime? enqueuedAt = null);
-    Task<bool> RecordMissionSessionAsync(int apiPort, string sessionId, bool started, DateTime? enqueuedAt = null);
+    Task<bool> RecordMissionSessionAsync(int apiPort, string sessionId, bool started, DateTime? enqueuedAt, Func<Task> effects);
     Task HandleServerStatusAsync(int apiPort, Dictionary<string, object> data, DateTime? enqueuedAt = null);
     Task PushServerUpdateAsync(DomainGameServer server);
     Task PushAllServersUpdateAsync();

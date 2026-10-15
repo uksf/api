@@ -53,10 +53,30 @@ public class GameServerEventHandlerSessionTests
             }
         );
 
+    private void ProcessManagerDecides(bool accept) =>
+        _processManager.Setup(x => x.RecordMissionSessionAsync(
+                                  It.IsAny<int>(),
+                                  It.IsAny<string>(),
+                                  It.IsAny<bool>(),
+                                  It.IsAny<DateTime?>(),
+                                  It.IsAny<Func<Task>>()
+                              )
+                       )
+                       .Returns<int, string, bool, DateTime?, Func<Task>>(async (_, _, started, _, effects) =>
+                           {
+                               if (accept || !started)
+                               {
+                                   await effects();
+                               }
+
+                               return accept;
+                           }
+                       );
+
     [Fact]
     public async Task MissionStarted_WhenTheProcessManagerRejectsIt_SkipsEveryOtherStartEffect()
     {
-        _processManager.Setup(x => x.RecordMissionSessionAsync(2303, "old", true, It.IsAny<DateTime?>())).ReturnsAsync(false);
+        ProcessManagerDecides(false);
 
         await Send("mission_started", "old");
 
@@ -78,28 +98,25 @@ public class GameServerEventHandlerSessionTests
     [Fact]
     public async Task MissionStarted_ForANewSession_RecordsItWithItsEnqueueTime()
     {
-        _processManager.Setup(x => x.RecordMissionSessionAsync(2303, "new", true, It.IsAny<DateTime?>())).ReturnsAsync(true);
+        ProcessManagerDecides(true);
 
         await Send("mission_started", "new");
 
-        _processManager.Verify(x => x.RecordMissionSessionAsync(2303, "new", true, new DateTime(2026, 10, 14, 12, 0, 0, DateTimeKind.Utc)), Times.Once);
+        _processManager.Verify(
+            x => x.RecordMissionSessionAsync(2303, "new", true, new DateTime(2026, 10, 14, 12, 0, 0, DateTimeKind.Utc), It.IsAny<Func<Task>>()),
+            Times.Once
+        );
         _missionStats.Verify(x => x.HandleMissionStartedAsync("new", "op", "Altis", It.IsAny<DateTime>()), Times.Once);
     }
 
     [Fact]
-    public async Task MissionEnded_EndsTheStatisticsSessionBeforeClearingTheServerSession()
+    public async Task MissionEnded_EndsTheStatisticsSessionThroughTheProcessManager()
     {
-        var order = new List<string>();
-        _missionStats.Setup(x => x.HandleMissionEndedAsync("old", It.IsAny<double>(), It.IsAny<DateTime>()))
-                     .Callback(() => order.Add("ended"))
-                     .Returns(Task.CompletedTask);
-        _processManager.Setup(x => x.RecordMissionSessionAsync(2303, "old", false, It.IsAny<DateTime?>()))
-                       .Callback(() => order.Add("cleared"))
-                       .ReturnsAsync(true);
+        ProcessManagerDecides(true);
 
         await Send("mission_ended", "old");
 
-        order.Should().Equal("ended", "cleared");
+        _missionStats.Verify(x => x.HandleMissionEndedAsync("old", It.IsAny<double>(), It.IsAny<DateTime>()), Times.Once);
     }
 
     [Fact]
@@ -107,7 +124,7 @@ public class GameServerEventHandlerSessionTests
     {
         await Send("mission_ended", "old");
 
-        _processManager.Verify(x => x.RecordMissionSessionAsync(2303, "old", false, It.IsAny<DateTime?>()), Times.Once);
+        _processManager.Verify(x => x.RecordMissionSessionAsync(2303, "old", false, It.IsAny<DateTime?>(), It.IsAny<Func<Task>>()), Times.Once);
         _gameServers.Verify(x => x.Update(It.IsAny<string>(), It.IsAny<MongoDB.Driver.UpdateDefinition<DomainGameServer>>()), Times.Never);
     }
 
@@ -116,7 +133,14 @@ public class GameServerEventHandlerSessionTests
     [InlineData("shutdown_saving")]
     public async Task AcknowledgedEvent_WhenHandlingFails_PropagatesTheFailure(string type)
     {
-        _processManager.Setup(x => x.RecordMissionSessionAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<DateTime?>()))
+        _processManager.Setup(x => x.RecordMissionSessionAsync(
+                                  It.IsAny<int>(),
+                                  It.IsAny<string>(),
+                                  It.IsAny<bool>(),
+                                  It.IsAny<DateTime?>(),
+                                  It.IsAny<Func<Task>>()
+                              )
+                       )
                        .ThrowsAsync(new TimeoutException("mongo"));
         _processManager.Setup(x => x.HandleStopSavingAsync(It.IsAny<int>(), It.IsAny<DateTime?>())).ThrowsAsync(new TimeoutException("mongo"));
 

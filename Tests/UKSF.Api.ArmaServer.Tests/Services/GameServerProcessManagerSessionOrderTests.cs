@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -50,11 +51,70 @@ public class GameServerProcessManagerSessionOrderTests : GameServerProcessManage
     }
 
     [Fact]
+    public async Task GetAllServerStatuses_WhenTheScanStillShowsTheServersPredecessor_KeepsTracking()
+    {
+        _mockHelpers.SetupSequence(x => x.GetGameServerArmaProcesses())
+                    .Returns([new ProcessCommandLineInfo(int.MaxValue, "arma3server_x64.exe -config=server.cfg -port=2302")])
+                    .Returns([new ProcessCommandLineInfo(_process.Id, "arma3server_x64.exe -config=server.cfg -port=2302")]);
+
+        await _sut.GetAllServerStatusesAsync();
+
+        _server.ProcessId.Should().Be(_process.Id);
+        _server.Status.CurrentMissionSessionId.Should().Be("B");
+        _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task MissionEnd_WhileAStartHoldsTheServer_WaitsForEveryStartEffect()
+    {
+        var order = new List<string>();
+        var captureEntered = new TaskCompletionSource();
+        var releaseCapture = new TaskCompletionSource();
+        _mockOpSessionCaptureService.Setup(x => x.CaptureStartedAsync("s1", "C"))
+                                    .Returns(async () =>
+                                        {
+                                            captureEntered.SetResult();
+                                            await releaseCapture.Task;
+                                        }
+                                    );
+
+        var start = _sut.RecordMissionSessionAsync(
+            2303,
+            "C",
+            started: true,
+            null,
+            () =>
+            {
+                order.Add("start effects");
+                return Task.CompletedTask;
+            }
+        );
+        await captureEntered.Task;
+        var end = _sut.RecordMissionSessionAsync(
+            2303,
+            "C",
+            started: false,
+            null,
+            () =>
+            {
+                order.Add("end effects");
+                return Task.CompletedTask;
+            }
+        );
+        await Task.Delay(50);
+        releaseCapture.SetResult();
+        await Task.WhenAll(start, end);
+
+        order.Should().Equal("start effects", "end effects");
+        _server.Status.CurrentMissionSessionId.Should().BeNull();
+    }
+
+    [Fact]
     public async Task RecordMissionStart_ForASessionThatAlreadyEnded_IsRejectedWithoutSideEffects()
     {
         _mockMissionStatsService.Setup(x => x.GetSessionAsync("A")).ReturnsAsync(new MissionSession { SessionId = "A", MissionEnded = DateTime.UtcNow });
 
-        var accepted = await _sut.RecordMissionSessionAsync(2303, "A", started: true);
+        var accepted = await _sut.RecordMissionSessionAsync(2303, "A", started: true, null, () => Task.CompletedTask);
 
         accepted.Should().BeFalse();
         _server.Status.CurrentMissionSessionId.Should().Be("B");
@@ -64,7 +124,7 @@ public class GameServerProcessManagerSessionOrderTests : GameServerProcessManage
     [Fact]
     public async Task RecordMissionStart_ForALiveSession_MakesItCurrentAndCapturesTheCampaignMission()
     {
-        var accepted = await _sut.RecordMissionSessionAsync(2303, "C", started: true);
+        var accepted = await _sut.RecordMissionSessionAsync(2303, "C", started: true, null, () => Task.CompletedTask);
 
         accepted.Should().BeTrue();
         _server.Status.CurrentMissionSessionId.Should().Be("C");
@@ -74,7 +134,7 @@ public class GameServerProcessManagerSessionOrderTests : GameServerProcessManage
     [Fact]
     public async Task RecordMissionStart_FromAnOlderProcess_IsRejected()
     {
-        var accepted = await _sut.RecordMissionSessionAsync(2303, "C", started: true, _server.ProcessStartedAt!.Value.AddMinutes(-1));
+        var accepted = await _sut.RecordMissionSessionAsync(2303, "C", started: true, _server.ProcessStartedAt!.Value.AddMinutes(-1), () => Task.CompletedTask);
 
         accepted.Should().BeFalse();
         _server.Status.CurrentMissionSessionId.Should().Be("B");

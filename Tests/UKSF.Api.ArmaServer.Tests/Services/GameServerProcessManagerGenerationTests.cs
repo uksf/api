@@ -89,7 +89,7 @@ public class GameServerProcessManagerGenerationTests : GameServerProcessManagerT
         _servers.Add(server);
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
 
-        await _sut.RecordMissionSessionAsync(2303, "A", started: false);
+        await _sut.RecordMissionSessionAsync(2303, "A", started: false, null, () => Task.CompletedTask);
 
         server.Status.CurrentMissionSessionId.Should().Be("B");
         _mockContext.Verify(x => x.Replace(It.IsAny<DomainGameServer>()), Times.Never);
@@ -102,7 +102,7 @@ public class GameServerProcessManagerGenerationTests : GameServerProcessManagerT
         _servers.Add(server);
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
 
-        await _sut.RecordMissionSessionAsync(2303, "B", started: false);
+        await _sut.RecordMissionSessionAsync(2303, "B", started: false, null, () => Task.CompletedTask);
 
         server.Status.CurrentMissionSessionId.Should().BeNull();
     }

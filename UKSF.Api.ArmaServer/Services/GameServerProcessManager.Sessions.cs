@@ -2,8 +2,13 @@ namespace UKSF.Api.ArmaServer.Services;
 
 public partial class GameServerProcessManager
 {
-    public async Task<bool> RecordMissionSessionAsync(int apiPort, string sessionId, bool started, DateTime? enqueuedAt = null)
+    public async Task<bool> RecordMissionSessionAsync(int apiPort, string sessionId, bool started, DateTime? enqueuedAt, Func<Task> effects)
     {
+        if (!started)
+        {
+            await effects();
+        }
+
         var accepted = true;
         await WithCurrentServerAsync(
             apiPort,
@@ -38,6 +43,11 @@ public partial class GameServerProcessManager
                 await gameServersContext.Replace(gameServer);
             }
         );
+        if (started && accepted)
+        {
+            await effects();
+        }
+
         return accepted;
     }
 }
