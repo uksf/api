@@ -16,7 +16,6 @@ public class OperationsController(
     ICampaignsContext campaignsContext,
     ICampaignMissionsContext campaignMissionsContext,
     IOperationsService operationsService,
-    IHttpContextService httpContextService,
     IUksfLogger logger
 ) : ControllerBase
 {
@@ -89,11 +88,6 @@ public class OperationsController(
     {
         var campaign = campaignsContext.GetSingle(campaignId);
         if (campaign is null)
-        {
-            throw new NotFoundException("Campaign not found");
-        }
-
-        if (campaign.Status == CampaignStatus.Upcoming && !httpContextService.UserHasPermission(Permissions.Command))
         {
             throw new NotFoundException("Campaign not found");
         }

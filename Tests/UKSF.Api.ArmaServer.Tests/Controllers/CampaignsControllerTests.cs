@@ -35,7 +35,6 @@ public class CampaignsControllerTests
             _mockOperationsContext.Object,
             _mockIntelPagesContext.Object,
             _mockOperationsService.Object,
-            _mockHttpContextService.Object,
             _mockLogger.Object
         );
     }
@@ -52,7 +51,7 @@ public class CampaignsControllerTests
     }
 
     [Fact]
-    public void Get_hides_upcoming_campaigns_from_non_command()
+    public void Get_includes_upcoming_campaigns_for_members()
     {
         _mockHttpContextService.Setup(x => x.UserHasPermission(Permissions.Command)).Returns(false);
         DomainCampaign current = new() { Name = "Current", Status = CampaignStatus.Current };
@@ -61,7 +60,7 @@ public class CampaignsControllerTests
 
         var result = _controller.Get().ToList();
 
-        result.Should().ContainSingle().Which.Should().Be(current);
+        result.Should().Equal(current, upcoming);
     }
 
     [Fact]
@@ -77,14 +76,15 @@ public class CampaignsControllerTests
     }
 
     [Fact]
-    public void GetSingle_throws_when_non_command_requests_upcoming()
+    public void GetSingle_returns_upcoming_campaign_for_members()
     {
         _mockHttpContextService.Setup(x => x.UserHasPermission(Permissions.Command)).Returns(false);
-        _mockContext.Setup(x => x.GetSingle("up")).Returns(new DomainCampaign { Name = "Upcoming", Status = CampaignStatus.Upcoming });
+        DomainCampaign upcoming = new() { Name = "Upcoming", Status = CampaignStatus.Upcoming };
+        _mockContext.Setup(x => x.GetSingle("up")).Returns(upcoming);
 
-        var act = () => _controller.Get("up");
+        var result = _controller.Get("up");
 
-        act.Should().Throw<NotFoundException>();
+        result.Should().Be(upcoming);
     }
 
     [Fact]

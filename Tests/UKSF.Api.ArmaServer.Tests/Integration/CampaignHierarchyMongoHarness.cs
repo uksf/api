@@ -46,8 +46,8 @@ internal sealed class CampaignHierarchyMongoHarness : IDisposable
         CampaignMissionsService = new CampaignMissionsService(GameServers.Object, FileMissions.Object, Missions, IntelPages, Launch.Object);
         OperationsService = new OperationsService(Operations, Missions, CampaignMissionsService, IntelPages);
 
-        CampaignsController = new CampaignsController(Campaigns, Operations, IntelPages, OperationsService, Http.Object, Logger.Object);
-        OperationsController = new OperationsController(Operations, Campaigns, Missions, OperationsService, Http.Object, Logger.Object);
+        CampaignsController = new CampaignsController(Campaigns, Operations, IntelPages, OperationsService, Logger.Object);
+        OperationsController = new OperationsController(Operations, Campaigns, Missions, OperationsService, Logger.Object);
         CampaignMissionsController = new CampaignMissionsController(
             Missions,
             Operations,
@@ -57,7 +57,7 @@ internal sealed class CampaignHierarchyMongoHarness : IDisposable
             Http.Object,
             Logger.Object
         );
-        IntelPagesController = new IntelPagesController(IntelPages, Campaigns, Operations, Missions, Http.Object, Logger.Object);
+        IntelPagesController = new IntelPagesController(IntelPages, Campaigns, Operations, Missions, Logger.Object);
     }
 
     public IMongoDatabase Database { get; }

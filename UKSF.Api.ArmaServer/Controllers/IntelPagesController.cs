@@ -15,7 +15,6 @@ public class IntelPagesController(
     ICampaignsContext campaignsContext,
     IOperationsContext operationsContext,
     ICampaignMissionsContext campaignMissionsContext,
-    IHttpContextService httpContextService,
     IUksfLogger logger
 ) : ControllerBase
 {
@@ -45,7 +44,7 @@ public class IntelPagesController(
     [Permissions(Permissions.Command)]
     public async Task Post([FromBody] DomainIntelPage page)
     {
-        RequireOwner(page.Scope, page.OwnerId, enforceVisibility: false);
+        RequireOwner(page.Scope, page.OwnerId, forWrite: true);
         await intelPagesContext.Add(page);
         logger.LogAudit($"Intel page '{page.Title}' added for {OwnerLabel(page)}");
     }
@@ -60,8 +59,8 @@ public class IntelPagesController(
             throw new NotFoundException("Intel page not found");
         }
 
-        RequireOwner(stored.Scope, stored.OwnerId, enforceVisibility: false);
-        RequireOwner(page.Scope, page.OwnerId, enforceVisibility: false);
+        RequireOwner(stored.Scope, stored.OwnerId, forWrite: true);
+        RequireOwner(page.Scope, page.OwnerId, forWrite: true);
         await intelPagesContext.Replace(page);
         logger.LogAudit($"Intel page '{page.Title}' updated for {OwnerLabel(page)}");
     }
@@ -76,7 +75,7 @@ public class IntelPagesController(
             throw new NotFoundException("Intel page not found");
         }
 
-        RequireOwner(page.Scope, page.OwnerId, enforceVisibility: false);
+        RequireOwner(page.Scope, page.OwnerId, forWrite: true);
         await intelPagesContext.Delete(id);
         logger.LogAudit($"Intel page '{page.Title}' deleted for {OwnerLabel(page)}");
     }
@@ -85,14 +84,14 @@ public class IntelPagesController(
     {
         return page.Scope switch
         {
-            IntelScope.Campaign => $"campaign '{campaignsContext.GetSingle(page.OwnerId)?.Name}'",
+            IntelScope.Campaign  => $"campaign '{campaignsContext.GetSingle(page.OwnerId)?.Name}'",
             IntelScope.Operation => $"operation '{operationsContext.GetSingle(page.OwnerId)?.Title}'",
-            IntelScope.Mission => $"mission '{campaignMissionsContext.GetSingle(page.OwnerId)?.Title}'",
-            _ => "unknown"
+            IntelScope.Mission   => $"mission '{campaignMissionsContext.GetSingle(page.OwnerId)?.Title}'",
+            _                    => "unknown"
         };
     }
 
-    private void RequireOwner(IntelScope scope, string ownerId, bool enforceVisibility = true)
+    private void RequireOwner(IntelScope scope, string ownerId, bool forWrite = false)
     {
         if (!Enum.IsDefined(scope))
         {
@@ -102,12 +101,7 @@ public class IntelPagesController(
         var campaign = ResolveOwnerCampaign(scope, ownerId);
         if (campaign is null)
         {
-            throw enforceVisibility ? new NotFoundException("Intel owner not found") : new BadRequestException("Intel owner not found");
-        }
-
-        if (enforceVisibility && campaign.Status == CampaignStatus.Upcoming && !httpContextService.UserHasPermission(Permissions.Command))
-        {
-            throw new NotFoundException("Campaign not found");
+            throw forWrite ? new BadRequestException("Intel owner not found") : new NotFoundException("Intel owner not found");
         }
     }
 
@@ -115,8 +109,7 @@ public class IntelPagesController(
     {
         switch (scope)
         {
-            case IntelScope.Campaign:
-                return campaignsContext.GetSingle(ownerId);
+            case IntelScope.Campaign: return campaignsContext.GetSingle(ownerId);
             case IntelScope.Operation:
             {
                 var operation = operationsContext.GetSingle(ownerId);
@@ -133,8 +126,7 @@ public class IntelPagesController(
                 var operation = operationsContext.GetSingle(mission.OperationId);
                 return operation is null ? null : campaignsContext.GetSingle(operation.CampaignId);
             }
-            default:
-                return null;
+            default: return null;
         }
     }
 }

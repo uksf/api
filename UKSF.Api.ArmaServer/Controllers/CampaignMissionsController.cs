@@ -110,11 +110,6 @@ public class CampaignMissionsController(
             throw new NotFoundException("Campaign not found");
         }
 
-        if (campaign.Status == CampaignStatus.Upcoming && !httpContextService.UserHasPermission(Permissions.Command))
-        {
-            throw new NotFoundException("Campaign not found");
-        }
-
         return campaign;
     }
 

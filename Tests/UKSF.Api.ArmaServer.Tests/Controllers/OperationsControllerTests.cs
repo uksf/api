@@ -42,7 +42,6 @@ public class OperationsControllerTests
             _mockCampaigns.Object,
             Mock.Of<ICampaignMissionsContext>(),
             _mockOperationsService.Object,
-            _mockHttp.Object,
             _mockLogger.Object
         );
     }
@@ -102,14 +101,16 @@ public class OperationsControllerTests
     }
 
     [Fact]
-    public void Get_hides_upcoming_campaign_from_non_command()
+    public void Get_returns_operations_of_an_upcoming_campaign_to_members()
     {
         _mockHttp.Setup(x => x.UserHasPermission(Permissions.Command)).Returns(false);
         _mockCampaigns.Setup(x => x.GetSingle("up")).Returns(new DomainCampaign { Id = "up", Status = CampaignStatus.Upcoming });
+        DomainOperation operation = new() { Id = "op1", CampaignId = "up" };
+        _mockContext.Setup(x => x.Get(It.IsAny<Func<DomainOperation, bool>>())).Returns<Func<DomainOperation, bool>>(new[] { operation }.Where);
 
-        var act = () => _controller.Get("up");
+        var result = _controller.Get("up");
 
-        act.Should().Throw<NotFoundException>();
+        result.Should().ContainSingle().Which.Should().Be(operation);
     }
 
     [Fact]

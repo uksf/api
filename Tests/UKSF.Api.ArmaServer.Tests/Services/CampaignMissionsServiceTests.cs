@@ -35,56 +35,56 @@ public class CampaignMissionsServiceTests
     [Fact]
     public void NextStandardOpTime_advances_to_upcoming_saturday_from_a_weekday()
     {
-        // 2026-06-10 is a Wednesday; 12:00 UTC = 13:00 BST (before 19:00). Next Saturday is 2026-06-13.
-        var now = new DateTime(2026, 6, 10, 12, 0, 0, DateTimeKind.Utc);
+        var wednesdayAfternoonBst = new DateTime(2026, 6, 10, 12, 0, 0, DateTimeKind.Utc);
+        var saturday1900Bst = new DateTime(2026, 6, 13, 18, 0, 0, DateTimeKind.Utc);
 
-        var result = _service.NextStandardOpTimeUtc(now);
+        var result = _service.NextStandardOpTimeUtc(wednesdayAfternoonBst);
 
-        result.Should().Be(new DateTime(2026, 6, 13, 18, 0, 0, DateTimeKind.Utc));
+        result.Should().Be(saturday1900Bst);
     }
 
     [Fact]
     public void NextStandardOpTime_advances_to_upcoming_saturday_even_when_time_already_past()
     {
-        // 2026-06-10 20:00 UTC (= 21:00 BST, past 19:00) is still a Wednesday. Target is still 2026-06-13.
-        var now = new DateTime(2026, 6, 10, 20, 0, 0, DateTimeKind.Utc);
+        var wednesdayEveningBst = new DateTime(2026, 6, 10, 20, 0, 0, DateTimeKind.Utc);
+        var saturday1900Bst = new DateTime(2026, 6, 13, 18, 0, 0, DateTimeKind.Utc);
 
-        var result = _service.NextStandardOpTimeUtc(now);
+        var result = _service.NextStandardOpTimeUtc(wednesdayEveningBst);
 
-        result.Should().Be(new DateTime(2026, 6, 13, 18, 0, 0, DateTimeKind.Utc));
+        result.Should().Be(saturday1900Bst);
     }
 
     [Fact]
     public void NextStandardOpTime_uses_today_when_today_is_saturday_before_1900()
     {
-        // 2026-06-13 is a Saturday. 12:00 UTC = 13:00 BST (before 19:00) → same day 19:00 BST.
-        var now = new DateTime(2026, 6, 13, 12, 0, 0, DateTimeKind.Utc);
+        var saturdayAfternoonBst = new DateTime(2026, 6, 13, 12, 0, 0, DateTimeKind.Utc);
+        var sameSaturday1900Bst = new DateTime(2026, 6, 13, 18, 0, 0, DateTimeKind.Utc);
 
-        var result = _service.NextStandardOpTimeUtc(now);
+        var result = _service.NextStandardOpTimeUtc(saturdayAfternoonBst);
 
-        result.Should().Be(new DateTime(2026, 6, 13, 18, 0, 0, DateTimeKind.Utc));
+        result.Should().Be(sameSaturday1900Bst);
     }
 
     [Fact]
     public void NextStandardOpTime_rolls_to_next_saturday_when_today_is_saturday_after_1900()
     {
-        // 2026-06-13 is a Saturday. 20:00 UTC = 21:00 BST (past 19:00) → next Saturday, 2026-06-20.
-        var now = new DateTime(2026, 6, 13, 20, 0, 0, DateTimeKind.Utc);
+        var saturdayEveningBst = new DateTime(2026, 6, 13, 20, 0, 0, DateTimeKind.Utc);
+        var nextSaturday1900Bst = new DateTime(2026, 6, 20, 18, 0, 0, DateTimeKind.Utc);
 
-        var result = _service.NextStandardOpTimeUtc(now);
+        var result = _service.NextStandardOpTimeUtc(saturdayEveningBst);
 
-        result.Should().Be(new DateTime(2026, 6, 20, 18, 0, 0, DateTimeKind.Utc));
+        result.Should().Be(nextSaturday1900Bst);
     }
 
     [Fact]
     public void NextStandardOpTime_stores_1900_london_as_utc_in_gmt()
     {
-        // 2026-01-10 is a Saturday in GMT. 12:00 UTC is before 19:00 local → same day 19:00 UTC.
-        var now = new DateTime(2026, 1, 10, 12, 0, 0, DateTimeKind.Utc);
+        var saturdayAfternoonGmt = new DateTime(2026, 1, 10, 12, 0, 0, DateTimeKind.Utc);
+        var sameSaturday1900Gmt = new DateTime(2026, 1, 10, 19, 0, 0, DateTimeKind.Utc);
 
-        var result = _service.NextStandardOpTimeUtc(now);
+        var result = _service.NextStandardOpTimeUtc(saturdayAfternoonGmt);
 
-        result.Should().Be(new DateTime(2026, 1, 10, 19, 0, 0, DateTimeKind.Utc));
+        result.Should().Be(sameSaturday1900Gmt);
     }
 
     [Fact]
@@ -131,7 +131,12 @@ public class CampaignMissionsServiceTests
     public void ApplyDefaults_does_not_overwrite_existing_serverId()
     {
         _mockGameServersService.Setup(x => x.GetServers()).Returns([new DomainGameServer { Name = "Main Server" }]);
-        DomainMission mission = new() { Title = "X", ServerId = "chosen", ScheduledTime = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) };
+        DomainMission mission = new()
+        {
+            Title = "X",
+            ServerId = "chosen",
+            ScheduledTime = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+        };
 
         _service.ApplyDefaults(mission);
 
@@ -143,7 +148,12 @@ public class CampaignMissionsServiceTests
     {
         var chosen = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         _mockGameServersService.Setup(x => x.GetServers()).Returns([new DomainGameServer { Name = "Main Server" }]);
-        DomainMission mission = new() { Title = "X", ServerId = "s1", ScheduledTime = chosen };
+        DomainMission mission = new()
+        {
+            Title = "X",
+            ServerId = "s1",
+            ScheduledTime = chosen
+        };
 
         _service.ApplyDefaults(mission);
 
@@ -194,6 +204,24 @@ public class CampaignMissionsServiceTests
     }
 
     [Fact]
+    public void ToDto_includes_the_server_name()
+    {
+        _mockGameServersService.Setup(x => x.GetServer("s1")).Returns(new DomainGameServer { Id = "s1", Name = "Main Server" });
+
+        var dto = _service.ToDto(new DomainMission { ServerId = "s1" });
+
+        dto.ServerName.Should().Be("Main Server");
+    }
+
+    [Fact]
+    public void ToDto_leaves_server_name_empty_when_server_is_gone()
+    {
+        var dto = _service.ToDto(new DomainMission { ServerId = "deleted" });
+
+        dto.ServerName.Should().BeEmpty();
+    }
+
+    [Fact]
     public void ToDto_reports_missing_when_missionName_empty()
     {
         DomainMission mission = new() { Title = "X", MissionName = "" };
@@ -207,7 +235,12 @@ public class CampaignMissionsServiceTests
     [Fact]
     public async Task LaunchMissionAsync_throws_when_mission_file_missing()
     {
-        DomainMission mission = new() { Id = "m1", MissionName = "gone.Altis.pbo", ServerId = "s1" };
+        DomainMission mission = new()
+        {
+            Id = "m1",
+            MissionName = "gone.Altis.pbo",
+            ServerId = "s1"
+        };
         _mockMissionsService.Setup(x => x.FindMissionFilePath("gone.Altis.pbo")).Returns((string)null);
 
         var act = () => _service.LaunchMissionAsync(mission, "user1");
@@ -219,7 +252,12 @@ public class CampaignMissionsServiceTests
     [Fact]
     public async Task LaunchMissionAsync_does_not_persist_when_launch_fails()
     {
-        DomainMission mission = new() { Id = "m1", MissionName = "m.Altis.pbo", ServerId = "s1" };
+        DomainMission mission = new()
+        {
+            Id = "m1",
+            MissionName = "m.Altis.pbo",
+            ServerId = "s1"
+        };
         _mockMissionsService.Setup(x => x.FindMissionFilePath("m.Altis.pbo")).Returns("/missions/m.Altis.pbo");
         _mockGameServerLaunchService.Setup(x => x.LaunchAsync("s1", "m.Altis.pbo", "user1")).ThrowsAsync(new BadRequestException("boom"));
 
@@ -234,15 +272,27 @@ public class CampaignMissionsServiceTests
     {
         DomainMission mission = new()
         {
-            Id = "m1", MissionName = "m.Altis.pbo", ServerId = "s1", Status = MissionStatus.Complete, SessionId = "stale-session"
+            Id = "m1",
+            MissionName = "m.Altis.pbo",
+            ServerId = "s1",
+            Status = MissionStatus.Complete,
+            SessionId = "stale-session"
         };
         _mockMissionsService.Setup(x => x.FindMissionFilePath("m.Altis.pbo")).Returns("/missions/m.Altis.pbo");
         _mockGameServerLaunchService.Setup(x => x.LaunchAsync("s1", "m.Altis.pbo", "user1")).ReturnsAsync([]);
 
         await _service.LaunchMissionAsync(mission, "user1");
 
-        _mockCampaignMissionsContext.Verify(x => x.Replace(It.Is<DomainMission>(o =>
-            o.LaunchedServerId == "s1" && o.LaunchedMission == "m.Altis.pbo" && o.LaunchedAt != null
-            && o.SessionId == null && o.Status == MissionStatus.Scheduled)), Times.Once);
+        _mockCampaignMissionsContext.Verify(
+            x => x.Replace(
+                It.Is<DomainMission>(o => o.LaunchedServerId == "s1" &&
+                                          o.LaunchedMission == "m.Altis.pbo" &&
+                                          o.LaunchedAt != null &&
+                                          o.SessionId == null &&
+                                          o.Status == MissionStatus.Scheduled
+                )
+            ),
+            Times.Once
+        );
     }
 }

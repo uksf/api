@@ -10,4 +10,5 @@ public class MissionDto
 {
     public DomainMission Mission { get; set; }
     public MissionFileState MissionFileState { get; set; }
+    public string ServerName { get; set; }
 }

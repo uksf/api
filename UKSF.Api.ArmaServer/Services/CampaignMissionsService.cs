@@ -42,7 +42,8 @@ public class CampaignMissionsService(
     {
         var nowLondon = TimeZoneInfo.ConvertTimeFromUtc(nowUtc, LondonZone);
         var daysUntilSaturday = ((int)DayOfWeek.Saturday - (int)nowLondon.DayOfWeek + 7) % 7;
-        var candidate = new DateTime(nowLondon.Year, nowLondon.Month, nowLondon.Day, StandardOpHourLocal, 0, 0, DateTimeKind.Unspecified).AddDays(daysUntilSaturday);
+        var candidate =
+            new DateTime(nowLondon.Year, nowLondon.Month, nowLondon.Day, StandardOpHourLocal, 0, 0, DateTimeKind.Unspecified).AddDays(daysUntilSaturday);
         if (nowLondon >= candidate)
         {
             candidate = candidate.AddDays(7);
@@ -53,7 +54,12 @@ public class CampaignMissionsService(
 
     public MissionDto ToDto(DomainMission mission)
     {
-        return new MissionDto { Mission = mission, MissionFileState = ResolveMissionFileState(mission.MissionName) };
+        return new MissionDto
+        {
+            Mission = mission,
+            MissionFileState = ResolveMissionFileState(mission.MissionName),
+            ServerName = gameServersService.GetServer(mission.ServerId)?.Name ?? ""
+        };
     }
 
     public async Task DeleteMission(string id)
@@ -85,9 +91,8 @@ public class CampaignMissionsService(
     private string ResolveMainServerId()
     {
         var servers = gameServersService.GetServers().ToList();
-        var main = servers.FirstOrDefault(x => x.Name == "Main Server")
-                   ?? servers.FirstOrDefault(x => x.ServerOption == GameServerOption.Singleton)
-                   ?? servers.FirstOrDefault();
+        var main = servers.FirstOrDefault(x => x.Name == "Main Server") ??
+                   servers.FirstOrDefault(x => x.ServerOption == GameServerOption.Singleton) ?? servers.FirstOrDefault();
         return main?.Id;
     }
 

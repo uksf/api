@@ -16,7 +16,6 @@ public class CampaignsController(
     IOperationsContext operationsContext,
     IIntelPagesContext intelPagesContext,
     IOperationsService operationsService,
-    IHttpContextService httpContextService,
     IUksfLogger logger
 ) : ControllerBase
 {
@@ -24,13 +23,7 @@ public class CampaignsController(
     [Authorize]
     public IEnumerable<DomainCampaign> Get()
     {
-        var campaigns = campaignsContext.Get();
-        if (!httpContextService.UserHasPermission(Permissions.Command))
-        {
-            campaigns = campaigns.Where(x => x.Status != CampaignStatus.Upcoming);
-        }
-
-        return campaigns;
+        return campaignsContext.Get();
     }
 
     [HttpGet("{id}")]
@@ -38,7 +31,7 @@ public class CampaignsController(
     public DomainCampaign Get([FromRoute] string id)
     {
         var campaign = campaignsContext.GetSingle(id);
-        if (campaign is null || (campaign.Status == CampaignStatus.Upcoming && !httpContextService.UserHasPermission(Permissions.Command)))
+        if (campaign is null)
         {
             throw new NotFoundException("Campaign not found");
         }

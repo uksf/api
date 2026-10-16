@@ -47,7 +47,7 @@ public class CampaignOrderingTests
         };
 
     private OperationsController OperationsController() =>
-        new(_operations.Object, _campaigns.Object, _missions.Object, Mock.Of<IOperationsService>(), _http.Object, Mock.Of<IUksfLogger>());
+        new(_operations.Object, _campaigns.Object, _missions.Object, Mock.Of<IOperationsService>(), Mock.Of<IUksfLogger>());
 
     private CampaignMissionsController MissionsController() =>
         new(
