@@ -22,15 +22,7 @@ public class DebugConsoleStripper : IDebugConsoleStripper
         var root = SqmParser.Parse(text);
         var editor = new SqmTextEditor(text);
 
-        foreach (var node in root.Descendants.Prepend(root))
-        {
-            foreach (var property in node.Properties.Where(p => p.Name.Equals(DebugConsole, StringComparison.OrdinalIgnoreCase)))
-            {
-                editor.DeleteLines(property.Start, property.End);
-            }
-
-            RemoveDebugConsoleAttributes(node, editor);
-        }
+        Strip(root, editor);
 
         if (editor.HasEdits)
         {
@@ -38,13 +30,27 @@ public class DebugConsoleStripper : IDebugConsoleStripper
         }
     }
 
-    private static void RemoveDebugConsoleAttributes(SqmClassNode node, SqmTextEditor editor)
+    private static void Strip(SqmClassNode node, SqmTextEditor editor)
+    {
+        foreach (var property in node.Properties.Where(p => p.Name.Equals(DebugConsole, StringComparison.OrdinalIgnoreCase)))
+        {
+            editor.DeleteLines(property.Start, property.End);
+        }
+
+        var removed = RemoveDebugConsoleAttributes(node, editor);
+        foreach (var child in node.Classes.Where(child => !removed.Contains(child)))
+        {
+            Strip(child, editor);
+        }
+    }
+
+    private static HashSet<SqmClassNode> RemoveDebugConsoleAttributes(SqmClassNode node, SqmTextEditor editor)
     {
         var attributes = node.Classes.Where(IsNumberedAttribute).ToList();
         var debugConsole = attributes.Where(a => a.Value("property").Equals(DebugConsole, StringComparison.OrdinalIgnoreCase)).ToHashSet();
         if (debugConsole.Count == 0)
         {
-            return;
+            return debugConsole;
         }
 
         foreach (var attribute in debugConsole)
@@ -62,6 +68,8 @@ public class DebugConsoleStripper : IDebugConsoleStripper
         {
             editor.SetValue(count, remaining.Count.ToString());
         }
+
+        return debugConsole;
     }
 
     private static bool IsNumberedAttribute(SqmClassNode node) =>

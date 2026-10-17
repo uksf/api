@@ -1,54 +1,13 @@
 namespace UKSF.Api.ArmaMissions.Services;
 
-public sealed class SqmClassNode
-{
-    public string Name { get; init; } = "";
-    public int Start { get; init; }
-    public int NameStart { get; init; }
-    public int NameEnd { get; init; }
-    public int BodyClose { get; set; }
-    public int End { get; set; }
-    public List<SqmClassNode> Classes { get; } = [];
-    public List<SqmPropertyNode> Properties { get; } = [];
-
-    public SqmClassNode Class(string name) => Classes.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-
-    public SqmPropertyNode Property(string name) => Properties.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-
-    public string Value(string name) => Property(name)?.Text ?? "";
-
-    public string OwnOrAttributeValue(string name)
-    {
-        var own = Property(name);
-        return own is not null ? own.Text : Class("Attributes")?.Value(name) ?? "";
-    }
-
-    public IEnumerable<SqmClassNode> Items =>
-        Classes.Where(x => x.Name.StartsWith("Item", StringComparison.OrdinalIgnoreCase) && int.TryParse(x.Name[4..], out _));
-
-    public IEnumerable<SqmClassNode> Descendants => Classes.SelectMany(x => x.Descendants.Prepend(x));
-}
-
-public sealed class SqmPropertyNode
-{
-    public string Name { get; init; } = "";
-    public int Start { get; init; }
-    public int ValueStart { get; init; }
-    public int ValueEnd { get; init; }
-    public int End { get; init; }
-    public string RawValue { get; init; } = "";
-
-    public string Text => RawValue.Length >= 2 && RawValue[0] == '"' && RawValue[^1] == '"' ? RawValue[1..^1].Replace("\"\"", "\"") : RawValue.Trim();
-}
-
-public sealed class SqmSyntaxException(string message) : Exception(message);
-
 public static class SqmParser
 {
+    private const string Utf8ByteOrderMarkAsLatin1 = "\u00EF\u00BB\u00BF";
+
     public static SqmClassNode Parse(string text)
     {
-        var root = new SqmClassNode { End = text.Length };
-        var index = 0;
+        var root = new SqmClassNode { End = text.Length, HasBody = true };
+        var index = text.StartsWith(Utf8ByteOrderMarkAsLatin1, StringComparison.Ordinal) ? Utf8ByteOrderMarkAsLatin1.Length : 0;
         ParseBody(text, ref index, root, false);
         root.BodyClose = text.Length;
         return root;
@@ -127,6 +86,7 @@ public static class SqmParser
         }
 
         Expect(text, ref index, '{');
+        node.HasBody = true;
         ParseBody(text, ref index, node, true);
         return node;
     }
@@ -148,30 +108,35 @@ public static class SqmParser
         Expect(text, ref index, '=');
         SkipTrivia(text, ref index);
         var valueStart = index;
+        var valueEnd = index;
         var depth = 0;
         while (index < text.Length && (depth > 0 || text[index] != ';'))
         {
+            if (SkipComment(text, ref index))
+            {
+                continue;
+            }
+
             switch (text[index])
             {
                 case '"':
                     SkipString(text, ref index);
+                    valueEnd = index;
                     continue;
                 case '{': depth++; break;
                 case '}': depth--; break;
             }
 
             index++;
+            if (!char.IsWhiteSpace(text[index - 1]))
+            {
+                valueEnd = index;
+            }
         }
 
         if (index >= text.Length)
         {
             throw new SqmSyntaxException($"property {name} at offset {start} has no terminating ';'");
-        }
-
-        var valueEnd = index;
-        while (valueEnd > valueStart && char.IsWhiteSpace(text[valueEnd - 1]))
-        {
-            valueEnd--;
         }
 
         index++;
@@ -217,22 +182,45 @@ public static class SqmParser
             {
                 index++;
             }
-            else if (text[index] == '/' && index + 1 < text.Length && text[index + 1] == '/' || text[index] == '#')
+            else if (text[index] == '#')
             {
-                while (index < text.Length && text[index] != '\n')
-                {
-                    index++;
-                }
+                SkipToLineEnd(text, ref index);
             }
-            else if (text[index] == '/' && index + 1 < text.Length && text[index + 1] == '*')
-            {
-                var end = text.IndexOf("*/", index + 2, StringComparison.Ordinal);
-                index = end < 0 ? text.Length : end + 2;
-            }
-            else
+            else if (!SkipComment(text, ref index))
             {
                 return;
             }
+        }
+    }
+
+    private static bool SkipComment(string text, ref int index)
+    {
+        if (text[index] != '/' || index + 1 >= text.Length)
+        {
+            return false;
+        }
+
+        if (text[index + 1] == '/')
+        {
+            SkipToLineEnd(text, ref index);
+            return true;
+        }
+
+        if (text[index + 1] == '*')
+        {
+            var end = text.IndexOf("*/", index + 2, StringComparison.Ordinal);
+            index = end < 0 ? text.Length : end + 2;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static void SkipToLineEnd(string text, ref int index)
+    {
+        while (index < text.Length && text[index] != '\n')
+        {
+            index++;
         }
     }
 

@@ -73,21 +73,19 @@ public class SqmWriter : ISqmWriter
 
     private static int UnbinHeaderEnd(string text)
     {
-        if (!text.StartsWith(UnbinHeaderFirstLine, StringComparison.Ordinal))
-        {
-            return 0;
-        }
-
         var end = 0;
-        for (var line = 0; line < UnbinHeaderLineCount; line++)
+        for (var line = 0; line < UnbinHeaderLineCount && end < text.Length; line++)
         {
             var newLine = text.IndexOf('\n', end);
-            if (newLine < 0)
+            var lineEnd = newLine < 0 ? text.Length : newLine + 1;
+            var content = text[end..lineEnd].Trim();
+            var isHeaderLine = line == 0 ? content == UnbinHeaderFirstLine : content.StartsWith("//", StringComparison.Ordinal);
+            if (!isHeaderLine)
             {
-                return text.Length;
+                break;
             }
 
-            end = newLine + 1;
+            end = lineEnd;
         }
 
         return end;

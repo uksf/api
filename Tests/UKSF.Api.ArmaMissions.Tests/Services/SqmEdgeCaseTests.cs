@@ -60,7 +60,7 @@ public class SqmEdgeCaseTests : IDisposable
 
         var (_, output) = Patch(sqm, AddLogic);
 
-        output.Should().Contain("class Entities;\nclass Entities\n{\nitems=1;\nclass Item0\n{\ndataType=\"Logic\";\nid=0;\n};\n};\n};");
+        output.Should().Contain("class Entities;\nclass Entities\n{\nitems=1;\n\tclass Item0\n\t{\n\t\tdataType=\"Logic\";\n\t\tid=0;\n\t};\n};\n};");
     }
 
     [Fact]
