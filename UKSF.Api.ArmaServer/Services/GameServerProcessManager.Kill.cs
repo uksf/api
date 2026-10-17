@@ -15,7 +15,7 @@ public partial class GameServerProcessManager
             requested.Id,
             async server =>
             {
-                if (StopPhaseWatchdog.SaveNotYetStored(server.Status.StopPhase) && !confirmDataLoss)
+                if (StopPhaseWatchdog.SaveNotYetStored(server.Status) && !confirmDataLoss)
                 {
                     throw new BadRequestException(DataLossRefusal);
                 }
@@ -45,7 +45,7 @@ public partial class GameServerProcessManager
                 throw new BadRequestException("The server list changed while preparing to kill all servers. Reload the page and try again");
             }
 
-            var saving = current.Where(s => StopPhaseWatchdog.SaveNotYetStored(s.Status.StopPhase)).Select(s => s.Name).ToList();
+            var saving = current.Where(s => StopPhaseWatchdog.SaveNotYetStored(s.Status)).Select(s => s.Name).ToList();
             if (saving.Count > 0 && !confirmDataLoss)
             {
                 throw new BadRequestException($"{string.Join(", ", saving)} still saving. {DataLossRefusal}");

@@ -121,12 +121,14 @@ public class GameServersController(
             throw new BadRequestException("Server is not running. This shouldn't happen so please contact an admin");
         }
 
-        if (gameServer.Status.StopPhase != StopPhase.None && DateTime.UtcNow < gameServer.Status.KillAllowedAt)
+        if (gameServer.Status.StopPhase != StopPhase.None &&
+            !StopPhaseWatchdog.WaitingForAMissionThatNeverLoaded(gameServer.Status) &&
+            DateTime.UtcNow < gameServer.Status.KillAllowedAt)
         {
             throw new BadRequestException("Server is stopping normally. Kill becomes available if the shutdown takes longer than expected");
         }
 
-        if (StopPhaseWatchdog.SaveNotYetStored(gameServer.Status.StopPhase) && !confirmDataLoss)
+        if (StopPhaseWatchdog.SaveNotYetStored(gameServer.Status) && !confirmDataLoss)
         {
             throw new BadRequestException("Killing now loses persistence data the API has not stored. Reload the page and confirm the kill");
         }
@@ -151,7 +153,7 @@ public class GameServersController(
     [Authorize]
     public async Task KillAllArmaProcesses([FromQuery] bool confirmDataLoss = false)
     {
-        var saving = gameServersService.GetServers().Where(server => StopPhaseWatchdog.SaveNotYetStored(server.Status.StopPhase)).ToList();
+        var saving = gameServersService.GetServers().Where(server => StopPhaseWatchdog.SaveNotYetStored(server.Status)).ToList();
         if (saving.Count > 0 && !confirmDataLoss)
         {
             throw new BadRequestException(

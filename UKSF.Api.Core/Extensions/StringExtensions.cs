@@ -43,27 +43,9 @@ public static class StringExtensions
             return text.Replace(" ", string.Empty);
         }
 
-        public string RemoveTrailingNewLineGroup()
-        {
-            return Regex.Replace(text, "\\s\\\\n\\s\"\";", ";");
-        }
-
-        public string RemoveNewLines()
-        {
-            return Regex.Replace(text, "\"[^\"]*\"|\\\\n", match => match.Value == "\\n" ? string.Empty : match.Value);
-        }
-
         public string RemoveQuotes()
         {
             return text.Replace("\"", string.Empty);
-        }
-
-        public string RemoveEmbeddedQuotes()
-        {
-            var item = text;
-            var match = new Regex("(\".*).+(.*?\")").Match(item);
-            item = item.Remove(match.Index, match.Length).Insert(match.Index, match.ToString().Replace("\"\"", "'"));
-            return Regex.Replace(item, "\"\\s+\"", string.Empty);
         }
 
         public IEnumerable<string> ExtractObjectIds()

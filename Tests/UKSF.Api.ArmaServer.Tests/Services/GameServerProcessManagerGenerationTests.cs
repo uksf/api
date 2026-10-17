@@ -165,6 +165,7 @@ public class GameServerProcessManagerGenerationTests : GameServerProcessManagerT
             new GameServerStatus
             {
                 Running = true,
+                CurrentMissionSessionId = "sess-1",
                 StopPhase = StopPhase.Ending,
                 StopRequestedAt = requestedAt
             }

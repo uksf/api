@@ -1,6 +1,5 @@
 using UKSF.Api.ArmaMissions.Models;
 using UKSF.Api.ArmaMissions.Models.Sqm;
-using UKSF.Api.Core.Extensions;
 
 namespace UKSF.Api.ArmaMissions.Services;
 
@@ -18,8 +17,7 @@ public class SqmWriter : ISqmWriter
         lines.AddRange(SerializeEntities(context.Sqm.Entities));
         lines.AddRange(context.Sqm.FooterLines);
 
-        lines = lines.Select(x => x.RemoveTrailingNewLineGroup().RemoveNewLines().RemoveEmbeddedQuotes()).ToList();
-        File.WriteAllLines(context.SqmPath, lines);
+        File.WriteAllLines(context.SqmPath, lines.Select(SqmStringJoiner.Join));
     }
 
     private static List<string> SerializeEntities(List<SqmEntity> entities)

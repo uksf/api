@@ -194,7 +194,7 @@ public partial class GameServerProcessManager(
             return;
         }
 
-        if (!server.Status.Running)
+        if (!server.Status.Running || !StopPhaseWatchdog.MissionLoaded(server.Status))
         {
             await KillServerCoreAsync(server);
             await PushServerUpdateAsync(server);

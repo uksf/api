@@ -30,7 +30,12 @@ public static class StopPhaseWatchdog
             _                    => throw new ArgumentOutOfRangeException(nameof(phase), phase, null)
         };
 
-    public static bool SaveNotYetStored(StopPhase phase) => phase is StopPhase.Ending or StopPhase.Saving or StopPhase.Delivering;
+    public static bool MissionLoaded(GameServerStatus status) => !string.IsNullOrEmpty(status.CurrentMissionSessionId);
+
+    public static bool SaveNotYetStored(GameServerStatus status) =>
+        status.StopPhase is StopPhase.Ending or StopPhase.Saving or StopPhase.Delivering && MissionLoaded(status);
+
+    public static bool WaitingForAMissionThatNeverLoaded(GameServerStatus status) => status.StopPhase == StopPhase.Ending && !MissionLoaded(status);
 
     public static bool WatchdogExceeded(GameServerStatus status, DateTime nowUtc)
     {
