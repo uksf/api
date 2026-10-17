@@ -22,7 +22,7 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
             Id = "s1",
             Name = "Test",
             ApiPort = 2303,
-            Status = new GameServerStatus { Running = true }
+            Status = new GameServerStatus { Running = true, CurrentMissionSessionId = "sess-1" }
         };
         _servers.Add(server);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
@@ -44,7 +44,7 @@ public class GameServerProcessManagerStopTests : GameServerProcessManagerTestBas
             Id = "s1",
             Name = "Test",
             ApiPort = 2303,
-            Status = new GameServerStatus { Running = true }
+            Status = new GameServerStatus { Running = true, CurrentMissionSessionId = "sess-1" }
         };
         _servers.Add(server);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);

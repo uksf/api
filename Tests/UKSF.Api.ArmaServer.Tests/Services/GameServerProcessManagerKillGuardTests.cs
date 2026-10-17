@@ -13,13 +13,18 @@ namespace UKSF.Api.ArmaServer.Tests.Services;
 
 public class GameServerProcessManagerKillGuardTests : GameServerProcessManagerTestBase
 {
-    private static DomainGameServer Server(StopPhase phase, bool running = true) =>
+    private static DomainGameServer Server(StopPhase phase, bool running = true, string missionSessionId = "sess-1") =>
         new()
         {
             Id = "s1",
             Name = "Test",
             ProcessId = 999999,
-            Status = new GameServerStatus { StopPhase = phase, Running = running }
+            Status = new GameServerStatus
+            {
+                StopPhase = phase,
+                Running = running,
+                CurrentMissionSessionId = missionSessionId
+            }
         };
 
     public GameServerProcessManagerKillGuardTests()
@@ -134,6 +139,59 @@ public class GameServerProcessManagerKillGuardTests : GameServerProcessManagerTe
         _mockHelpers.Verify(x => x.GetGameServerArmaProcesses(), Times.Once);
         server.ProcessId.Should().BeNull();
         server.Status.StopPhase.Should().Be(StopPhase.None);
+    }
+
+    [Fact]
+    public async Task KillServer_WhenNoMissionHasStarted_KillsWithoutConfirmation()
+    {
+        var current = Server(StopPhase.Ending, missionSessionId: null);
+        _mockContext.Setup(x => x.GetSingle("s1")).Returns(current);
+
+        await _sut.KillServerAsync(current);
+
+        current.ProcessId.Should().BeNull();
+        current.Status.StopPhase.Should().Be(StopPhase.None);
+    }
+
+    [Fact]
+    public async Task KillAll_WhenNoMissionHasStarted_KillsWithoutConfirmation()
+    {
+        var server = Server(StopPhase.Ending, missionSessionId: null);
+        _mockContext.Setup(x => x.Get()).Returns(new List<DomainGameServer> { server });
+        _mockContext.Setup(x => x.GetSingle("s1")).Returns(server);
+
+        await _sut.KillAllAsync();
+
+        server.ProcessId.Should().BeNull();
+        server.Status.StopPhase.Should().Be(StopPhase.None);
+    }
+
+    [Fact]
+    public async Task Stop_WhenTheMissionNeverStarted_KillsInsteadOfWaitingForTheGame()
+    {
+        var server = Server(StopPhase.None, missionSessionId: null);
+        _servers.Add(server);
+
+        await _sut.StopServerAsync(server);
+
+        server.ProcessId.Should().BeNull();
+        server.Status.Running.Should().BeFalse();
+        server.Status.StopPhase.Should().Be(StopPhase.None);
+        _mockHttpClientFactory.Verify(x => x.CreateClient(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Stop_WhenAnUnloadedServerIsStuckWaitingForShutdown_KillsIt()
+    {
+        var server = Server(StopPhase.Ending, missionSessionId: null);
+        server.Status.StopRequestedAt = DateTime.UtcNow.AddMinutes(-30);
+        _servers.Add(server);
+
+        await _sut.StopServerAsync(server);
+
+        server.ProcessId.Should().BeNull();
+        server.Status.StopPhase.Should().Be(StopPhase.None);
+        _mockHttpClientFactory.Verify(x => x.CreateClient(It.IsAny<string>()), Times.Never);
     }
 
     [Fact]

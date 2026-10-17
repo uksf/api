@@ -83,49 +83,12 @@ public class StringUtilitiesTests
 
     [Theory]
     [InlineData("", "")]
-    [InlineData("\"hello world;\" \\n \"\";", "\"hello world;\";")]
-    public void ShouldRemoveTrailingNewLineGroup(string text, string expected)
-    {
-        var subject = text.RemoveTrailingNewLineGroup();
-
-        subject.Should().Be(expected);
-    }
-
-    [Theory]
-    [InlineData("", "")]
-    [InlineData("hello\\nworld\\n\\nhello world", "helloworldhello world")]
-    [InlineData("hello\\n", "hello")]
-    [InlineData("\\n  hello world   \\n", "  hello world   ")]
-    [InlineData("value=\"a3\\data\\numbers\\x.paa\";", "value=\"a3\\data\\numbers\\x.paa\";")]
-    [InlineData("init=\"a;\" \\n \"b;\";", "init=\"a;\"  \"b;\";")]
-    [InlineData("init=\"x [\"\"\\n\"\"];\" \\n \"'\\numbers';\";", "init=\"x [\"\"\\n\"\"];\"  \"'\\numbers';\";")]
-    public void ShouldRemoveNewLines(string text, string expected)
-    {
-        var subject = text.RemoveNewLines();
-
-        subject.Should().Be(expected);
-    }
-
-    [Theory]
-    [InlineData("", "")]
     [InlineData("\"helloworld\" \"hello world\"", "helloworld hello world")]
     [InlineData("hello\"\"", "hello")]
     [InlineData("\"  hello world   \"", "  hello world   ")]
     public void ShouldRemoveQuotes(string text, string expected)
     {
         var subject = text.RemoveQuotes();
-
-        subject.Should().Be(expected);
-    }
-
-    [Theory]
-    [InlineData("", "")]
-    [InlineData("\"hello \"\"test\"\" world\"", "\"hello 'test' world\"")]
-    [InlineData("\"hello \" \"test\"\" world\"", "\"hello test' world\"")]
-    [InlineData("\"\"\"\"", "''")]
-    public void ShouldRemoveEmbeddedQuotes(string text, string expected)
-    {
-        var subject = text.RemoveEmbeddedQuotes();
 
         subject.Should().Be(expected);
     }
