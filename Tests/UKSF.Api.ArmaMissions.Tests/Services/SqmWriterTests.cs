@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using FluentAssertions;
 using UKSF.Api.ArmaMissions.Models;
 using UKSF.Api.ArmaMissions.Models.Sqm;
@@ -10,14 +11,53 @@ namespace UKSF.Api.ArmaMissions.Tests.Services;
 
 public class SqmWriterTests : IDisposable
 {
-    private readonly string _tempDir;
-    private readonly SqmWriter _subject = new();
+    private const string SafehouseTrigger =
+        "onActivation=\"\"\"mkr_safehouse_4\"\" setMarkerAlphaLocal 1;\" \\n \"[\"\"<img image='\\idi\\acre\\addons\\sys_prc152\\data\\prc152c_ui.paa' size='10'/>\"\", 1] spawn BIS_fnc_dynamicText;\" \\n \"\";";
 
-    public SqmWriterTests()
-    {
-        _tempDir = Path.Combine(Path.GetTempPath(), $"uksf_sqmwriter_{Guid.NewGuid():N}");
-        Directory.CreateDirectory(_tempDir);
-    }
+    private static readonly string Mission = string.Join(
+        "\r\n",
+        "version=54;",
+        "class EditorData",
+        "{",
+        "\tclass ItemIDProvider",
+        "\t{",
+        "\t\tnextID=10;",
+        "\t};",
+        "};",
+        "class Mission",
+        "{",
+        "\tclass Entities",
+        "\t{",
+        "\t\titems=3;",
+        "\t\tclass Item0",
+        "\t\t{",
+        "\t\t\tdataType=\"Logic\";",
+        "\t\t\tid=7;",
+        "\t\t\ttype=\"ModuleCurator_F\";",
+        "\t\t};",
+        "\t\tclass Item1",
+        "\t\t{",
+        "\t\t\tdataType=\"Trigger\";",
+        "\t\t\tclass Attributes",
+        "\t\t\t{",
+        $"\t\t\t\t{SafehouseTrigger}",
+        "\t\t\t};",
+        "\t\t\tid=8;",
+        "\t\t};",
+        "\t\tclass Item2",
+        "\t\t{",
+        "\t\t\tdataType=\"Object\";",
+        "\t\t\tid=9;",
+        "\t\t\ttype=\"B_Soldier_F\";",
+        "\t\t};",
+        "\t};",
+        "};",
+        ""
+    );
+
+    private readonly string _tempDir = Path.Combine(Path.GetTempPath(), $"uksf_sqmwriter_{Guid.NewGuid():N}");
+
+    public SqmWriterTests() => Directory.CreateDirectory(_tempDir);
 
     public void Dispose()
     {
@@ -27,81 +67,65 @@ public class SqmWriterTests : IDisposable
         }
     }
 
-    private string[] WriteHeaderLines(params string[] headerLines)
+    [Fact]
+    public void Write_WhenNothingChanged_WritesTheFileByteForByte()
     {
-        var context = new MissionPatchContext { FolderPath = _tempDir, Sqm = new SqmDocument { HeaderLines = [..headerLines] } };
+        var output = Patch(Mission, _ => { });
 
-        _subject.Write(context);
-
-        return File.ReadAllLines(context.SqmPath);
+        output.Should().Be(Mission);
     }
 
     [Fact]
-    public void Write_WhenQuotedPathContainsBackslashN_KeepsPathIntact()
+    public void Write_KeepsMultilineCodeWithEscapedQuotesUntouched()
     {
-        var lines = WriteHeaderLines(@"value=""a3\air_f_jets\plane_Fighter_04\data\numbers\fighter_04_number_04_ca.paa"";");
+        var output = Patch(Mission, context => context.Sqm.Entities.RemoveAt(0));
 
-        lines.Should().Contain(@"value=""a3\air_f_jets\plane_Fighter_04\data\numbers\fighter_04_number_04_ca.paa"";");
+        output.Should().Contain($"\r\n\t\t\t\t{SafehouseTrigger}\r\n");
     }
 
     [Fact]
-    public void Write_WhenQuotedCodeContainsSingleQuotedPath_KeepsPathIntact()
+    public void Write_WhenAnEntityIsRemoved_DeletesItsLinesAndRenumbersTheRest()
     {
-        var lines = WriteHeaderLines(
-            @"expression=""_this setObjectTextureGlobal [3,_value]; _this setObjectMaterialGlobal [3,'a3\air_f_jets\plane_Fighter_04\data\numbers\Fighter_04_numbers.rvmat']"";"
+        var output = Patch(Mission, context => context.Sqm.Entities.RemoveAt(0));
+
+        output.Should().NotContain("ModuleCurator_F");
+        output.Should().Contain("\t\titems=2;\r\n\t\tclass Item0\r\n\t\t{\r\n\t\t\tdataType=\"Trigger\";");
+        output.Should().Contain("\t\tclass Item1\r\n\t\t{\r\n\t\t\tdataType=\"Object\";");
+        output.Should().NotContain("class Item2");
+    }
+
+    [Fact]
+    public void Write_WhenAnEntityIsAdded_AppendsItAtItemIndentationAndRaisesNextId()
+    {
+        var output = Patch(
+            Mission,
+            context => { context.Sqm.Entities.Add(new SqmLogic { Lines = ["class Item", "{", "dataType=\"Logic\";", $"id={context.NextEntityId++};", "};"] }); }
         );
 
-        lines.Should()
-             .Contain(
-                 @"expression=""_this setObjectTextureGlobal [3,_value]; _this setObjectMaterialGlobal [3,'a3\air_f_jets\plane_Fighter_04\data\numbers\Fighter_04_numbers.rvmat']"";"
-             );
+        output.Should().Contain("\t\titems=4;");
+        output.Should().Contain("\t\t};\r\n\t\tclass Item3\r\n\t\t{\r\n\t\t\tdataType=\"Logic\";\r\n\t\t\tid=10;\r\n\t\t};\r\n\t};\r\n};");
+        output.Should().Contain("\t\tnextID=11;");
     }
 
     [Fact]
-    public void Write_WhenMultiLineCodeIsJoinedWithBackslashN_JoinsIntoSingleString()
+    public void Write_WhenUnbinHeaderPresent_StripsItsSevenLines()
     {
-        var lines = WriteHeaderLines(@"onActivation=""[dz_2, 15] call uksf_operation_fnc_aiParadrop;"" \n ""[dz_3, 15] call uksf_operation_fnc_aiParadrop;"";");
+        var header = string.Concat(new[] { new string('/', 68) }.Concat(Enumerable.Range(2, 6).Select(i => $"// Line {i}")).Select(line => line + "\r\n"));
 
-        lines.Should().Contain(@"onActivation=""[dz_2, 15] call uksf_operation_fnc_aiParadrop;[dz_3, 15] call uksf_operation_fnc_aiParadrop;"";");
+        var output = Patch(header + Mission, _ => { });
+
+        output.Should().Be(Mission);
     }
 
-    [Fact]
-    public void Write_WhenJoinedCodeContainsQuotedPath_JoinsCodeAndKeepsPath()
+    private string Patch(string sqm, Action<MissionPatchContext> change)
     {
-        var lines = WriteHeaderLines(@"init=""this setVariable [""""tex"""", 'a3\data\numbers\x.paa'];"" \n ""hint 'done';"";");
+        var context = new MissionPatchContext { FolderPath = _tempDir };
+        SqmTextEditor.WriteFile(context.SqmPath, sqm);
+        new SqmReader().Read(context);
 
-        lines.Should().Contain(@"init=""this setVariable [""""tex"""", 'a3\data\numbers\x.paa'];hint 'done';"";");
-    }
+        change(context);
+        new SqmWriter().Write(context);
 
-    [Fact]
-    public void Write_WhenCodeStartsWithAnEscapedQuoteAndHoldsSingleQuotes_KeepsEveryQuote()
-    {
-        var lines = WriteHeaderLines(
-            @"onActivation=""""""mkr_safehouse_4"""" setMarkerAlphaLocal 1;"" \n ""[player, [""""safehouse_4"""", 20]] remoteExecCall [""""say3D"""", 0];"" \n ""[""""<img image='\idi\acre\addons\sys_prc152\data\prc152c_ui.paa' size='10'/>"""", 1, -0.2, 28, 1, 0, 1000] spawn BIS_fnc_dynamicText;"";"
-        );
-
-        lines.Should()
-             .Contain(
-                 @"onActivation=""""""mkr_safehouse_4"""" setMarkerAlphaLocal 1;[player, [""""safehouse_4"""", 20]] remoteExecCall [""""say3D"""", 0];[""""<img image='\idi\acre\addons\sys_prc152\data\prc152c_ui.paa' size='10'/>"""", 1, -0.2, 28, 1, 0, 1000] spawn BIS_fnc_dynamicText;"";"
-             );
-    }
-
-    [Fact]
-    public void Write_WhenCodeEndsWithAnEmptySegment_DropsTheSegment()
-    {
-        var lines = WriteHeaderLines(
-            @"onActivation=""""""mkr_change_1"""" setMarkerAlphaLocal 1;"" \n ""[speaker_1, [""""change_1"""", 20]] remoteExecCall [""""say3D"""", 0];"" \n """";"
-        );
-
-        lines.Should()
-             .Contain(@"onActivation=""""""mkr_change_1"""" setMarkerAlphaLocal 1;[speaker_1, [""""change_1"""", 20]] remoteExecCall [""""say3D"""", 0];"";");
-    }
-
-    [Fact]
-    public void Write_WhenEscapedQuotesSurroundASpace_KeepsTheSpace()
-    {
-        var lines = WriteHeaderLines(@"init=""hint (""""a"""" + """" """" + """"b"""");"";");
-
-        lines.Should().Contain(@"init=""hint (""""a"""" + """" """" + """"b"""");"";");
+        return SqmTextEditor.ReadFile(context.SqmPath);
     }
 }

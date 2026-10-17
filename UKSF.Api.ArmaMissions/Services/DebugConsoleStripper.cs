@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using UKSF.Api.ArmaMissions.Models;
 
 namespace UKSF.Api.ArmaMissions.Services;
@@ -10,8 +9,7 @@ public interface IDebugConsoleStripper
 
 public class DebugConsoleStripper : IDebugConsoleStripper
 {
-    private static readonly Regex ScalarLine = new(@"^\s*enableDebugConsole\s*=", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-    private static readonly Regex AttributeProperty = new(@"property\s*=\s*""EnableDebugConsole""", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private const string DebugConsole = "EnableDebugConsole";
 
     public void Patch(MissionPatchContext context)
     {
@@ -20,111 +18,52 @@ public class DebugConsoleStripper : IDebugConsoleStripper
             return;
         }
 
-        var lines = File.ReadAllLines(context.SqmPath).ToList();
-        var changed = false;
+        var text = SqmTextEditor.ReadFile(context.SqmPath);
+        var root = SqmParser.Parse(text);
+        var editor = new SqmTextEditor(text);
 
-        if (RemoveScalarLines(lines))
+        foreach (var node in root.Descendants.Prepend(root))
         {
-            changed = true;
+            foreach (var property in node.Properties.Where(p => p.Name.Equals(DebugConsole, StringComparison.OrdinalIgnoreCase)))
+            {
+                editor.DeleteLines(property.Start, property.End);
+            }
+
+            RemoveDebugConsoleAttributes(node, editor);
         }
 
-        if (RemoveEnableDebugConsoleAttributeBlocks(lines))
+        if (editor.HasEdits)
         {
-            changed = true;
-        }
-
-        if (changed)
-        {
-            File.WriteAllLines(context.SqmPath, lines);
+            SqmTextEditor.WriteFile(context.SqmPath, editor.Apply());
         }
     }
 
-    private static bool RemoveScalarLines(List<string> lines)
+    private static void RemoveDebugConsoleAttributes(SqmClassNode node, SqmTextEditor editor)
     {
-        var changed = false;
-        for (var i = lines.Count - 1; i >= 0; i--)
+        var attributes = node.Classes.Where(IsNumberedAttribute).ToList();
+        var debugConsole = attributes.Where(a => a.Value("property").Equals(DebugConsole, StringComparison.OrdinalIgnoreCase)).ToHashSet();
+        if (debugConsole.Count == 0)
         {
-            if (ScalarLine.IsMatch(lines[i]))
-            {
-                lines.RemoveAt(i);
-                changed = true;
-            }
+            return;
         }
 
-        return changed;
+        foreach (var attribute in debugConsole)
+        {
+            editor.DeleteLines(attribute.Start, attribute.End);
+        }
+
+        var remaining = attributes.Where(a => !debugConsole.Contains(a)).ToList();
+        for (var i = 0; i < remaining.Count; i++)
+        {
+            editor.Rename(remaining[i], $"Attribute{i}");
+        }
+
+        if (node.Property("nAttributes") is { } count)
+        {
+            editor.SetValue(count, remaining.Count.ToString());
+        }
     }
 
-    private static bool RemoveEnableDebugConsoleAttributeBlocks(List<string> lines)
-    {
-        var changed = false;
-        var i = 0;
-        while (i < lines.Count)
-        {
-            if (!lines[i].TrimStart().StartsWith("class Attribute", StringComparison.OrdinalIgnoreCase))
-            {
-                i++;
-                continue;
-            }
-
-            var blockEnd = FindBlockEnd(lines, i);
-            if (blockEnd == -1)
-            {
-                i++;
-                continue;
-            }
-
-            var blockMatchesEnableDebugConsole = false;
-            for (var j = i + 1; j < blockEnd; j++)
-            {
-                if (AttributeProperty.IsMatch(lines[j]))
-                {
-                    blockMatchesEnableDebugConsole = true;
-                    break;
-                }
-            }
-
-            if (blockMatchesEnableDebugConsole)
-            {
-                lines.RemoveRange(i, blockEnd - i + 1);
-                changed = true;
-                continue;
-            }
-
-            i = blockEnd + 1;
-        }
-
-        return changed;
-    }
-
-    private static int FindBlockEnd(List<string> lines, int classLineIndex)
-    {
-        var index = classLineIndex + 1;
-        if (index >= lines.Count || lines[index].Trim() != "{")
-        {
-            return -1;
-        }
-
-        var depth = 1;
-        index++;
-        while (index < lines.Count && depth > 0)
-        {
-            var trimmed = lines[index].Trim();
-            if (trimmed == "{")
-            {
-                depth++;
-            }
-            else if (trimmed == "};")
-            {
-                depth--;
-                if (depth == 0)
-                {
-                    return index;
-                }
-            }
-
-            index++;
-        }
-
-        return -1;
-    }
+    private static bool IsNumberedAttribute(SqmClassNode node) =>
+        node.Name.StartsWith("Attribute", StringComparison.OrdinalIgnoreCase) && int.TryParse(node.Name["Attribute".Length..], out _);
 }

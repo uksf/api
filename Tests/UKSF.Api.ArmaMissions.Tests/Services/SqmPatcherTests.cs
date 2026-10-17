@@ -13,8 +13,6 @@ public class SqmPatcherTests
 {
     private readonly SqmPatcher _patcher = new();
 
-    // ─── Medic Trait ────────────────────────────────────────────────────────
-
     [Fact]
     public void Patch_MedicPlayer_GetsMedicTraitAttribute()
     {
@@ -38,8 +36,6 @@ public class SqmPatcherTests
         playerLines.Should().NotContain(l => l.Contains("Enh_unitTraits_medic"));
     }
 
-    // ─── Engineer Trait ─────────────────────────────────────────────────────
-
     [Fact]
     public void Patch_EngineerPlayer_GetsEngineerTraitAttribute()
     {
@@ -62,8 +58,6 @@ public class SqmPatcherTests
         var playerLines = GetFirstPlayerEntityLines(context);
         playerLines.Should().NotContain(l => l.Contains("Enh_unitTraits_engineer"));
     }
-
-    // ─── Both Traits ────────────────────────────────────────────────────────
 
     [Fact]
     public void Patch_MedicAndEngineerPlayer_GetsBothTraitAttributes()
@@ -110,8 +104,6 @@ public class SqmPatcherTests
         playerLines.Should().NotContain(l => l.Contains("CustomAttributes"));
     }
 
-    // ─── Helpers ────────────────────────────────────────────────────────────
-
     private static MissionPatchContext CreateContextWithSinglePlayer(bool isMedic, bool isEngineer)
     {
         var player = new PatchPlayer
@@ -156,6 +148,6 @@ public class SqmPatcherTests
     {
         var group = context.Sqm.Entities.OfType<SqmGroup>().First();
         var playerEntity = group.Children.OfType<SqmObject>().First();
-        return playerEntity.RawLines;
+        return playerEntity.Lines;
     }
 }

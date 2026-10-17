@@ -10,7 +10,6 @@ public interface ISqmPatcher
 
 public class SqmPatcher : ISqmPatcher
 {
-    // Position offsets to space entities apart in the world so they don't stack on each other
     private const int PlayerStartPosition = 10;
     private const double CuratorStartPosition = 0.5;
 
@@ -34,24 +33,28 @@ public class SqmPatcher : ISqmPatcher
             var curator = CreateCuratorEntity(context, ref curatorPosition);
             entities.Add(curator);
         }
-
-        for (var i = 0; i < entities.Count; i++)
-        {
-            ReindexEntity(entities[i], i);
-        }
     }
 
     private static SqmGroup CreateGroupEntity(PatchUnit unit, MissionPatchContext context, ref int position)
     {
-        List<string> rawLines =
+        var groupId = context.NextEntityId++;
+        List<SqmEntity> children = [];
+        for (var i = 0; i < unit.Slots.Count; i++)
+        {
+            children.Add(CreatePlayerEntity(unit.Slots[i], i, context, ref position));
+        }
+
+        List<string> lines =
         [
             "class Item",
             "{",
             "dataType=\"Group\";",
             "side=\"West\";",
-            $"id={context.NextEntityId++};",
+            $"id={groupId};",
             "class Entities",
             "{",
+            $"items={children.Count};",
+            ..children.SelectMany(child => child.Lines),
             "};",
             "class Attributes",
             "{",
@@ -79,17 +82,11 @@ public class SqmPatcher : ISqmPatcher
             "};"
         ];
 
-        List<SqmEntity> children = [];
-        for (var i = 0; i < unit.Slots.Count; i++)
-        {
-            children.Add(CreatePlayerEntity(unit.Slots[i], i, context, ref position));
-        }
-
         return new SqmGroup
         {
             Children = children,
             AllChildrenPlayable = true,
-            RawLines = rawLines
+            Lines = lines
         };
     }
 
@@ -127,7 +124,7 @@ public class SqmPatcher : ISqmPatcher
         {
             IsPlayable = true,
             Type = player.ObjectClass,
-            RawLines = rawLines
+            Lines = rawLines
         };
     }
 
@@ -150,7 +147,7 @@ public class SqmPatcher : ISqmPatcher
             "};"
         ];
 
-        return new SqmLogic { Type = "ModuleCurator_F", RawLines = rawLines };
+        return new SqmLogic { Type = "ModuleCurator_F", Lines = rawLines };
     }
 
     private static void AddTraitAttributes(List<string> rawLines, PatchPlayer player)
@@ -201,13 +198,5 @@ public class SqmPatcher : ISqmPatcher
 
         rawLines.Add($"nAttributes={traits.Count};");
         rawLines.Add("};");
-    }
-
-    private static void ReindexEntity(SqmEntity entity, int index)
-    {
-        if (entity.RawLines is { Count: > 0 })
-        {
-            entity.RawLines[0] = $"class Item{index}";
-        }
     }
 }

@@ -10,124 +10,61 @@ public interface ISqmReader
 
 public class SqmReader : ISqmReader
 {
-    private const int UnbinHeaderLineCount = 7;
-
     public void Read(MissionPatchContext context)
     {
-        var allLines = File.ReadAllLines(context.SqmPath).Select(x => x.Trim()).ToList();
-        allLines.RemoveAll(string.IsNullOrEmpty);
-        StripUnbinHeader(allLines);
+        var text = SqmTextEditor.ReadFile(context.SqmPath);
+        var root = SqmParser.Parse(text);
+        var entities = MissionEntities(root);
 
-        var nextId = ReadNextId(allLines);
-        context.NextEntityId = nextId;
-
-        var entitiesIndex = SqmParsingUtilities.GetIndexByKey(allLines, "class Entities");
-        if (entitiesIndex == -1)
-        {
-            context.Sqm = new SqmDocument { HeaderLines = allLines };
-            return;
-        }
-
-        var headerLines = allLines.Take(entitiesIndex).ToList();
-        var entitiesBlock = SqmParsingUtilities.ReadBlock(allLines, ref entitiesIndex);
-        var footerLines = allLines.Skip(entitiesIndex).ToList();
-
-        var entities = ParseEntities(entitiesBlock);
-
+        context.NextEntityId = NextEntityId(root);
         context.Sqm = new SqmDocument
         {
-            HeaderLines = headerLines,
-            Entities = entities,
-            FooterLines = footerLines
+            Text = text,
+            Root = root,
+            EntitiesNode = entities,
+            Entities = entities?.Items.Select(node => ParseEntity(text, node)).ToList() ?? []
         };
     }
 
-    private static void StripUnbinHeader(List<string> lines)
+    public static SqmClassNode MissionEntities(SqmClassNode root) =>
+        root.Class("Mission")?.Class("Entities") ?? root.Descendants.FirstOrDefault(node => node.Name.Equals("Entities", StringComparison.OrdinalIgnoreCase));
+
+    public static SqmPropertyNode NextIdProperty(SqmClassNode root) =>
+        (root.Class("EditorData")?.Class("ItemIDProvider") ?? root.Class("ItemIDProvider"))?.Property("nextID");
+
+    private static int NextEntityId(SqmClassNode root)
     {
-        if (lines.Count > 0 && lines[0] == "////////////////////////////////////////////////////////////////////")
-        {
-            lines.RemoveRange(0, UnbinHeaderLineCount);
-        }
+        var providerNext = int.TryParse(NextIdProperty(root)?.Text, out var next) ? next : 0;
+        var highestId = root.Descendants.Select(node => int.TryParse(node.Value("id"), out var id) ? id : -1).DefaultIfEmpty(-1).Max();
+        return Math.Max(providerNext, highestId + 1);
     }
 
-    private static int ReadNextId(List<string> lines)
+    private static SqmEntity ParseEntity(string text, SqmClassNode node)
     {
-        var providerBlock = SqmParsingUtilities.ReadBlockByKey(lines, "ItemIDProvider");
-        if (providerBlock.Count == 0)
-        {
-            return 0;
-        }
-
-        var nextIdValue = SqmParsingUtilities.ReadSingleValue(providerBlock, "nextID");
-        return int.TryParse(nextIdValue, out var id) ? id : 0;
-    }
-
-    private static List<SqmEntity> ParseEntities(List<string> entitiesBlock)
-    {
-        var itemCount = ReadItemCount(entitiesBlock);
-        List<SqmEntity> entities = [];
-        var index = entitiesBlock.FindIndex(x => x.StartsWith("class Item"));
-        while (entities.Count < itemCount && index < entitiesBlock.Count)
-        {
-            var itemBlock = SqmParsingUtilities.ReadBlock(entitiesBlock, ref index);
-            entities.Add(ParseEntity(itemBlock));
-        }
-
-        return entities;
-    }
-
-    private static SqmEntity ParseEntity(List<string> rawLines)
-    {
-        var dataType = SqmParsingUtilities.ReadSingleValue(rawLines, "dataType");
-
-        switch (dataType)
+        switch (node.Value("dataType"))
         {
             case "Group":
             {
-                var childEntitiesBlock = SqmParsingUtilities.ReadBlockByKey(rawLines, "Entities");
-                List<SqmEntity> children = [];
-                if (childEntitiesBlock.Count > 0)
-                {
-                    children = ParseEntities(childEntitiesBlock);
-                }
-
-                var allChildrenPlayable = children.Count > 0 && children.All(c => c is SqmObject { IsPlayable: true });
-                var isIgnored = children.Any(c => c is SqmObject obj && obj.RawLines.Any(l => l.Contains("@ignore", StringComparison.OrdinalIgnoreCase)));
-
+                var children = node.Class("Entities")?.Items.Select(child => ParseEntity(text, child)).ToList() ?? [];
                 return new SqmGroup
                 {
+                    Node = node,
                     Children = children,
-                    AllChildrenPlayable = allChildrenPlayable,
-                    IsIgnored = isIgnored,
-                    RawLines = rawLines
+                    AllChildrenPlayable = children.Count > 0 && children.All(c => c is SqmObject { IsPlayable: true }),
+                    IsIgnored = children.Any(c => c is SqmObject && text[c.Node.Start..c.Node.End].Contains("@ignore", StringComparison.OrdinalIgnoreCase))
                 };
             }
             case "Object":
             {
-                var isPlayable = SqmParsingUtilities.ReadSingleValue(rawLines, "isPlayable");
-                var isPlayer = SqmParsingUtilities.ReadSingleValue(rawLines, "isPlayer");
-                var playable = isPlayable == "1" || isPlayer == "1";
-                var type = SqmParsingUtilities.ReadSingleValue(rawLines, "type");
-
                 return new SqmObject
                 {
-                    IsPlayable = playable,
-                    Type = type,
-                    RawLines = rawLines
+                    Node = node,
+                    IsPlayable = node.OwnOrAttributeValue("isPlayable") == "1" || node.OwnOrAttributeValue("isPlayer") == "1",
+                    Type = node.Value("type")
                 };
             }
-            case "Logic":
-            {
-                var type = SqmParsingUtilities.ReadSingleValue(rawLines, "type");
-                return new SqmLogic { Type = type, RawLines = rawLines };
-            }
-            default: return new SqmPassthrough { RawLines = rawLines };
+            case "Logic": return new SqmLogic { Node = node, Type = node.Value("type") };
+            default:      return new SqmPassthrough { Node = node };
         }
-    }
-
-    private static int ReadItemCount(List<string> block)
-    {
-        var value = SqmParsingUtilities.ReadSingleValue(block, "items");
-        return int.TryParse(value, out var count) ? count : 0;
     }
 }

@@ -1,8 +1,11 @@
+using UKSF.Api.ArmaMissions.Services;
+
 namespace UKSF.Api.ArmaMissions.Models.Sqm;
 
 public abstract class SqmEntity
 {
-    public List<string> RawLines { get; set; } = [];
+    public SqmClassNode Node { get; init; }
+    public List<string> Lines { get; init; } = [];
 }
 
 public class SqmGroup : SqmEntity

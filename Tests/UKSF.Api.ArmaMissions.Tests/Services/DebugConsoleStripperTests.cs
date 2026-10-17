@@ -154,8 +154,9 @@ public class DebugConsoleStripperTests : IDisposable
 
         var content = File.ReadAllText(sqmPath);
         content.Should().NotContain("EnableDebugConsole");
-        content.Should().Contain("SomethingElse");
-        content.Should().Contain("class Attribute1");
+        content.Should().MatchRegex(@"class Attribute0\s*\{\s*property=""SomethingElse"";");
+        content.Should().NotContain("class Attribute1");
+        content.Should().Contain("nAttributes=1;");
     }
 
     [Fact]

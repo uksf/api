@@ -1,5 +1,4 @@
 using UKSF.Api.ArmaMissions.Models;
-using UKSF.Api.ArmaMissions.Models.Sqm;
 
 namespace UKSF.Api.ArmaMissions.Services;
 
@@ -10,55 +9,87 @@ public interface ISqmWriter
 
 public class SqmWriter : ISqmWriter
 {
+    private const string UnbinHeaderFirstLine = "////////////////////////////////////////////////////////////////////";
+    private const int UnbinHeaderLineCount = 7;
+
     public void Write(MissionPatchContext context)
     {
-        var lines = new List<string>();
-        lines.AddRange(context.Sqm.HeaderLines);
-        lines.AddRange(SerializeEntities(context.Sqm.Entities));
-        lines.AddRange(context.Sqm.FooterLines);
+        var sqm = context.Sqm;
+        var entitiesNode = sqm.EntitiesNode ?? throw new SqmSyntaxException("mission.sqm has no class Mission with class Entities");
+        var editor = new SqmTextEditor(sqm.Text);
 
-        File.WriteAllLines(context.SqmPath, lines.Select(SqmStringJoiner.Join));
-    }
-
-    private static List<string> SerializeEntities(List<SqmEntity> entities)
-    {
-        List<string> serialized = ["class Entities", "{", $"items = {entities.Count};"];
-        foreach (var entity in entities)
+        var kept = sqm.Entities.Where(e => e.Node is not null).Select(e => e.Node).ToHashSet();
+        foreach (var node in entitiesNode.Items.Where(node => !kept.Contains(node)))
         {
-            serialized.AddRange(SerializeEntity(entity));
+            editor.DeleteLines(node.Start, node.End);
         }
 
-        serialized.Add("};");
-        return serialized;
-    }
-
-    private static List<string> SerializeEntity(SqmEntity entity)
-    {
-        return entity switch
+        List<string> added = [];
+        var itemsProperty = entitiesNode.Property("items");
+        if (itemsProperty is null)
         {
-            SqmGroup group => SerializeGroup(group),
-            _              => entity.RawLines
-        };
-    }
-
-    private static List<string> SerializeGroup(SqmGroup group)
-    {
-        if (group.IsIgnored || group.Children.Count == 0)
+            added.Add($"items={sqm.Entities.Count};");
+        }
+        else
         {
-            return group.RawLines;
+            editor.SetValue(itemsProperty, sqm.Entities.Count.ToString());
         }
 
-        var lines = new List<string>(group.RawLines);
-        var entitiesIndex = SqmParsingUtilities.GetIndexByKey(lines, "Entities");
-        if (entitiesIndex == -1)
+        for (var i = 0; i < sqm.Entities.Count; i++)
         {
-            return lines;
+            var entity = sqm.Entities[i];
+            if (entity.Node is not null)
+            {
+                editor.Rename(entity.Node, $"Item{i}");
+            }
+            else
+            {
+                added.Add($"class Item{i}");
+                added.AddRange(entity.Lines.Skip(1));
+            }
         }
 
-        var entitiesBlock = SqmParsingUtilities.ReadBlock(lines, entitiesIndex);
-        lines.RemoveRange(entitiesIndex, entitiesBlock.Count);
-        lines.InsertRange(entitiesIndex, SerializeEntities(group.Children));
+        if (added.Count > 0)
+        {
+            var firstItem = entitiesNode.Items.FirstOrDefault();
+            var indent = firstItem is null ? editor.IndentAt(entitiesNode.BodyClose) + "\t" : editor.IndentAt(firstItem.Start);
+            editor.InsertLinesBefore(entitiesNode.BodyClose, added, indent);
+        }
 
-        return lines;
+        var nextId = SqmReader.NextIdProperty(sqm.Root);
+        if (nextId is not null && (!int.TryParse(nextId.Text, out var current) || current < context.NextEntityId))
+        {
+            editor.SetValue(nextId, context.NextEntityId.ToString());
+        }
+
+        var unbinHeaderEnd = UnbinHeaderEnd(sqm.Text);
+        if (unbinHeaderEnd > 0)
+        {
+            editor.Replace(0, unbinHeaderEnd, "");
+        }
+
+        SqmTextEditor.WriteFile(context.SqmPath, editor.Apply());
+    }
+
+    private static int UnbinHeaderEnd(string text)
+    {
+        if (!text.StartsWith(UnbinHeaderFirstLine, StringComparison.Ordinal))
+        {
+            return 0;
+        }
+
+        var end = 0;
+        for (var line = 0; line < UnbinHeaderLineCount; line++)
+        {
+            var newLine = text.IndexOf('\n', end);
+            if (newLine < 0)
+            {
+                return text.Length;
+            }
+
+            end = newLine + 1;
+        }
+
+        return end;
     }
 }
