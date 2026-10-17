@@ -70,6 +70,38 @@ public class SqmWriterTests : IDisposable
     {
         var lines = WriteHeaderLines(@"init=""this setVariable [""""tex"""", 'a3\data\numbers\x.paa'];"" \n ""hint 'done';"";");
 
-        lines.Should().Contain(@"init=""this setVariable ['tex', 'a3\data\numbers\x.paa'];hint 'done';"";");
+        lines.Should().Contain(@"init=""this setVariable [""""tex"""", 'a3\data\numbers\x.paa'];hint 'done';"";");
+    }
+
+    [Fact]
+    public void Write_WhenCodeStartsWithAnEscapedQuoteAndHoldsSingleQuotes_KeepsEveryQuote()
+    {
+        var lines = WriteHeaderLines(
+            @"onActivation=""""""mkr_safehouse_4"""" setMarkerAlphaLocal 1;"" \n ""[player, [""""safehouse_4"""", 20]] remoteExecCall [""""say3D"""", 0];"" \n ""[""""<img image='\idi\acre\addons\sys_prc152\data\prc152c_ui.paa' size='10'/>"""", 1, -0.2, 28, 1, 0, 1000] spawn BIS_fnc_dynamicText;"";"
+        );
+
+        lines.Should()
+             .Contain(
+                 @"onActivation=""""""mkr_safehouse_4"""" setMarkerAlphaLocal 1;[player, [""""safehouse_4"""", 20]] remoteExecCall [""""say3D"""", 0];[""""<img image='\idi\acre\addons\sys_prc152\data\prc152c_ui.paa' size='10'/>"""", 1, -0.2, 28, 1, 0, 1000] spawn BIS_fnc_dynamicText;"";"
+             );
+    }
+
+    [Fact]
+    public void Write_WhenCodeEndsWithAnEmptySegment_DropsTheSegment()
+    {
+        var lines = WriteHeaderLines(
+            @"onActivation=""""""mkr_change_1"""" setMarkerAlphaLocal 1;"" \n ""[speaker_1, [""""change_1"""", 20]] remoteExecCall [""""say3D"""", 0];"" \n """";"
+        );
+
+        lines.Should()
+             .Contain(@"onActivation=""""""mkr_change_1"""" setMarkerAlphaLocal 1;[speaker_1, [""""change_1"""", 20]] remoteExecCall [""""say3D"""", 0];"";");
+    }
+
+    [Fact]
+    public void Write_WhenEscapedQuotesSurroundASpace_KeepsTheSpace()
+    {
+        var lines = WriteHeaderLines(@"init=""hint (""""a"""" + """" """" + """"b"""");"";");
+
+        lines.Should().Contain(@"init=""hint (""""a"""" + """" """" + """"b"""");"";");
     }
 }
