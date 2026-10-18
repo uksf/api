@@ -9,8 +9,9 @@ public class DevRunLauncher(ISyntheticServerLauncher syntheticLauncher, IVariabl
 {
     private const int GamePort = 3304;
     private const int ApiPort = SyntheticApiPorts.DevRun;
+    public const string MissionRunningLogLine = "uksf_dev: mission running, launching headless clients";
 
-    public SyntheticLaunchResult Launch(string runId, string sqf, IReadOnlyList<string> mods, string worldName = null)
+    public SyntheticLaunchResult Launch(string runId, string sqf, IReadOnlyList<string> mods, string worldName = null, int headlessClients = 0)
     {
         var serverRoot = variablesService.GetVariable("SERVER_PATH_DEV").AsString();
         var shortId = runId.Length >= 8 ? runId[..8] : runId;
@@ -43,10 +44,11 @@ public class DevRunLauncher(ISyntheticServerLauncher syntheticLauncher, IVariabl
             ApiPort: ApiPort,
             Mods: mods,
             ServerConfig: BuildConfig(profileName, missionName),
-            MissionSqm: MissionSqm,
+            MissionSqm: BuildMissionSqm(headlessClients),
             DescriptionExt: DescriptionExt,
-            FunctionFiles: new Dictionary<string, string> { ["fn_runUserSqf.sqf"] = BuildWrapperSqf(runId, sqf) },
-            MissionFiles: missionFiles
+            FunctionFiles: new Dictionary<string, string> { ["fn_runUserSqf.sqf"] = BuildWrapperSqf(runId, sqf, headlessClients) },
+            MissionFiles: missionFiles,
+            HeadlessClients: headlessClients
         );
 
         return syntheticLauncher.Launch(spec);
@@ -57,10 +59,12 @@ public class DevRunLauncher(ISyntheticServerLauncher syntheticLauncher, IVariabl
           hostname = "{{profileName}}";
           password = "";
           passwordAdmin = "";
-          maxPlayers = 1;
+          maxPlayers = 4;
           voteThreshold = 0.33;
           disableVoN = 1;
           persistent = 1;
+          headlessClients[] = {"127.0.0.1"};
+          localClient[] = {"127.0.0.1"};
 
           class Missions
           {
@@ -72,12 +76,13 @@ public class DevRunLauncher(ISyntheticServerLauncher syntheticLauncher, IVariabl
           };
           """;
 
-    private static string BuildWrapperSqf(string runId, string userSqf)
+    private static string BuildWrapperSqf(string runId, string userSqf, int headlessClients)
     {
         var escaped = userSqf.Replace("\"", "\"\"");
         return $$"""
                  uksf_dev_runId = "{{runId}}";
                  uksf_dev_resultPosted = false;
+                 {{(headlessClients > 0 ? $"[\"{MissionRunningLogLine}\"] call uksf_dev_fnc_logLine;" : "")}}
 
                  private _userFn = compileFinal "{{escaped}}";
                  [] call _userFn;
@@ -98,7 +103,7 @@ public class DevRunLauncher(ISyntheticServerLauncher syntheticLauncher, IVariabl
                                           {
                                               gameType = "Coop";
                                               minPlayers = 1;
-                                              maxPlayers = 1;
+                                              maxPlayers = 4;
                                           };
                                           class CfgFunctions
                                           {
@@ -115,6 +120,27 @@ public class DevRunLauncher(ISyntheticServerLauncher syntheticLauncher, IVariabl
                                               };
                                           };
                                           """;
+
+    private static string BuildMissionSqm(int headlessClients) =>
+        MissionSqm.Replace("ENTITY_COUNT", (1 + headlessClients).ToString())
+                  .Replace("HEADLESS_CLIENT_SLOTS", string.Concat(Enumerable.Range(1, headlessClients).Select(HeadlessClientSlot)));
+
+    private static string HeadlessClientSlot(int index) =>
+        $$"""
+          class Item{{index}}
+          {
+              dataType="Logic";
+              class PositionInfo
+              {
+                  position[]={{{index * 2}},0,0};
+              };
+              name="HC{{index}}";
+              isPlayable=1;
+              id={{100 + index}};
+              type="HeadlessClient_F";
+          };
+
+          """;
 
     private const string MissionSqm = """
                                       version=54;
@@ -149,7 +175,7 @@ public class DevRunLauncher(ISyntheticServerLauncher syntheticLauncher, IVariabl
                                           };
                                           class Entities
                                           {
-                                              items=1;
+                                              items=ENTITY_COUNT;
                                               class Item0
                                               {
                                                   dataType="Group";
@@ -179,6 +205,7 @@ public class DevRunLauncher(ISyntheticServerLauncher syntheticLauncher, IVariabl
                                                   };
                                                   id=1;
                                               };
+                                      HEADLESS_CLIENT_SLOTS
                                           };
                                       };
                                       class CustomAttributes

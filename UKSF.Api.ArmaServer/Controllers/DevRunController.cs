@@ -6,7 +6,7 @@ using UKSF.Api.Core;
 
 namespace UKSF.Api.ArmaServer.Controllers;
 
-public record TriggerDevRunRequest(string Sqf, IReadOnlyList<string> Mods, int? TimeoutSeconds, string WorldName = null);
+public record TriggerDevRunRequest(string Sqf, IReadOnlyList<string> Mods, int? TimeoutSeconds, string WorldName = null, int HeadlessClients = 0);
 
 [Route("dev-run")]
 public class DevRunController(IDevRunService service, IDevRunsContext context) : ControllerBase
@@ -15,7 +15,12 @@ public class DevRunController(IDevRunService service, IDevRunsContext context) :
     [Permissions(Permissions.Admin)]
     public IActionResult Trigger([FromBody] TriggerDevRunRequest request)
     {
-        var result = service.Trigger(request.Sqf, request.Mods, request.TimeoutSeconds, request.WorldName);
+        if (request.HeadlessClients is < 0 or > SyntheticApiPorts.DevRunMaxHeadlessClients)
+        {
+            return BadRequest(new { Error = "BadHeadlessClients", Max = SyntheticApiPorts.DevRunMaxHeadlessClients });
+        }
+
+        var result = service.Trigger(request.Sqf, request.Mods, request.TimeoutSeconds, request.WorldName, request.HeadlessClients);
         return result.Outcome switch
         {
             DevRunTriggerOutcome.Started        => Accepted(new { result.RunId }),

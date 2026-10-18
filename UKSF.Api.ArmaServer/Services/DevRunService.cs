@@ -27,9 +27,9 @@ public class DevRunService : IDevRunService
     private readonly IUksfLogger _logger;
     private readonly int _pollMs;
     private readonly int _defaultTimeoutSeconds;
-    private readonly ConcurrentDictionary<string, int> _activePids = new();
+    private readonly ConcurrentDictionary<string, IReadOnlyList<int>> _activePids = new();
+    private readonly ConcurrentDictionary<string, IReadOnlyList<ProcessLaunch>> _pendingHeadlessClients = new();
 
-    // Production constructor — used by DI.
     public DevRunService(
         IDevRunLauncher launcher,
         IDevRunsContext context,
@@ -39,7 +39,6 @@ public class DevRunService : IDevRunService
         IUksfLogger logger
     ) : this(launcher, context, processUtilities, gate, variablesService, logger, DefaultPollMs, DefaultTimeoutSeconds) { }
 
-    // Test constructor — allows short poll and timeout intervals.
     internal DevRunService(
         IDevRunLauncher launcher,
         IDevRunsContext context,
@@ -61,7 +60,7 @@ public class DevRunService : IDevRunService
         _defaultTimeoutSeconds = defaultTimeoutSeconds;
     }
 
-    public DevRunTriggerResult Trigger(string sqf, IReadOnlyList<string> mods, int? timeoutSeconds, string worldName = null)
+    public DevRunTriggerResult Trigger(string sqf, IReadOnlyList<string> mods, int? timeoutSeconds, string worldName = null, int headlessClients = 0)
     {
         var runId = Guid.NewGuid().ToString();
         if (!_gate.TryAcquire(runId))
@@ -83,9 +82,14 @@ public class DevRunService : IDevRunService
             };
             _context.Add(record).GetAwaiter().GetResult();
 
-            var launch = _launcher.Launch(runId, sqf, mods, worldName);
-            _activePids[runId] = launch.ProcessId;
-            _ = Task.Run(() => RunWatcherAsync(launch.ProcessId, record, effectiveTimeout));
+            var launch = _launcher.Launch(runId, sqf, mods, worldName, headlessClients);
+            _activePids[runId] = [launch.ProcessId];
+            if (launch.PendingHeadlessClients is { Count: > 0 } pendingHeadlessClients)
+            {
+                _pendingHeadlessClients[runId] = pendingHeadlessClients;
+            }
+
+            _ = Task.Run(() => RunWatcherAsync(launch, record, effectiveTimeout));
 
             return new DevRunTriggerResult(DevRunTriggerOutcome.Started, runId);
         }
@@ -131,6 +135,11 @@ public class DevRunService : IDevRunService
             return;
         }
 
+        if (line == DevRunLauncher.MissionRunningLogLine)
+        {
+            LaunchPendingHeadlessClients(runId);
+        }
+
         var truncatedLine = line.Length > LogLineMaxChars ? line[..4090] + "[...]" : line;
         record.Logs.Add(new DevRunLogEntry(DateTime.UtcNow, truncatedLine));
         await _context.Update(record.Id, x => x.Logs, record.Logs);
@@ -172,22 +181,19 @@ public class DevRunService : IDevRunService
             await _context.Update(record.Id, x => x.CompletedAt, (DateTime?)DateTime.UtcNow);
         }
 
-        // Kill the spawned process so the watcher's IsProcessAlive check exits the
-        // poll loop and releases the launch gate via RunWatcherAsync finally.
-        if (_activePids.TryRemove(runId, out var pid))
+        if (_activePids.TryRemove(runId, out var pids))
         {
-            KillProcess(pid);
+            KillProcesses(pids);
             return;
         }
 
-        // No tracked process: orphaned gate hold (record gone after API hiccup).
         if (_gate.CurrentRunId == runId)
         {
             _gate.Release();
         }
     }
 
-    private async Task RunWatcherAsync(int pid, DomainDevRun record, int timeoutSeconds)
+    private async Task RunWatcherAsync(SyntheticLaunchResult launch, DomainDevRun record, int timeoutSeconds)
     {
         var deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
 
@@ -197,10 +203,12 @@ public class DevRunService : IDevRunService
             {
                 await Task.Delay(_pollMs);
 
-                if (_processUtilities.IsProcessAlive(pid))
+                if (_processUtilities.IsProcessAlive(launch.ProcessId))
                 {
                     continue;
                 }
+
+                KillProcesses(ActivePids(record.RunId).Where(pid => pid != launch.ProcessId));
 
                 var current = _context.GetSingle(x => x.RunId == record.RunId);
                 if (current?.Status == DevRunStatus.Running)
@@ -211,7 +219,7 @@ public class DevRunService : IDevRunService
                 return;
             }
 
-            KillProcess(pid);
+            KillProcesses(ActivePids(record.RunId));
 
             var afterKill = _context.GetSingle(x => x.RunId == record.RunId);
             if (afterKill?.Status == DevRunStatus.Running)
@@ -222,6 +230,7 @@ public class DevRunService : IDevRunService
         finally
         {
             _activePids.TryRemove(record.RunId, out _);
+            _pendingHeadlessClients.TryRemove(record.RunId, out _);
             _gate.Release();
         }
     }
@@ -236,19 +245,35 @@ public class DevRunService : IDevRunService
         }
     }
 
-    private void KillProcess(int pid)
+    private IReadOnlyList<int> ActivePids(string runId) => _activePids.TryGetValue(runId, out var pids) ? pids : [];
+
+    private void LaunchPendingHeadlessClients(string runId)
     {
-        try
+        if (!_pendingHeadlessClients.TryRemove(runId, out var headlessClients) || !_activePids.ContainsKey(runId))
         {
-            var process = _processUtilities.FindProcessById(pid);
-            if (process is { HasExited: false })
-            {
-                process.Kill(entireProcessTree: true);
-            }
+            return;
         }
-        catch (Exception ex)
+
+        var launched = headlessClients.Select(x => _processUtilities.LaunchManagedProcess(x.Executable, x.Arguments)).ToList();
+        _activePids.AddOrUpdate(runId, launched, (_, existing) => [.. existing, .. launched]);
+    }
+
+    private void KillProcesses(IEnumerable<int> pids)
+    {
+        foreach (var pid in pids)
         {
-            _logger.LogError(ex);
+            try
+            {
+                var process = _processUtilities.FindProcessById(pid);
+                if (process is { HasExited: false })
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex);
+            }
         }
     }
 }

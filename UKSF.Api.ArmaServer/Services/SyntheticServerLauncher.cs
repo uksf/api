@@ -85,6 +85,22 @@ public class SyntheticServerLauncher : ISyntheticServerLauncher
                    " -bandwidthAlg=2 -hugepages -filePatching -limitFPS=200";
 
         var pid = _processUtilities.LaunchManagedProcess(spec.ServerExecutablePath, args);
-        return new SyntheticLaunchResult(pid, profilePath, missionPath);
+        var headlessClients = Enumerable.Range(1, spec.HeadlessClients)
+                                        .Select(index => new ProcessLaunch(
+                                                    spec.ServerExecutablePath,
+                                                    HeadlessClientArguments(spec, profilePath, modList, index)
+                                                )
+                                        )
+                                        .ToList();
+        return new SyntheticLaunchResult(pid, profilePath, missionPath, headlessClients);
     }
+
+    private string HeadlessClientArguments(SyntheticLaunchSpec spec, string profilePath, string modList, int index) =>
+        $"-client -connect=127.0.0.1:{spec.GamePort} -localhost=127.0.0.1" +
+        $" -profiles=\"{profilePath}hc{index}\"" +
+        $" -name=hc{index}" +
+        $" -mod=\"{modList}\"" +
+        $" -apiport={spec.ApiPort + index}" +
+        $" -apiUrl=\"{_apiUrl()}\"" +
+        " -hugepages -limitFPS=200";
 }
