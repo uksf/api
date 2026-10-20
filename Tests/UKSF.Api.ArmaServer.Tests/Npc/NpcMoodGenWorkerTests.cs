@@ -104,7 +104,7 @@ public class NpcMoodGenWorkerTests
         clacks.Setup(x => x.EmoteAsync("smuggler", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<double>()))
               .ReturnsAsync(() =>
                   {
-                      job.Moods.Clear(); // the API dropped the mood when the user uploaded a recording
+                      job.Moods.Clear();
                       return new ClacksEmoteResult
                       {
                           Status = EmoteStatus.Ok,

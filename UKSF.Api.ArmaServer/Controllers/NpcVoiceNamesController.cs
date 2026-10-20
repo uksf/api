@@ -7,7 +7,6 @@ namespace UKSF.Api.ArmaServer.Controllers;
 
 public record NpcVoiceName(string VoiceId, string DisplayName);
 
-/// The voice picker in the Eden editor has no login, so this lists base voice IDs and names only.
 [Route("npcvoices/names")]
 public class NpcVoiceNamesController(INpcVoicesContext context) : ControllerBase
 {

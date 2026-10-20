@@ -26,7 +26,7 @@ public class NpcVoicesController(
     IUksfLogger logger
 ) : ControllerBase
 {
-    private const int MaxBytes = 5242880; // 5 MB — also enforced by RequestSizeLimit before model binding
+    private const int MaxBytes = 5 * 1024 * 1024;
     private const long MinMs = 3000;
     private const long MaxMs = 15000;
 
@@ -97,7 +97,6 @@ public class NpcVoicesController(
 
         if (existing is not null)
         {
-            // A recorded mood replaces the current one, generated or not.
             store.Delete(existing.FilePath);
             await context.Delete(existing.Id);
         }
@@ -167,7 +166,6 @@ public class NpcVoicesController(
 
         if (doc.MoodOf is null)
         {
-            // A mood variant cannot outlive its base: the page lists moods under their base only.
             foreach (var variant in context.Get(x => x.MoodOf == doc.VoiceId).ToList())
             {
                 store.Delete(variant.FilePath);
@@ -191,8 +189,6 @@ public class NpcVoicesController(
         return Ok();
     }
 
-    /// Queues the requested moods, or every mood the voice does not have yet. Moods already queued
-    /// for this voice stay queued.
     [HttpPost("{baseVoiceId}/generate-moods")]
     [Authorize]
     public async Task<DomainNpcVoiceJob> GenerateMoods(string baseVoiceId, [FromBody] GenerateMoodsRequest request = null)
@@ -268,7 +264,6 @@ public class NpcVoicesController(
 
     private bool CanManage(DomainNpcVoice voice) => voice.OwnerId == httpContextService.GetUserId() || httpContextService.UserHasPermission(Permissions.Admin);
 
-    /// A recorded or deleted mood must not be overwritten later by a queued generation.
     private async Task DropFromJobAsync(string baseVoiceId, string mood)
     {
         var job = jobs.GetSingle(x => x.BaseVoiceId == baseVoiceId);

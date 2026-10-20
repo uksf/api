@@ -33,7 +33,6 @@ public partial class NpcVoicesControllerTests
         _httpContext.Setup(x => x.GetUserId()).Returns("user-1");
         _store.Setup(x => x.SaveBaseAsync(It.IsAny<string>(), It.IsAny<byte[]>())).ReturnsAsync("smuggler.wav");
         _context.Setup(x => x.Add(It.IsAny<DomainNpcVoice>())).Returns(Task.CompletedTask);
-        // Dup-slug check (predicate overload) defaults to "not found".
         _context.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcVoice, bool>>())).Returns((DomainNpcVoice)null);
         _clacks.Setup(x => x.PutVoiceAsync(It.IsAny<string>(), It.IsAny<byte[]>())).ReturnsAsync(true);
         _sut = new NpcVoicesController(_context.Object, _jobs.Object, _store.Object, _clacks.Object, _httpContext.Object, _logger.Object);
@@ -78,7 +77,7 @@ public partial class NpcVoicesControllerTests
     [Fact]
     public async Task Upload_stores_voice_and_pushes_to_clacks()
     {
-        var result = await _sut.Upload(WavFile(24000 * 2 * 5), "Smuggler", null, null); // 5s clip
+        var result = await _sut.Upload(WavFile(24000 * 2 * 5), "Smuggler", null, null);
         result.VoiceId.Should().Be("smuggler");
         result.OwnerId.Should().Be("user-1");
         _store.Verify(x => x.SaveBaseAsync("smuggler", It.IsAny<byte[]>()), Times.Once);
@@ -89,7 +88,7 @@ public partial class NpcVoicesControllerTests
     [Fact]
     public async Task Upload_rejects_clip_shorter_than_three_seconds()
     {
-        var act = () => _sut.Upload(WavFile(24000 * 2 * 1), "Smuggler", null, null); // 1s
+        var act = () => _sut.Upload(WavFile(24000 * 2 * 1), "Smuggler", null, null);
         await act.Should().ThrowAsync<Exception>();
         _store.Verify(x => x.SaveBaseAsync(It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
     }
@@ -105,7 +104,6 @@ public partial class NpcVoicesControllerTests
     [Fact]
     public async Task Mood_variant_gets_compound_slug_and_moodOf()
     {
-        // Parent "smuggler" exists; the new slug "smuggler_angry" does not.
         _context.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcVoice, bool>>())).Returns((Func<DomainNpcVoice, bool> p) => p(Parent) ? Parent : null);
         var result = await _sut.Upload(WavFile(24000 * 2 * 5), "ignored", "smuggler", "Angry");
         result.VoiceId.Should().Be("smuggler_angry");
@@ -116,7 +114,6 @@ public partial class NpcVoicesControllerTests
     [Fact]
     public async Task Mood_variant_with_unknown_parent_is_rejected()
     {
-        // Default GetSingle(predicate) returns null → parent not found.
         var act = () => _sut.Upload(WavFile(24000 * 2 * 5), "ignored", "ghost", "Angry");
         await act.Should().ThrowAsync<Exception>();
         _store.Verify(x => x.SaveBaseAsync(It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);

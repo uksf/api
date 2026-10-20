@@ -10,12 +10,6 @@ using UKSF.Api.Core;
 
 namespace UKSF.Api.ArmaServer.Npc.Services;
 
-/// <summary>
-/// Drains the npcVoiceJobs queue: for each Pending mood, asks the clacks `emotion` role to
-/// clone the base voice into that mood, stores the WAV as a {base}_{mood} variant, registers it,
-/// and pushes it to the mesh. NodeDown (no emotion node up) leaves the mood Pending for the next
-/// tick; a generation failure marks only that mood Failed. Offline/batch — polls every 30s.
-/// </summary>
 public class NpcMoodGenWorker(INpcVoiceJobsContext jobs, INpcVoicesContext voices, INpcVoiceStore store, IClacksClient clacks, IUksfLogger logger)
     : BackgroundService
 {
@@ -63,11 +57,9 @@ public class NpcMoodGenWorker(INpcVoiceJobsContext jobs, INpcVoicesContext voice
                 var result = await clacks.EmoteAsync(job.BaseVoiceId, script.Script, script.EmoText, MoodScripts.EmoAlpha);
                 if (result.Status == EmoteStatus.NodeDown)
                 {
-                    return; // no emotion node up — stop the whole drain, retry next tick
+                    return;
                 }
 
-                // Generation takes a minute. The mood may have been recorded, deleted or re-queued, or
-                // the voice deleted, in the meantime; those changes win over this result.
                 if (!StillQueued(job.Id, mood) || voices.GetSingle(x => x.VoiceId == job.BaseVoiceId) is null) continue;
 
                 if (result.Status == EmoteStatus.Failed)
@@ -86,8 +78,6 @@ public class NpcMoodGenWorker(INpcVoiceJobsContext jobs, INpcVoicesContext voice
 
     private bool StillQueued(string jobId, string mood) => jobs.GetSingle(jobId)?.Moods.Any(m => m.Mood == mood && m.Status == NpcMoodStatus.Pending) == true;
 
-    /// Writes one mood's status onto the current job, not onto the copy read at the start of the drain,
-    /// so moods queued or removed through the API meanwhile are kept.
     private async Task SetStatusAsync(string jobId, string mood, NpcMoodStatus status, string error)
     {
         var current = jobs.GetSingle(jobId);
@@ -99,9 +89,6 @@ public class NpcMoodGenWorker(INpcVoiceJobsContext jobs, INpcVoicesContext voice
         await jobs.Replace(current);
     }
 
-    /// Fillers are voice assets rendered by the same emotion engine, so they belong in this
-    /// offline pass, never at mission time: the clone engine voices a bare interjection as
-    /// near-silence, and the heavy engine must not spin up while a game holds the GPU.
     private async Task RenderMissingFillersAsync(DomainNpcVoice baseDoc)
     {
         var baseBytes = await store.ReadAsync(baseDoc.FilePath);
@@ -134,8 +121,6 @@ public class NpcMoodGenWorker(INpcVoiceJobsContext jobs, INpcVoicesContext voice
             await voices.Delete(existing.Id);
         }
 
-        // The mood engine renders louder than the clone engine, so an unmatched variant
-        // makes the same character jump in volume the moment their mood changes.
         var baseBytes = await store.ReadAsync(baseDoc.FilePath);
         var wavBytes = baseBytes is null ? result.WavBytes : WavLoudness.MatchRms(result.WavBytes, WavLoudness.Rms(baseBytes));
 
