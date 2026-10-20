@@ -4,7 +4,6 @@ using UKSF.Api.ArmaServer.Npc.Models;
 
 namespace UKSF.Api.ArmaServer.Npc.Services;
 
-/// Pure guarded-source profile engine. No I/O. Deterministic from state + classifications.
 public static class NpcGuardedProfile
 {
     public const string SafeDeflection = "I don't follow. Say that again plainly.";
@@ -12,6 +11,7 @@ public static class NpcGuardedProfile
     public const string BackOffFallback = "Alright. Just don't go there again.";
     public const string BurnedFallback = "We're finished. I have nothing more to say to you.";
     public const string RefuseFallback = "I can't help you with that.";
+    public const int ConcernGatedSlot = 3;
 
     public static string FallbackFor(string directive) =>
         directive switch
@@ -89,7 +89,16 @@ public static class NpcGuardedProfile
             }
         }
 
-        // Negative speech dominates positive cooperation changes in the batch (order-independent).
+        if (sawThreat)
+        {
+            state.ConcernAddressed = false;
+            state.AskedFactId = null;
+        }
+        else if (sawAddressesConcern && !state.Burned)
+        {
+            state.ConcernAddressed = true;
+        }
+
         var bandDelta = sawNegative ? -1 :
             sawPositive             ? 1 : 0;
         if (!state.Burned || becameBurned) state.CooperationBand = NpcCooperationBands.Step(state.CooperationBand, bandDelta);
@@ -97,6 +106,7 @@ public static class NpcGuardedProfile
         string permittedId = null;
         string permittedTopic = null;
         string permittedText = null;
+        var heldForConcern = false;
         var facts = config?.Facts ?? [];
 
         if (!state.Burned && !sawThreat && anyActionable)
@@ -106,13 +116,18 @@ public static class NpcGuardedProfile
             {
                 var slot = nextIndex + 1;
                 var fact = facts[nextIndex];
-                var topicOk = relevantSlots.Contains(slot);
-                var concernOk = slot < 3 || sawAddressesConcern;
+                var topicOk = relevantSlots.Contains(slot) || (!string.IsNullOrEmpty(state.AskedFactId) && NpcGuardedFactIds.Same(state.AskedFactId, fact.Id));
+                var concernOk = slot < ConcernGatedSlot || state.ConcernAddressed;
                 if (topicOk && concernOk && !string.IsNullOrEmpty(fact.Id))
                 {
                     permittedId = fact.Id;
                     permittedTopic = fact.Topic;
                     permittedText = fact.Text;
+                }
+                else if (topicOk && !concernOk)
+                {
+                    heldForConcern = true;
+                    state.AskedFactId = fact.Id;
                 }
             }
         }
@@ -125,6 +140,7 @@ public static class NpcGuardedProfile
             PermittedFactId = permittedId,
             PermittedFactTopic = permittedTopic,
             PermittedFactText = permittedText,
+            HeldForConcern = heldForConcern,
             Classifications = ordered
         };
     }
@@ -139,7 +155,6 @@ public static class NpcGuardedProfile
     )
     {
         if (becameBurned) return NpcGuardedDirectives.Burned;
-        // Net outcome of the batch: back-off after threat clears warning for this reply.
         if (clearedWarning) return NpcGuardedDirectives.BackOff;
         if (issuedWarning) return NpcGuardedDirectives.Warn;
         if (state.Burned) return NpcGuardedDirectives.Refuse;

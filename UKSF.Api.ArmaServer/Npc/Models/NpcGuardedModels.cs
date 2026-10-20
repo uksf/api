@@ -24,7 +24,7 @@ public static class NpcCooperationBands
             if (string.Equals(Order[i], band, StringComparison.Ordinal)) return i;
         }
 
-        return 1; // guarded
+        return 1;
     }
 
     public static string Step(string band, int delta)
@@ -78,7 +78,6 @@ public class NpcGuardedFact
     [JsonPropertyName("topic")]
     public string Topic { get; set; } = string.Empty;
 
-    /// Canonical speakable sentence. Disclosed and next-includable facts may enter the combined prompt.
     [JsonPropertyName("text")]
     public string Text { get; set; } = string.Empty;
 }
@@ -106,13 +105,21 @@ public class NpcGuardedState
     [JsonPropertyName("disclosedFactIds")]
     public List<string> DisclosedFactIds { get; set; } = [];
 
+    [JsonPropertyName("concernAddressed")]
+    public bool ConcernAddressed { get; set; }
+
+    [JsonPropertyName("askedFactId")]
+    public string AskedFactId { get; set; }
+
     public NpcGuardedState Clone() =>
         new()
         {
             CooperationBand = CooperationBand,
             PendingWarning = PendingWarning,
             Burned = Burned,
-            DisclosedFactIds = [..DisclosedFactIds]
+            DisclosedFactIds = [..DisclosedFactIds],
+            ConcernAddressed = ConcernAddressed,
+            AskedFactId = AskedFactId
         };
 }
 
@@ -124,11 +131,9 @@ public class NpcGuardedClassification
     [JsonPropertyName("tag")]
     public string Tag { get; set; } = string.Empty;
 
-    /// 1-based fact slot, or null when the move is not topic-bound.
     [JsonPropertyName("topicSlot")]
     public int? TopicSlot { get; set; }
 
-    /// Independent of Tag: true when this utterance also addresses the source concern.
     [JsonPropertyName("addressesConcern")]
     public bool AddressesConcern { get; set; }
 
@@ -149,6 +154,7 @@ public class NpcGuardedEngineResult
     public string PermittedFactId { get; set; }
     public string PermittedFactTopic { get; set; }
     public string PermittedFactText { get; set; }
+    public bool HeldForConcern { get; set; }
     public List<NpcGuardedClassification> Classifications { get; set; } = [];
 }
 
