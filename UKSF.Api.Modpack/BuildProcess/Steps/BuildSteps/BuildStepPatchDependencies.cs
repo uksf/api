@@ -76,7 +76,7 @@ public class BuildStepPatchDependencies : FileBuildStep
             StepLogger.LogSurround($"Verified {mod} patches");
 
             StepLogger.LogSurround($"\nRemoving signatures of patched {mod} PBOs...");
-            var removed = InvalidateSignatures(addons, before);
+            var removed = InvalidateSignatures(addons, before) + RemoveUpstreamSignaturesOfPatchedPbos(addons, state);
             StepLogger.LogSurround($"Removed {removed} signatures");
         }
     }
@@ -123,6 +123,24 @@ public class BuildStepPatchDependencies : FileBuildStep
             {
                 File.Delete(bisign);
                 StepLogger.Log($"Removed {Path.GetFileName(bisign)}");
+                removed++;
+            }
+        }
+
+        return removed;
+    }
+
+    internal int RemoveUpstreamSignaturesOfPatchedPbos(string addons, string state)
+    {
+        var removed = 0;
+        foreach (var stateFile in Directory.GetFiles(state, "*.state.json"))
+        {
+            var pbo = Path.GetFileName(stateFile)[..^".state.json".Length];
+            foreach (var bisign in Directory.GetFiles(addons, $"{pbo}.*.bisign")
+                                            .Where(x => !Path.GetFileName(x).StartsWith($"{pbo}.uksf_dependencies_", StringComparison.OrdinalIgnoreCase)))
+            {
+                File.Delete(bisign);
+                StepLogger.Log($"Removed upstream signature {Path.GetFileName(bisign)}");
                 removed++;
             }
         }

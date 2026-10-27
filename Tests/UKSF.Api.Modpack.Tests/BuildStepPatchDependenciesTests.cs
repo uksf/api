@@ -188,6 +188,33 @@ public class BuildStepPatchDependenciesTests : IDisposable
         File.Exists($"{untouched}.uksf_dependencies_dev.bisign").Should().BeTrue();
     }
 
+    [Fact]
+    public void RemoveUpstreamSignaturesOfPatchedPbos_Should_RepairAPatchedPboLeftWithItsUpstreamSignature()
+    {
+        var state = Path.Combine(State, "@CUP_Vehicles");
+        Directory.CreateDirectory(state);
+        Directory.CreateDirectory(CupAddons);
+        File.WriteAllText(Path.Combine(state, "tigr.pbo.state.json"), "{}");
+        foreach (var file in new[]
+                 {
+                     "tigr.pbo",
+                     "tigr.pbo.cup_vehicles-1.19.2.bisign",
+                     "tigr.pbo.uksf_dependencies_dev.bisign",
+                     "other.pbo",
+                     "other.pbo.cup_vehicles-1.19.2.bisign"
+                 })
+        {
+            File.WriteAllBytes(Path.Combine(CupAddons, file), [0]);
+        }
+
+        CreateStep().RemoveUpstreamSignaturesOfPatchedPbos(CupAddons, state).Should().Be(1);
+
+        Directory.GetFiles(CupAddons, "*.bisign")
+                 .Select(Path.GetFileName)
+                 .Should()
+                 .BeEquivalentTo("tigr.pbo.uksf_dependencies_dev.bisign", "other.pbo.cup_vehicles-1.19.2.bisign");
+    }
+
     private void WriteManifest(string mod)
     {
         Directory.CreateDirectory(Path.Combine(Patches, mod));
