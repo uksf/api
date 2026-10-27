@@ -42,7 +42,6 @@ public class BuildStepPatchDependenciesTests : IDisposable
         SetVariable("BUILD_PATH_SOURCES", _sourcesDir);
         SetVariable("BUILD_PATH_PATCHER", _patcherDir);
 
-        // Records the requested command and runs a harmless one with the configured exit code instead.
         _mockProcessCommandFactory.Setup(x => x.CreateCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                                   .Returns((string executable, string workingDir, string args) =>
                                       {
@@ -55,6 +54,7 @@ public class BuildStepPatchDependenciesTests : IDisposable
     private string Patches => Path.Combine(_sourcesDir, "modpack", "patches");
     private string State => Path.Combine(_envDir, "PatcherState");
     private string Addons => Path.Combine(_envDir, "Repo", "@uksf_dependencies", "addons");
+    private string CupAddons => Path.Combine(_envDir, "Repo", "@CUP_Vehicles", "addons");
 
     public void Dispose()
     {
@@ -69,10 +69,9 @@ public class BuildStepPatchDependenciesTests : IDisposable
     }
 
     [Fact]
-    public void CheckGuards_Should_ReturnTrue_When_ManifestsExist()
+    public void CheckGuards_Should_ReturnTrue_When_ModManifestsExist()
     {
-        Directory.CreateDirectory(Patches);
-        File.WriteAllText(Path.Combine(Patches, "a.pbo.json"), "{}");
+        WriteManifest("@CUP_Vehicles");
 
         CreateStep().CheckGuards().Should().BeTrue();
     }
@@ -80,8 +79,8 @@ public class BuildStepPatchDependenciesTests : IDisposable
     [Fact]
     public void CheckGuards_Should_ReturnTrue_When_OnlyStateExists_So_RemovedPatchesAreRestored()
     {
-        Directory.CreateDirectory(State);
-        File.WriteAllText(Path.Combine(State, "a.pbo.state.json"), "{}");
+        Directory.CreateDirectory(Path.Combine(State, "@CUP_Vehicles"));
+        File.WriteAllText(Path.Combine(State, "@CUP_Vehicles", "a.pbo.state.json"), "{}");
 
         CreateStep().CheckGuards().Should().BeTrue();
     }
@@ -95,27 +94,68 @@ public class BuildStepPatchDependenciesTests : IDisposable
     }
 
     [Fact]
-    public async Task Process_Should_ApplyThenVerify_With_StateOutsideTheRepo()
+    public async Task Setup_Should_Fail_When_AManifestIsOutsideAModFolder()
     {
         CreatePatcher();
+        Directory.CreateDirectory(Patches);
+        File.WriteAllText(Path.Combine(Patches, "a.pbo.json"), "{}");
+
+        var act = () => CreateStep().Setup();
+
+        await act.Should().ThrowAsync<Exception>().WithMessage("*must be in a mod folder*");
+    }
+
+    [Fact]
+    public async Task Process_Should_ApplyThenVerify_EachPatchedMod_With_StateOutsideTheRepo()
+    {
+        CreatePatcher();
+        Directory.CreateDirectory(CupAddons);
+        WriteManifest("@uksf_dependencies");
+        WriteManifest("@CUP_Vehicles");
         var step = CreateStep();
 
         await step.Setup();
         await step.Process();
 
-        var expectedArgs = $"--addons \"{Addons}\" --patches \"{Patches}\" --state \"{State}\"";
-        _commands.Should()
-                 .Equal(
-                     (Path.Join(_patcherDir, "uksf-patcher.exe"), $"apply {expectedArgs}"),
-                     (Path.Join(_patcherDir, "uksf-patcher.exe"), $"verify {expectedArgs}")
-                 );
+        var patcher = Path.Join(_patcherDir, "uksf-patcher.exe");
+        var cupArgs = $"--addons \"{CupAddons}\" --patches \"{Path.Join(Patches, "@CUP_Vehicles")}\" --state \"{Path.Join(State, "@CUP_Vehicles")}\"";
+        var depArgs = $"--addons \"{Addons}\" --patches \"{Path.Join(Patches, "@uksf_dependencies")}\" --state \"{Path.Join(State, "@uksf_dependencies")}\"";
+        _commands.Should().Equal((patcher, $"apply {cupArgs}"), (patcher, $"verify {cupArgs}"), (patcher, $"apply {depArgs}"), (patcher, $"verify {depArgs}"));
         State.Should().NotStartWith(Path.Combine(_envDir, "Repo"));
+    }
+
+    [Fact]
+    public async Task Process_Should_Fail_When_APatchedModIsNotInTheRepo()
+    {
+        CreatePatcher();
+        WriteManifest("@CUP_Vehicles");
+        var step = CreateStep();
+        await step.Setup();
+
+        var act = () => step.Process();
+
+        await act.Should().ThrowAsync<Exception>().WithMessage("*@CUP_Vehicles*does not exist*");
+    }
+
+    [Fact]
+    public async Task Setup_Should_MoveUngroupedStateIntoTheDependenciesMod()
+    {
+        CreatePatcher();
+        Directory.CreateDirectory(State);
+        File.WriteAllText(Path.Combine(State, "a.pbo.state.json"), "{}");
+        File.WriteAllBytes(Path.Combine(State, "a.pbo.pristine"), [1]);
+
+        await CreateStep().Setup();
+
+        Directory.GetFiles(State).Should().BeEmpty();
+        Directory.GetFiles(Path.Combine(State, "@uksf_dependencies")).Select(Path.GetFileName).Should().BeEquivalentTo("a.pbo.state.json", "a.pbo.pristine");
     }
 
     [Fact]
     public async Task Process_Should_Fail_When_ThePatcherFails()
     {
         CreatePatcher();
+        WriteManifest("@uksf_dependencies");
         _exitCode = 1;
         var step = CreateStep();
         await step.Setup();
@@ -140,13 +180,18 @@ public class BuildStepPatchDependenciesTests : IDisposable
             File.SetLastWriteTimeUtc($"{pbo}.uksf_dependencies_dev.bisign", future);
         }
 
-        var step = CreateStep();
-        var before = step.SnapshotPbos();
+        var before = BuildStepPatchDependencies.SnapshotPbos(Addons);
         File.WriteAllBytes(patched, [1, 2]);
-        step.InvalidateSignatures(before).Should().Be(1);
+        CreateStep().InvalidateSignatures(Addons, before).Should().Be(1);
 
         File.Exists($"{patched}.uksf_dependencies_dev.bisign").Should().BeFalse();
         File.Exists($"{untouched}.uksf_dependencies_dev.bisign").Should().BeTrue();
+    }
+
+    private void WriteManifest(string mod)
+    {
+        Directory.CreateDirectory(Path.Combine(Patches, mod));
+        File.WriteAllText(Path.Combine(Patches, mod, "a.pbo.json"), "{}");
     }
 
     private void CreatePatcher()

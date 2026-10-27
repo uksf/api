@@ -71,23 +71,20 @@ public class BuildStepSignDependencies : FileBuildStep
             return true;
         }
 
-        var pboFiles = addons.GetFiles("*.pbo", SearchOption.AllDirectories);
-        if (pboFiles.Length == 0)
+        var pboFiles = DependencyPbos();
+        if (pboFiles.Count == 0)
         {
             StepLogger.Log("No PBO files found");
             return false;
         }
-
-        var bisignsByPbo = addons.GetFiles("*.bisign", SearchOption.AllDirectories)
-                                 .GroupBy(b => ExtractPboName(b.Name))
-                                 .ToDictionary(g => g.Key, g => g.ToArray());
 
         List<FileInfo> changedPbos = [];
         List<FileInfo> missingSignaturePbos = [];
 
         foreach (var pbo in pboFiles)
         {
-            if (!bisignsByPbo.TryGetValue(pbo.Name, out var bisigns) || bisigns.Length != 1)
+            var bisigns = Bisigns(pbo);
+            if (bisigns.Count != 1)
             {
                 missingSignaturePbos.Add(pbo);
             }
@@ -99,7 +96,7 @@ public class BuildStepSignDependencies : FileBuildStep
 
         if (changedPbos.Count == 0 && missingSignaturePbos.Count == 0)
         {
-            StepLogger.Log($"All {pboFiles.Length} PBOs have valid signatures");
+            StepLogger.Log($"All {pboFiles.Count} PBOs have valid signatures");
             return false;
         }
 
@@ -168,12 +165,13 @@ public class BuildStepSignDependencies : FileBuildStep
         var addonsPath = Path.Join(GetBuildEnvironmentPath(), "Repo", "@uksf_dependencies", "addons");
         var keygenPath = Path.Join(GetBuildEnvironmentPath(), "PrivateKeys");
         DirectoryInfo addons = new(addonsPath);
+        var repoFiles = DependencyPbos();
 
         StepLogger.LogSurround("\nDeleting dependencies signatures...");
         await DeleteFiles(GetDirectoryContents(addons, "*.bisign*"));
+        await DeleteFiles(repoFiles.Where(x => x.DirectoryName != addons.FullName).SelectMany(PatchedPboSignatureFiles).ToList());
         StepLogger.LogSurround("Deleted dependencies signatures");
 
-        var repoFiles = GetDirectoryContents(addons, "*.pbo");
         StepLogger.LogSurround("\nSigning dependencies...");
         await SignFiles(keygenPath, repoFiles);
         StepLogger.LogSurround("Signed dependencies");
@@ -181,21 +179,12 @@ public class BuildStepSignDependencies : FileBuildStep
 
     private async Task ProcessPartialSign()
     {
-        var addonsPath = Path.Join(GetBuildEnvironmentPath(), "Repo", "@uksf_dependencies", "addons");
         var keygenPath = Path.Join(GetBuildEnvironmentPath(), "PrivateKeys");
-        DirectoryInfo addons = new(addonsPath);
-
-        var allBisigns = addons.GetFiles("*.bisign", SearchOption.AllDirectories)
-                               .GroupBy(b => ExtractPboName(b.Name))
-                               .ToDictionary(g => g.Key, g => g.ToList());
 
         StepLogger.LogSurround("\nCleaning affected signatures...");
         foreach (var pbo in _affectedPbos)
         {
-            if (allBisigns.TryGetValue(pbo.Name, out var staleBisigns))
-            {
-                await DeleteFiles(staleBisigns);
-            }
+            await DeleteFiles(Bisigns(pbo));
         }
 
         StepLogger.LogSurround("Cleaned affected signatures");
@@ -215,11 +204,34 @@ public class BuildStepSignDependencies : FileBuildStep
         };
     }
 
-    private static string ExtractPboName(string bisignFileName)
+    internal List<FileInfo> DependencyPbos()
     {
-        // Bisign format: {name}.pbo.{keyname}.bisign
-        var pboIndex = bisignFileName.IndexOf(".pbo.", StringComparison.Ordinal);
-        return pboIndex >= 0 ? bisignFileName[..(pboIndex + 4)] : bisignFileName;
+        var repoPath = Path.Join(GetBuildEnvironmentPath(), "Repo");
+        var dependencies = new DirectoryInfo(Path.Join(repoPath, BuildStepPatchDependencies.DependenciesMod, "addons"));
+        var pbos = dependencies.Exists ? dependencies.GetFiles("*.pbo", SearchOption.AllDirectories).ToList() : [];
+
+        var patcherState = new DirectoryInfo(Path.Join(GetBuildEnvironmentPath(), "PatcherState"));
+        var patchedMods = patcherState.Exists ? patcherState.GetDirectories("@*").Select(x => x.Name) : [];
+        foreach (var mod in patchedMods.Where(x => !x.Equals(BuildStepPatchDependencies.DependenciesMod, StringComparison.OrdinalIgnoreCase)))
+        {
+            var addons = new DirectoryInfo(Path.Join(repoPath, mod, "addons"));
+            if (addons.Exists)
+            {
+                pbos.AddRange(addons.GetFiles("*.pbo").Where(pbo => Bisigns(pbo).Count == PatchedPboSignatureFiles(pbo).Count));
+            }
+        }
+
+        return pbos;
+    }
+
+    private static List<FileInfo> Bisigns(FileInfo pbo)
+    {
+        return pbo.Directory!.GetFiles($"{pbo.Name}.*.bisign").ToList();
+    }
+
+    private static List<FileInfo> PatchedPboSignatureFiles(FileInfo pbo)
+    {
+        return pbo.Directory!.GetFiles($"{pbo.Name}.uksf_dependencies_*.bisign*").ToList();
     }
 
     private Task SignFiles(string keygenPath, List<FileInfo> files)
