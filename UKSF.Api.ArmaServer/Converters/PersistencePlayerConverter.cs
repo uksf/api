@@ -95,9 +95,6 @@ public static class PersistencePlayerConverter
 
     private static AceMedicalState ParseAceMedical(object raw)
     {
-        // Legacy player records stored aceMedical as a JSON-encoded SQF string
-        // (pre-HashMap ACE format). Parse it directly through the typed
-        // deserialiser — same converters apply.
         if (raw is string legacyJson)
         {
             if (string.IsNullOrWhiteSpace(legacyJson)) return new AceMedicalState();
@@ -116,21 +113,13 @@ public static class PersistencePlayerConverter
             return new AceMedicalState();
         }
 
-        // SqfNotationParser.Normalize aggressively converts pair-of-string-keyed lists
-        // into Dictionary<string,object>. That misfires for a few ACE fields whose
-        // canonical SQF shape is "array of [string, list] pairs" (a list, not a hashmap)
-        // or "empty list standing in for empty hashmap". Massage the shape here so the
-        // typed deserialiser sees the JSON the converters expect.
         var normalised = new Dictionary<string, object>(dict, StringComparer.OrdinalIgnoreCase);
 
-        // ace_medical_logs: SQF emits [[logType, [entries]], ...]. Parser flips it to
-        // a Dict on misdetection. Reverse so MedicalLogCategoryConverter sees an array.
         if (normalised.TryGetValue("ace_medical_logs", out var logsRaw) && logsRaw is Dictionary<string, object> logsDict)
         {
             normalised["ace_medical_logs"] = logsDict.Select(kvp => (object)new List<object> { kvp.Key, kvp.Value }).ToList();
         }
 
-        // Wound buckets: empty list stands in for empty hashmap when no wounds exist.
         foreach (var key in new[] { "ace_medical_openwounds", "ace_medical_bandagedwounds", "ace_medical_stitchedwounds" })
         {
             if (normalised.TryGetValue(key, out var bucket) && bucket is List<object> { Count: 0 })
@@ -157,7 +146,8 @@ public static class PersistencePlayerConverter
             Channel = ToInt(list[1]),
             Volume = ToDouble(list[2]),
             Spatial = ToSafeString(list[3]),
-            PttIndex = ToInt(list[4])
+            PttIndex = ToInt(list[4]),
+            Mpu5 = list.Count > 5 ? ToList(list[5]) : []
         };
     }
 
@@ -187,13 +177,17 @@ public static class PersistencePlayerConverter
 
     private static List<object> SerializeRadioState(RadioState radio)
     {
-        return [(object)radio.Type, (long)radio.Channel, radio.Volume, radio.Spatial, (long)radio.PttIndex];
+        List<object> result = [radio.Type, (long)radio.Channel, radio.Volume, radio.Spatial, (long)radio.PttIndex];
+        if (radio.Mpu5.Count > 0)
+        {
+            result.Add(radio.Mpu5);
+        }
+
+        return result;
     }
 
     private static Dictionary<string, object> SerializeAceMedical(AceMedicalState state)
     {
-        // Round-trip through JSON so nested ACE entries emit as positional arrays (via the
-        // registered converters), matching the wire format from ace_medical_fnc_serializeState.
         var json = JsonSerializer.Serialize(state, JsonOptions);
         return JsonSerializer.Deserialize<Dictionary<string, object>>(json, DictReadOptions) ?? new Dictionary<string, object>();
     }

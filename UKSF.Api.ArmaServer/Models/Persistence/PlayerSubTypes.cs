@@ -10,7 +10,6 @@ public class PlayerVehicleState
     [JsonPropertyName("role")]
     public string Role { get; set; } = string.Empty;
 
-    // Polymorphic: cargo roles use int (getCargoIndex), turret roles use int[] (CBA_fnc_turretPath)
     [JsonPropertyName("index")]
     public object Index { get; set; } = -1;
 }
@@ -31,6 +30,9 @@ public class RadioState
 
     [JsonPropertyName("pttIndex")]
     public int PttIndex { get; set; }
+
+    [JsonPropertyName("mpu5")]
+    public List<object> Mpu5 { get; set; } = [];
 }
 
 public class PlayerDiveState
@@ -38,8 +40,6 @@ public class PlayerDiveState
     [JsonPropertyName("isDiving")]
     public bool IsDiving { get; set; }
 
-    // Elements 1-32 of the dive state array (gas levels, tissue saturation, decompression, toxicity)
-    // Null when not diving
     [JsonPropertyName("rawData")]
     public List<object> RawData { get; set; } = [];
 }
