@@ -35,12 +35,7 @@ public sealed class UpdateOperation(
         WorkshopModDependencyFilesService.CopyExtensionsToDependencies(workshopMod, selectedExtensions, cancellationToken);
 
         DeleteUnselectedFiles(workshopMod, selectedPbos, selectedExtensions);
-
-        workshopMod.Pbos = selectedPbos;
-        workshopMod.Extensions = selectedExtensions;
-        workshopMod.AvailablePbos = [];
-        workshopMod.AvailablePboFolders = [];
-        workshopMod.AvailableExtensions = [];
+        RecordSelection(workshopMod, selectedPbos, selectedExtensions);
 
         return Task.CompletedTask;
     }

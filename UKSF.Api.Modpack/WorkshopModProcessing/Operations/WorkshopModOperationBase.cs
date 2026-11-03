@@ -75,7 +75,8 @@ public abstract class WorkshopModOperationBase(
                 throw new InvalidOperationException($"No PBOs or extensions found in {workshopModPath}");
             }
 
-            var contentChanged = HasChanged(workshopMod.Pbos, pbos) || HasChanged(workshopMod.Extensions, extensions);
+            var contentChanged = HasUnseenOrMissingFiles(workshopMod.Pbos, workshopMod.LockedPbos, pbos) ||
+                                 HasUnseenOrMissingFiles(workshopMod.Extensions, workshopMod.LockedExtensions, extensions);
 
             if (contentChanged)
             {
@@ -83,7 +84,12 @@ public abstract class WorkshopModOperationBase(
             }
 
             await WorkshopModsProcessingService.SetAvailable(workshopMod, pbos, pboFolders, extensions);
-            return OperationResult.Successful(interventionRequired: contentChanged, availablePbos: pbos, availableExtensions: extensions);
+            return contentChanged
+                ? OperationResult.Successful(interventionRequired: true, availablePbos: pbos, availableExtensions: extensions)
+                : OperationResult.Successful(
+                    availablePbos: pbos.Except(workshopMod.LockedPbos ?? []).ToList(),
+                    availableExtensions: extensions.Except(workshopMod.LockedExtensions ?? []).ToList()
+                );
         }
         catch (Exception exception)
         {
@@ -91,9 +97,10 @@ public abstract class WorkshopModOperationBase(
         }
     }
 
-    private static bool HasChanged(List<string> installed, List<string> available)
+    private static bool HasUnseenOrMissingFiles(List<string> installed, List<string> locked, List<string> available)
     {
-        return !(installed ?? []).OrderBy(x => x).SequenceEqual(available.OrderBy(x => x));
+        var known = (installed ?? []).Concat(locked ?? []);
+        return available.Except(known).Any() || (installed ?? []).Except(available).Any();
     }
 
     protected bool ExecutionFilesChanged { get; set; } = true;
@@ -140,11 +147,17 @@ public abstract class WorkshopModOperationBase(
         }
     }
 
-    /// <summary>
-    ///     Removes every file of this mod that is not selected: its previous selection, and any file of the workshop item that the
-    ///     dependencies folder holds without a record, such as a copy made by hand before the mod was managed here. A file that any
-    ///     other mod lists as its own is never removed.
-    /// </summary>
+    protected static void RecordSelection(DomainWorkshopMod workshopMod, List<string> selectedPbos, List<string> selectedExtensions)
+    {
+        workshopMod.LockedPbos = (workshopMod.AvailablePbos ?? []).Except(selectedPbos).ToList();
+        workshopMod.LockedExtensions = (workshopMod.AvailableExtensions ?? []).Except(selectedExtensions).ToList();
+        workshopMod.Pbos = selectedPbos;
+        workshopMod.Extensions = selectedExtensions;
+        workshopMod.AvailablePbos = [];
+        workshopMod.AvailablePboFolders = [];
+        workshopMod.AvailableExtensions = [];
+    }
+
     protected void DeleteUnselectedFiles(DomainWorkshopMod workshopMod, List<string> selectedPbos, List<string> selectedExtensions)
     {
         var otherMods = WorkshopModsContext.Get(x => x.Id != workshopMod.Id).ToList();

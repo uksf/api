@@ -24,18 +24,17 @@ public class DomainWorkshopMod : MongoObject
     public bool RootMod { get; set; }
     public string FolderName { get; set; }
 
-    /// <summary>PBO file names taken from the mod's addons directory.</summary>
     public List<string> Pbos { get; set; } = [];
 
-    /// <summary>Extension DLL names taken from the mod root, kept so they can be removed again.</summary>
     public List<string> Extensions { get; set; } = [];
 
     public List<string> AvailablePbos { get; set; } = [];
 
-    /// <summary>The available PBOs found outside the addons folder, with their folder, so the selection can show where they came from.</summary>
     public List<WorkshopModPbo> AvailablePboFolders { get; set; } = [];
 
     public List<string> AvailableExtensions { get; set; } = [];
+    public List<string> LockedPbos { get; set; } = [];
+    public List<string> LockedExtensions { get; set; } = [];
     public DateTime LastUpdatedLocally { get; set; }
     public string ModpackVersionFirstAdded { get; set; }
     public string ModpackVersionLastUpdated { get; set; }
@@ -44,6 +43,5 @@ public class DomainWorkshopMod : MongoObject
     public string StatusMessage { get; set; }
     public string ErrorMessage { get; set; }
 
-    /// <summary>The last operation requested for this mod, used to retry it after it ends up in the Error state.</summary>
     public WorkshopModOperationType? LastOperation { get; set; }
 }

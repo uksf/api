@@ -12,6 +12,8 @@ public class WorkshopModResponse
     public List<string> AvailablePbos { get; set; } = [];
     public List<WorkshopModPbo> AvailablePboFolders { get; set; } = [];
     public List<string> AvailableExtensions { get; set; } = [];
+    public List<string> LockedPbos { get; set; } = [];
+    public List<string> LockedExtensions { get; set; } = [];
     public string LastUpdatedLocally { get; set; }
     public string ModpackVersionFirstAdded { get; set; }
     public string ModpackVersionLastUpdated { get; set; }
