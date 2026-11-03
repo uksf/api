@@ -122,6 +122,44 @@ public class LockedFilesTests
     }
 
     [Fact]
+    public async Task Check_WhenALockedOrInstalledFileOnlyChangesCase_ShouldContinueWithoutTheLockedFile()
+    {
+        SetupWorkshopMod(pbos: ["ATAK_Phone.pbo"], lockedPbos: ["ATAK_Alerts.pbo"], extensions: ["atak.dll"], lockedExtensions: ["other.dll"]);
+        SetupFilesOnDisk(["atak_alerts.pbo", "atak_phone.pbo"], ["ATAK.dll", "OTHER.dll"]);
+
+        var result = await _update.CheckAsync("test-mod-123");
+
+        result.InterventionRequired.Should().BeFalse();
+        result.AvailablePbos.Should().BeEquivalentTo("atak_phone.pbo");
+        result.AvailableExtensions.Should().BeEquivalentTo("ATAK.dll");
+    }
+
+    [Fact]
+    public async Task Execute_WhenALockedFileIsSelectedWithDifferentCase_ShouldUnlockIt()
+    {
+        var workshopMod = SetupWorkshopMod(pbos: ["ATAK_Phone.pbo"], lockedPbos: ["ATAK_Alerts.pbo"]);
+        workshopMod.AvailablePbos = ["ATAK_Alerts.pbo", "ATAK_Phone.pbo"];
+
+        await _update.ExecuteAsync("test-mod-123", ["ATAK_Phone.pbo", "atak_alerts.pbo"], []);
+
+        workshopMod.LockedPbos.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Execute_WhenReplayedAfterCompleting_ShouldKeepTheLocks()
+    {
+        var workshopMod = SetupWorkshopMod(pbos: [], lockedPbos: []);
+        workshopMod.AvailablePbos = ["ATAK_Alerts.pbo", "ATAK_Phone.pbo"];
+        workshopMod.AvailableExtensions = ["atak.dll", "other.dll"];
+
+        await _update.ExecuteAsync("test-mod-123", ["ATAK_Phone.pbo"], ["atak.dll"]);
+        await _update.ExecuteAsync("test-mod-123", ["ATAK_Phone.pbo"], ["atak.dll"]);
+
+        workshopMod.LockedPbos.Should().BeEquivalentTo("ATAK_Alerts.pbo");
+        workshopMod.LockedExtensions.Should().BeEquivalentTo("other.dll");
+    }
+
+    [Fact]
     public async Task Execute_WhenALockedFileIsSelected_ShouldUnlockIt()
     {
         var workshopMod = SetupWorkshopMod(pbos: ["ATAK_Phone.pbo"], lockedPbos: ["ATAK_Alerts.pbo", "ACRE_MPU5.pbo"]);

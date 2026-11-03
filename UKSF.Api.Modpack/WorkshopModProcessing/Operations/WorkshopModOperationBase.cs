@@ -87,8 +87,8 @@ public abstract class WorkshopModOperationBase(
             return contentChanged
                 ? OperationResult.Successful(interventionRequired: true, availablePbos: pbos, availableExtensions: extensions)
                 : OperationResult.Successful(
-                    availablePbos: pbos.Except(workshopMod.LockedPbos ?? []).ToList(),
-                    availableExtensions: extensions.Except(workshopMod.LockedExtensions ?? []).ToList()
+                    availablePbos: pbos.Except(workshopMod.LockedPbos ?? [], FileName).ToList(),
+                    availableExtensions: extensions.Except(workshopMod.LockedExtensions ?? [], FileName).ToList()
                 );
         }
         catch (Exception exception)
@@ -97,10 +97,12 @@ public abstract class WorkshopModOperationBase(
         }
     }
 
+    private static readonly StringComparer FileName = StringComparer.OrdinalIgnoreCase;
+
     private static bool HasUnseenOrMissingFiles(List<string> installed, List<string> locked, List<string> available)
     {
         var known = (installed ?? []).Concat(locked ?? []);
-        return available.Except(known).Any() || (installed ?? []).Except(available).Any();
+        return available.Except(known, FileName).Any() || (installed ?? []).Except(available, FileName).Any();
     }
 
     protected bool ExecutionFilesChanged { get; set; } = true;
@@ -149,8 +151,13 @@ public abstract class WorkshopModOperationBase(
 
     protected static void RecordSelection(DomainWorkshopMod workshopMod, List<string> selectedPbos, List<string> selectedExtensions)
     {
-        workshopMod.LockedPbos = (workshopMod.AvailablePbos ?? []).Except(selectedPbos).ToList();
-        workshopMod.LockedExtensions = (workshopMod.AvailableExtensions ?? []).Except(selectedExtensions).ToList();
+        var replayAfterCompletion = (workshopMod.AvailablePbos ?? []).Count == 0 && (workshopMod.AvailableExtensions ?? []).Count == 0;
+        if (!replayAfterCompletion)
+        {
+            workshopMod.LockedPbos = (workshopMod.AvailablePbos ?? []).Except(selectedPbos, FileName).ToList();
+            workshopMod.LockedExtensions = (workshopMod.AvailableExtensions ?? []).Except(selectedExtensions, FileName).ToList();
+        }
+
         workshopMod.Pbos = selectedPbos;
         workshopMod.Extensions = selectedExtensions;
         workshopMod.AvailablePbos = [];
