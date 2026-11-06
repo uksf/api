@@ -46,7 +46,6 @@ public class BuildStepPatchDependencies : FileBuildStep
 
         Directory.CreateDirectory(StatePath);
         MoveUngroupedStateToDependencies();
-        StepLogger.Log($"Using {_patcher}");
         return Task.CompletedTask;
     }
 
@@ -66,18 +65,21 @@ public class BuildStepPatchDependencies : FileBuildStep
             Directory.CreateDirectory(state);
             var args = $"--addons \"{addons}\" --patches \"{patches}\" --state \"{state}\"";
 
-            StepLogger.LogSurround($"\nApplying {mod} patches...");
             var before = SnapshotPbos(addons);
-            await RunProcess(addons, _patcher, $"apply {args}", _patcherTimeout, true);
-            StepLogger.LogSurround($"Applied {mod} patches");
+            var output = await RunProcess(addons, _patcher, $"apply {args}", _patcherTimeout, suppressOutput: true);
+            var upToDate = output.Count(IsUpToDate);
+            var changes = output.Where(x => !string.IsNullOrWhiteSpace(x) && !IsUpToDate(x) && !x.StartsWith("Process exited with code")).ToList();
+            StepLogger.LogSurround($"\n{mod}: {upToDate} PBOs up to date{(changes.Count > 0 ? $", {changes.Count} changed" : "")}");
+            changes.ForEach(x => StepLogger.Log(x));
 
-            StepLogger.LogSurround($"\nVerifying {mod} patches...");
-            await RunProcess(addons, _patcher, $"verify {args}", _patcherTimeout, true);
-            StepLogger.LogSurround($"Verified {mod} patches");
+            if (changes.Count > 0 || ChangedPbos(addons, before).Count > 0)
+            {
+                StepLogger.LogSurround($"Verifying {mod} patches...");
+                await RunProcess(addons, _patcher, $"verify {args}", _patcherTimeout, true);
+            }
 
-            StepLogger.LogSurround($"\nRemoving signatures of patched {mod} PBOs...");
-            var removed = InvalidateSignatures(addons, before) + RemoveUpstreamSignaturesOfPatchedPbos(addons, state);
-            StepLogger.LogSurround($"Removed {removed} signatures");
+            InvalidateSignatures(addons, before);
+            RemoveUpstreamSignaturesOfPatchedPbos(addons, state);
         }
     }
 
@@ -109,16 +111,18 @@ public class BuildStepPatchDependencies : FileBuildStep
         return Directory.GetFiles(addons, "*.pbo").ToDictionary(x => x, x => (new FileInfo(x).Length, File.GetLastWriteTimeUtc(x)));
     }
 
+    internal static bool IsUpToDate(string line) => line?.EndsWith(": up to date", StringComparison.Ordinal) == true;
+
+    internal static List<string> ChangedPbos(string addons, Dictionary<string, (long Length, DateTime WriteTime)> before)
+    {
+        return SnapshotPbos(addons).Where(x => !before.TryGetValue(x.Key, out var was) || was != x.Value).Select(x => x.Key).ToList();
+    }
+
     internal int InvalidateSignatures(string addons, Dictionary<string, (long Length, DateTime WriteTime)> before)
     {
         var removed = 0;
-        foreach (var (pbo, now) in SnapshotPbos(addons))
+        foreach (var pbo in ChangedPbos(addons, before))
         {
-            if (before.TryGetValue(pbo, out var was) && was == now)
-            {
-                continue;
-            }
-
             foreach (var bisign in Directory.GetFiles(addons, $"{Path.GetFileName(pbo)}.*.bisign"))
             {
                 File.Delete(bisign);

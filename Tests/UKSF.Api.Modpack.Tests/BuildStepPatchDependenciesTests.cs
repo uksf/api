@@ -24,6 +24,7 @@ public class BuildStepPatchDependenciesTests : IDisposable
     private readonly string _envDir;
     private readonly string _patcherDir;
     private readonly string _sourcesDir;
+    private string _applyOutput = "a.pbo: up to date";
     private int _exitCode;
 
     public BuildStepPatchDependenciesTests()
@@ -46,7 +47,8 @@ public class BuildStepPatchDependenciesTests : IDisposable
                                   .Returns((string executable, string workingDir, string args) =>
                                       {
                                           _commands.Add((executable, args));
-                                          return new ProcessCommand(_mockLogger.Object, "cmd.exe", workingDir, $"/c exit {_exitCode}");
+                                          var echo = args.StartsWith("apply") ? $"echo {_applyOutput}& " : "";
+                                          return new ProcessCommand(_mockLogger.Object, "cmd.exe", workingDir, $"/c {echo}exit {_exitCode}");
                                       }
                                   );
     }
@@ -106,8 +108,22 @@ public class BuildStepPatchDependenciesTests : IDisposable
     }
 
     [Fact]
+    public async Task Process_Should_SkipVerify_When_EveryPboIsUpToDate()
+    {
+        CreatePatcher();
+        WriteManifest("@uksf_dependencies");
+        var step = CreateStep();
+
+        await step.Setup();
+        await step.Process();
+
+        _commands.Select(x => x.Args.Split(' ')[0]).Should().Equal("apply");
+    }
+
+    [Fact]
     public async Task Process_Should_ApplyThenVerify_EachPatchedMod_With_StateOutsideTheRepo()
     {
+        _applyOutput = "a.pbo: patched (first patch) -^> abc";
         CreatePatcher();
         Directory.CreateDirectory(CupAddons);
         WriteManifest("@uksf_dependencies");
