@@ -69,7 +69,10 @@ public class DiscordMessageService(
 
         var guild = _discordClientService.GetGuild();
         var channel = guild.GetTextChannel(channelId);
-        await channel.SendMessageAsync(message);
+        foreach (var chunk in DiscordMessageSplitter.Split(message))
+        {
+            await channel.SendMessageAsync(chunk);
+        }
     }
 
     public async Task SendMessageToEveryone(ulong channelId, string message, bool notifyOffline)
