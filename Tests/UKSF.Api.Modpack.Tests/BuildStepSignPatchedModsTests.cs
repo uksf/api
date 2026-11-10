@@ -66,6 +66,27 @@ public class BuildStepSignPatchedModsTests : IDisposable
         pbos.Should().BeEquivalentTo(Path.Combine(cup, "cup_wheeledvehicles_tigr.pbo"));
     }
 
+    [Theory]
+    [InlineData(new byte[] { 1, 2, 3, 9 }, true)]
+    [InlineData(new byte[] { 7, 7, 7, 9 }, false)]
+    public void CheckGuards_Should_PartialSign_Only_When_A_Signature_Was_Made_With_Another_Key(byte[] bisignBytes, bool signedWithCurrentKey)
+    {
+        Addons("@uksf_dependencies");
+        var keys = Path.Combine(_tempDir, "Repo", "@uksf_dependencies", "keys");
+        Directory.CreateDirectory(keys);
+        File.WriteAllBytes(Path.Combine(keys, "uksf_dependencies_dev.bikey"), [1, 2, 3]);
+        Directory.CreateDirectory(Path.Combine(_tempDir, "PrivateKeys"));
+        File.WriteAllBytes(Path.Combine(_tempDir, "PrivateKeys", "uksf_dependencies_dev.biprivatekey"), [0]);
+        var cup = Addons("@CUP_Vehicles", "cup_wheeledvehicles_tigr.pbo");
+        File.SetLastWriteTimeUtc(Path.Combine(cup, "cup_wheeledvehicles_tigr.pbo"), DateTime.UtcNow.AddMinutes(-5));
+        File.WriteAllBytes(Path.Combine(cup, "cup_wheeledvehicles_tigr.pbo.uksf_dependencies_dev.bisign"), bisignBytes);
+        Directory.CreateDirectory(Path.Combine(_tempDir, "PatcherState", "@CUP_Vehicles"));
+        var step = CreateStep();
+
+        step.CheckGuards().Should().Be(!signedWithCurrentKey);
+        step.FullSign.Should().BeFalse();
+    }
+
     private string Addons(string mod, params string[] pbos)
     {
         var addons = Path.Combine(_tempDir, "Repo", mod, "addons");
