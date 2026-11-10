@@ -9,11 +9,12 @@ public static class PboReader
     private const uint CompressedEntryMethod = 0x43707273;
     private const int MaxLzssExpansion = 9;
     public const long MaxExtractedBytes = 512L * 1024 * 1024;
+    public const int MaxEntries = 50_000;
     private static readonly string[] CanonicalMissionFiles = ["mission.sqm", "description.ext", "cba_settings.sqf"];
 
-    private record Entry(string Name, uint Method, uint OriginalSize, uint DataSize);
+    private record Entry(string Name, string[] Parts, uint Method, uint OriginalSize, uint DataSize);
 
-    public static void Extract(string pboPath, string folderPath)
+    public static void Extract(string pboPath, string folderPath, int maxEntries = MaxEntries)
     {
         var bytes = File.ReadAllBytes(pboPath);
         var position = 0;
@@ -36,7 +37,13 @@ public static class PboReader
                 break;
             }
 
-            entries.Add(new Entry(CanonicalName(name), method, originalSize, dataSize));
+            if (entries.Count == maxEntries)
+            {
+                throw new PboOperationException($"pbo has more than {maxEntries} files");
+            }
+
+            var parts = PathParts(name);
+            entries.Add(new Entry(string.Join('\\', parts), parts, method, originalSize, dataSize));
         }
 
         if (entries.Count == 0)
@@ -56,7 +63,7 @@ public static class PboReader
 
             var block = bytes.AsSpan(position, (int)entry.DataSize);
             position += (int)entry.DataSize;
-            var outputPath = SafeOutputPath(folderPath, entry.Name);
+            var outputPath = Path.Combine([folderPath, ..entry.Parts]);
             Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
             File.WriteAllBytes(outputPath, IsCompressed(entry) ? Decompress(block, entry) : block.ToArray());
         }
@@ -94,14 +101,25 @@ public static class PboReader
         return output;
     }
 
-    private static string CanonicalName(string name)
+    private static string[] PathParts(string entryName)
     {
-        return CanonicalMissionFiles.FirstOrDefault(file => file.Equals(name, StringComparison.OrdinalIgnoreCase)) ?? name;
+        var parts = entryName.Split('\\', '/');
+        if (parts.Any(x => x is "" or ".." or "." || x.Contains(':')))
+        {
+            throw new PboOperationException($"{entryName}: unsafe path in pbo");
+        }
+
+        if (parts.Length == 1)
+        {
+            parts[0] = CanonicalMissionFiles.FirstOrDefault(file => file.Equals(parts[0], StringComparison.OrdinalIgnoreCase)) ?? parts[0];
+        }
+
+        return parts;
     }
 
     private static void CheckEntries(List<Entry> entries)
     {
-        var duplicate = entries.GroupBy(entry => entry.Name.Replace('/', '\\'), StringComparer.OrdinalIgnoreCase).FirstOrDefault(group => group.Count() > 1);
+        var duplicate = entries.GroupBy(entry => entry.Name, StringComparer.OrdinalIgnoreCase).FirstOrDefault(group => group.Count() > 1);
         if (duplicate is not null)
         {
             throw new PboOperationException($"{duplicate.Key}: pbo has more than one entry with this name");
@@ -162,17 +180,6 @@ public static class PboReader
         }
 
         return data;
-    }
-
-    private static string SafeOutputPath(string folderPath, string entryName)
-    {
-        var parts = entryName.Split('\\', '/');
-        if (entryName.StartsWith('\\') || entryName.StartsWith('/') || parts.Any(x => x is ".." or "." || x.Contains(':')))
-        {
-            throw new PboOperationException($"{entryName}: unsafe path in pbo");
-        }
-
-        return Path.Combine([folderPath, ..parts]);
     }
 
     private static void SkipProductProperties(byte[] bytes, ref int position)

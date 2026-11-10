@@ -1,24 +1,26 @@
 using System.Globalization;
 using System.Text;
-using System.Text.RegularExpressions;
 using UKSF.Api.ArmaMissions.Exceptions;
 
 namespace UKSF.Api.ArmaMissions.Services;
 
-public sealed partial class RapDecoder
+public sealed class RapDecoder
 {
     public const int MaxDepth = 64;
     public const int MaxNodes = 2_000_000;
     public const int MaxOutputChars = 64 * 1024 * 1024;
+    private const string ConfigNewline = "\" \\n \"";
 
     private static readonly byte[] Signature = [0, (byte)'r', (byte)'a', (byte)'P'];
     private readonly byte[] _bytes;
+    private readonly int _maxOutputChars;
     private readonly StringBuilder _text = new();
     private int _nodes;
 
-    private RapDecoder(byte[] bytes)
+    private RapDecoder(byte[] bytes, int maxOutputChars)
     {
         _bytes = bytes;
+        _maxOutputChars = maxOutputChars;
     }
 
     public static bool IsRapified(ReadOnlySpan<byte> bytes)
@@ -26,14 +28,14 @@ public sealed partial class RapDecoder
         return bytes.StartsWith(Signature);
     }
 
-    public static string ToText(byte[] bytes)
+    public static string ToText(byte[] bytes, int maxOutputChars = MaxOutputChars)
     {
         if (!IsRapified(bytes))
         {
             throw new PboOperationException("file is not rapified");
         }
 
-        var decoder = new RapDecoder(bytes);
+        var decoder = new RapDecoder(bytes, maxOutputChars);
         try
         {
             var position = 16;
@@ -82,8 +84,9 @@ public sealed partial class RapDecoder
                 case 1:
                 {
                     var subType = _bytes[position++];
-                    var name = ReadAsciiz(ref position);
-                    Append(indent, name, " = ", ReadScalar(ref position, subType), ";\n");
+                    Append(indent, ReadAsciiz(ref position), " = ");
+                    WriteScalar(ref position, subType);
+                    Append(";\n");
                     break;
                 }
                 case 2:
@@ -95,8 +98,9 @@ public sealed partial class RapDecoder
                         position += 4;
                     }
 
-                    var name = ReadAsciiz(ref position);
-                    Append(indent, name, append ? "[] += " : "[] = ", ReadArray(ref position, depth + 1), ";\n");
+                    Append(indent, ReadAsciiz(ref position), append ? "[] += " : "[] = ");
+                    WriteArray(ref position, depth + 1);
+                    Append(";\n");
                     break;
                 }
                 case 3:  Append(indent, "class ", ReadAsciiz(ref position), ";\n"); break;
@@ -106,53 +110,89 @@ public sealed partial class RapDecoder
         }
     }
 
-    private string ReadArray(ref int position, int depth)
+    private void WriteArray(ref int position, int depth)
     {
         EnterLevel(depth);
         var count = ReadCount(ref position);
-        var items = new List<string>();
+        Append("{");
         for (var i = 0; i < count; i++)
         {
             CountNode();
+            if (i > 0)
+            {
+                Append(",");
+            }
+
             var type = _bytes[position++];
-            items.Add(type == 3 ? ReadArray(ref position, depth + 1) : ReadScalar(ref position, type));
+            if (type == 3)
+            {
+                WriteArray(ref position, depth + 1);
+            }
+            else
+            {
+                WriteScalar(ref position, type);
+            }
         }
 
-        return $"{{{string.Join(",", items)}}}";
+        Append("}");
     }
 
-    private string ReadScalar(ref int position, byte type)
+    private void WriteScalar(ref int position, byte type)
     {
         switch (type)
         {
             case 0:
-            case 4: return QuoteConfigString(ReadAsciiz(ref position));
+            case 4: WriteConfigString(ReadAsciiz(ref position)); break;
             case 1:
             {
                 var value = BitConverter.ToSingle(_bytes, position);
                 position += 4;
-                return value.ToString("R", CultureInfo.InvariantCulture).Replace('E', 'e');
+                Append(value.ToString("R", CultureInfo.InvariantCulture).Replace('E', 'e'));
+                break;
             }
             case 2:
             {
                 var value = BitConverter.ToInt32(_bytes, position);
                 position += 4;
-                return value.ToString(CultureInfo.InvariantCulture);
+                Append(value.ToString(CultureInfo.InvariantCulture));
+                break;
             }
             case 6:
             {
                 var value = BitConverter.ToInt64(_bytes, position);
                 position += 8;
-                return value.ToString(CultureInfo.InvariantCulture);
+                Append(value.ToString(CultureInfo.InvariantCulture));
+                break;
             }
             default: throw new PboOperationException($"unknown rapified value type {type} at offset {position - 1}");
         }
     }
 
-    public static string QuoteConfigString(string value)
+    private void WriteConfigString(string value)
     {
-        var lines = LineBreak().Split(value).Select(line => line.Replace("\"", "\"\""));
-        return $"\"{string.Join("\" \\n \"", lines)}\"";
+        Append("\"");
+        for (var i = 0; i < value.Length; i++)
+        {
+            switch (value[i])
+            {
+                case '"': Append("\"\""); break;
+                case '\r':
+                    if (i + 1 < value.Length && value[i + 1] == '\n')
+                    {
+                        i++;
+                    }
+
+                    Append(ConfigNewline);
+                    break;
+                case '\n': Append(ConfigNewline); break;
+                default:
+                    Reserve(1);
+                    _text.Append(value[i]);
+                    break;
+            }
+        }
+
+        Append("\"");
     }
 
     private int ReadCount(ref int position)
@@ -219,12 +259,16 @@ public sealed partial class RapDecoder
     {
         foreach (var part in parts)
         {
+            Reserve(part.Length);
             _text.Append(part);
         }
+    }
 
-        if (_text.Length > MaxOutputChars)
+    private void Reserve(int length)
+    {
+        if (_text.Length + (long)length > _maxOutputChars)
         {
-            throw new PboOperationException($"rapified file decodes to more than {MaxOutputChars} characters");
+            throw new PboOperationException($"rapified file decodes to more than {_maxOutputChars} characters");
         }
     }
 
@@ -240,7 +284,4 @@ public sealed partial class RapDecoder
         position = end + 1;
         return value;
     }
-
-    [GeneratedRegex("\r\n|\r|\n")]
-    private static partial Regex LineBreak();
 }
