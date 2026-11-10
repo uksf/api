@@ -1,12 +1,25 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 using UKSF.Api.ArmaMissions.Exceptions;
 
 namespace UKSF.Api.ArmaMissions.Services;
 
-public static class RapDecoder
+public sealed partial class RapDecoder
 {
+    public const int MaxDepth = 64;
+    public const int MaxNodes = 2_000_000;
+    public const int MaxOutputChars = 64 * 1024 * 1024;
+
     private static readonly byte[] Signature = [0, (byte)'r', (byte)'a', (byte)'P'];
+    private readonly byte[] _bytes;
+    private readonly StringBuilder _text = new();
+    private int _nodes;
+
+    private RapDecoder(byte[] bytes)
+    {
+        _bytes = bytes;
+    }
 
     public static bool IsRapified(ReadOnlySpan<byte> bytes)
     {
@@ -20,56 +33,57 @@ public static class RapDecoder
             throw new PboOperationException("file is not rapified");
         }
 
-        var text = new StringBuilder();
+        var decoder = new RapDecoder(bytes);
         try
         {
             var position = 16;
-            ReadAsciiz(bytes, ref position);
-            WriteBody(bytes, position, text, 0);
+            decoder.ReadAsciiz(ref position);
+            decoder.WriteBody(position, 0);
         }
         catch (IndexOutOfRangeException)
         {
             throw new PboOperationException("rapified file is truncated");
         }
-        catch (ArgumentOutOfRangeException)
+        catch (ArgumentException)
         {
             throw new PboOperationException("rapified file is truncated");
         }
 
-        return text.ToString();
+        return decoder._text.ToString();
     }
 
-    private static void WriteBody(byte[] bytes, int position, StringBuilder text, int depth)
+    private void WriteBody(int position, int depth)
     {
+        EnterLevel(depth);
         var indent = new string('\t', depth);
-        var count = ReadCompressedInt(bytes, ref position);
+        var count = ReadCount(ref position);
         for (var i = 0; i < count; i++)
         {
-            var type = bytes[position++];
+            CountNode();
+            var type = _bytes[position++];
             switch (type)
             {
                 case 0:
                 {
-                    var name = ReadAsciiz(bytes, ref position);
-                    var offset = (int)ReadUInt(bytes, ref position);
-                    var bodyPosition = offset;
-                    var parent = ReadAsciiz(bytes, ref bodyPosition);
-                    text.Append(indent).Append("class ").Append(name);
+                    var name = ReadAsciiz(ref position);
+                    var bodyPosition = ReadOffset(ref position);
+                    var parent = ReadAsciiz(ref bodyPosition);
+                    Append(indent, "class ", name);
                     if (parent.Length > 0)
                     {
-                        text.Append(": ").Append(parent);
+                        Append(": ", parent);
                     }
 
-                    text.Append('\n').Append(indent).Append("{\n");
-                    WriteBody(bytes, bodyPosition, text, depth + 1);
-                    text.Append(indent).Append("};\n");
+                    Append("\n", indent, "{\n");
+                    WriteBody(bodyPosition, depth + 1);
+                    Append(indent, "};\n");
                     break;
                 }
                 case 1:
                 {
-                    var subType = bytes[position++];
-                    var name = ReadAsciiz(bytes, ref position);
-                    text.Append(indent).Append(name).Append(" = ").Append(ReadScalar(bytes, ref position, subType)).Append(";\n");
+                    var subType = _bytes[position++];
+                    var name = ReadAsciiz(ref position);
+                    Append(indent, name, " = ", ReadScalar(ref position, subType), ";\n");
                     break;
                 }
                 case 2:
@@ -81,51 +95,53 @@ public static class RapDecoder
                         position += 4;
                     }
 
-                    var name = ReadAsciiz(bytes, ref position);
-                    text.Append(indent).Append(name).Append(append ? "[] += " : "[] = ").Append(ReadArray(bytes, ref position)).Append(";\n");
+                    var name = ReadAsciiz(ref position);
+                    Append(indent, name, append ? "[] += " : "[] = ", ReadArray(ref position, depth + 1), ";\n");
                     break;
                 }
-                case 3:  text.Append(indent).Append("class ").Append(ReadAsciiz(bytes, ref position)).Append(";\n"); break;
-                case 4:  text.Append(indent).Append("delete ").Append(ReadAsciiz(bytes, ref position)).Append(";\n"); break;
+                case 3:  Append(indent, "class ", ReadAsciiz(ref position), ";\n"); break;
+                case 4:  Append(indent, "delete ", ReadAsciiz(ref position), ";\n"); break;
                 default: throw new PboOperationException($"unknown rapified entry type {type} at offset {position - 1}");
             }
         }
     }
 
-    private static string ReadArray(byte[] bytes, ref int position)
+    private string ReadArray(ref int position, int depth)
     {
-        var count = ReadCompressedInt(bytes, ref position);
-        var items = new string[count];
+        EnterLevel(depth);
+        var count = ReadCount(ref position);
+        var items = new List<string>();
         for (var i = 0; i < count; i++)
         {
-            var type = bytes[position++];
-            items[i] = type == 3 ? ReadArray(bytes, ref position) : ReadScalar(bytes, ref position, type);
+            CountNode();
+            var type = _bytes[position++];
+            items.Add(type == 3 ? ReadArray(ref position, depth + 1) : ReadScalar(ref position, type));
         }
 
         return $"{{{string.Join(",", items)}}}";
     }
 
-    private static string ReadScalar(byte[] bytes, ref int position, byte type)
+    private string ReadScalar(ref int position, byte type)
     {
         switch (type)
         {
             case 0:
-            case 4: return $"\"{ReadAsciiz(bytes, ref position).Replace("\"", "\"\"")}\"";
+            case 4: return QuoteConfigString(ReadAsciiz(ref position));
             case 1:
             {
-                var value = BitConverter.ToSingle(bytes, position);
+                var value = BitConverter.ToSingle(_bytes, position);
                 position += 4;
                 return value.ToString("R", CultureInfo.InvariantCulture).Replace('E', 'e');
             }
             case 2:
             {
-                var value = BitConverter.ToInt32(bytes, position);
+                var value = BitConverter.ToInt32(_bytes, position);
                 position += 4;
                 return value.ToString(CultureInfo.InvariantCulture);
             }
             case 6:
             {
-                var value = BitConverter.ToInt64(bytes, position);
+                var value = BitConverter.ToInt64(_bytes, position);
                 position += 8;
                 return value.ToString(CultureInfo.InvariantCulture);
             }
@@ -133,40 +149,98 @@ public static class RapDecoder
         }
     }
 
-    private static int ReadCompressedInt(byte[] bytes, ref int position)
+    public static string QuoteConfigString(string value)
     {
-        var value = 0;
-        var shift = 0;
-        while (true)
+        var lines = LineBreak().Split(value).Select(line => line.Replace("\"", "\"\""));
+        return $"\"{string.Join("\" \\n \"", lines)}\"";
+    }
+
+    private int ReadCount(ref int position)
+    {
+        var value = ReadCompressedInt(ref position);
+        if (value > _bytes.Length - position)
         {
-            var part = bytes[position++];
+            throw new PboOperationException($"rapified count {value} at offset {position} exceeds the file");
+        }
+
+        return (int)value;
+    }
+
+    private uint ReadCompressedInt(ref int position)
+    {
+        uint value = 0;
+        for (var shift = 0; shift < 35; shift += 7)
+        {
+            uint part = _bytes[position++];
+            if (shift == 28 && part > 0x0F)
+            {
+                throw new PboOperationException($"rapified integer at offset {position - 1} overflows");
+            }
+
             value |= (part & 0x7F) << shift;
             if ((part & 0x80) == 0)
             {
                 return value;
             }
+        }
 
-            shift += 7;
+        throw new PboOperationException($"rapified integer at offset {position - 1} overflows");
+    }
+
+    private int ReadOffset(ref int position)
+    {
+        var offset = BitConverter.ToUInt32(_bytes, position);
+        position += 4;
+        if (offset < 16 || offset >= _bytes.Length)
+        {
+            throw new PboOperationException($"rapified class offset {offset} is outside the file");
+        }
+
+        return (int)offset;
+    }
+
+    private static void EnterLevel(int depth)
+    {
+        if (depth > MaxDepth)
+        {
+            throw new PboOperationException($"rapified file nests deeper than {MaxDepth}");
         }
     }
 
-    private static uint ReadUInt(byte[] bytes, ref int position)
+    private void CountNode()
     {
-        var value = BitConverter.ToUInt32(bytes, position);
-        position += 4;
-        return value;
+        if (++_nodes > MaxNodes)
+        {
+            throw new PboOperationException($"rapified file has more than {MaxNodes} entries");
+        }
     }
 
-    private static string ReadAsciiz(byte[] bytes, ref int position)
+    private void Append(params string[] parts)
     {
-        var end = Array.IndexOf(bytes, (byte)0, position);
+        foreach (var part in parts)
+        {
+            _text.Append(part);
+        }
+
+        if (_text.Length > MaxOutputChars)
+        {
+            throw new PboOperationException($"rapified file decodes to more than {MaxOutputChars} characters");
+        }
+    }
+
+    private string ReadAsciiz(ref int position)
+    {
+        var end = Array.IndexOf(_bytes, (byte)0, position);
         if (end < 0)
         {
             throw new PboOperationException("rapified string is not terminated");
         }
 
-        var value = Encoding.UTF8.GetString(bytes, position, end - position);
+        var value = Encoding.UTF8.GetString(_bytes, position, end - position);
         position = end + 1;
         return value;
     }
+
+    [GeneratedRegex("\r\n|\r|\n")]
+    private static partial Regex LineBreak();
 }

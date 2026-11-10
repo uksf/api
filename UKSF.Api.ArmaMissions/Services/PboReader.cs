@@ -7,6 +7,9 @@ public static class PboReader
 {
     private const uint ProductEntryMethod = 0x56657273;
     private const uint CompressedEntryMethod = 0x43707273;
+    private const int MaxLzssExpansion = 9;
+    public const long MaxExtractedBytes = 512L * 1024 * 1024;
+    private static readonly string[] CanonicalMissionFiles = ["mission.sqm", "description.ext", "cba_settings.sqf"];
 
     private record Entry(string Name, uint Method, uint OriginalSize, uint DataSize);
 
@@ -33,13 +36,15 @@ public static class PboReader
                 break;
             }
 
-            entries.Add(new Entry(name, method, originalSize, dataSize));
+            entries.Add(new Entry(CanonicalName(name), method, originalSize, dataSize));
         }
 
         if (entries.Count == 0)
         {
             throw new PboOperationException($"{Path.GetFileName(pboPath)} contains no files");
         }
+
+        CheckEntries(entries);
 
         Directory.CreateDirectory(folderPath);
         foreach (var entry in entries)
@@ -87,6 +92,36 @@ public static class PboReader
 
         consumed = inputPosition;
         return output;
+    }
+
+    private static string CanonicalName(string name)
+    {
+        return CanonicalMissionFiles.FirstOrDefault(file => file.Equals(name, StringComparison.OrdinalIgnoreCase)) ?? name;
+    }
+
+    private static void CheckEntries(List<Entry> entries)
+    {
+        var duplicate = entries.GroupBy(entry => entry.Name.Replace('/', '\\'), StringComparer.OrdinalIgnoreCase).FirstOrDefault(group => group.Count() > 1);
+        if (duplicate is not null)
+        {
+            throw new PboOperationException($"{duplicate.Key}: pbo has more than one entry with this name");
+        }
+
+        long total = 0;
+        foreach (var entry in entries)
+        {
+            var size = IsCompressed(entry) ? entry.OriginalSize : entry.DataSize;
+            if (IsCompressed(entry) && entry.OriginalSize > (long)entry.DataSize * MaxLzssExpansion)
+            {
+                throw new PboOperationException($"{entry.Name}: declared size {entry.OriginalSize} is too large for {entry.DataSize} compressed bytes");
+            }
+
+            total += size;
+            if (total > MaxExtractedBytes)
+            {
+                throw new PboOperationException($"pbo extracts to more than {MaxExtractedBytes} bytes");
+            }
+        }
     }
 
     private static bool IsCompressed(Entry entry)

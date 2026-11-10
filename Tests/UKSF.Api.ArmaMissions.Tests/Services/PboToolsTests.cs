@@ -140,6 +140,84 @@ public sealed class PboToolsTests : IDisposable
         await act.Should().ThrowAsync<PboOperationException>().WithMessage("pbo header is truncated");
     }
 
+    [Fact]
+    public async Task ExtractPbo_rejects_a_declared_size_beyond_lzss_expansion_before_decoding()
+    {
+        var pboPath = WritePbo(("init.sqf", 0x43707273u, new byte[4], 0x40000000u));
+
+        var act = () => _pboTools.ExtractPbo(pboPath, _tempDir);
+
+        await act.Should().ThrowAsync<PboOperationException>().WithMessage("init.sqf: declared size 1073741824 is too large for 4 compressed bytes");
+    }
+
+    [Fact]
+    public async Task ExtractPbo_rejects_a_pbo_that_extracts_past_the_budget()
+    {
+        var pboPath = Path.Combine(_tempDir, "op.VR.pbo");
+        using (var writer = new BinaryWriter(File.Create(pboPath)))
+        {
+            foreach (var name in new[] { "a.paa", "b.paa" })
+            {
+                writer.Write(Encoding.ASCII.GetBytes(name + "\0"));
+                writer.Write(0u);
+                writer.Write(0u);
+                writer.Write(0L);
+                writer.Write(300u * 1024 * 1024);
+            }
+
+            writer.Write(new byte[21]);
+        }
+
+        var act = () => _pboTools.ExtractPbo(pboPath, _tempDir);
+
+        await act.Should().ThrowAsync<PboOperationException>().WithMessage("pbo extracts to more than 536870912 bytes");
+    }
+
+    [Theory]
+    [InlineData("Mission.sqm", "mission.sqm")]
+    [InlineData("scripts\\A.sqf", "Scripts/a.sqf")]
+    public async Task ExtractPbo_rejects_names_that_differ_only_by_case(string first, string second)
+    {
+        var pboPath = WritePbo((first, 0u, new byte[] { 1 }, 1u), (second, 0u, new byte[] { 2 }, 1u));
+
+        var act = () => _pboTools.ExtractPbo(pboPath, _tempDir);
+
+        await act.Should().ThrowAsync<PboOperationException>().WithMessage("*more than one entry with this name");
+    }
+
+    [Fact]
+    public async Task ExtractPbo_writes_the_mission_files_the_patcher_opens_in_lower_case()
+    {
+        var pboPath = WritePbo(
+            ("Mission.sqm", 0u, new byte[] { 1 }, 1u),
+            ("Description.EXT", 0u, new byte[] { 1 }, 1u),
+            ("CBA_Settings.sqf", 0u, new byte[] { 1 }, 1u),
+            ("Scripts\\Init.sqf", 0u, new byte[] { 1 }, 1u)
+        );
+
+        await _pboTools.ExtractPbo(pboPath, _tempDir);
+
+        ReadTree(Path.Combine(_tempDir, "op.VR"))
+            .Keys.Should()
+            .BeEquivalentTo("mission.sqm", "description.ext", "cba_settings.sqf", Path.Combine("Scripts", "Init.sqf"));
+    }
+
+    [Theory]
+    [InlineData(1700000000u)]
+    [InlineData(0u)]
+    public async Task MakePbo_writes_reserved_before_the_timestamp(uint timestamp)
+    {
+        var source = CreateMission(new Dictionary<string, string> { ["mission.sqm"] = "abc" });
+        File.SetLastWriteTimeUtc(Path.Combine(source, "mission.sqm"), DateTime.UnixEpoch.AddSeconds(timestamp));
+        var pboPath = Path.Combine(_tempDir, "op.VR.pbo");
+
+        await _pboTools.MakePbo(source, pboPath, _tempDir);
+
+        var bytes = File.ReadAllBytes(pboPath);
+        var fields = Enumerable.Range(0, 5).Select(i => BitConverter.ToUInt32(bytes, "mission.sqm\0".Length + i * 4));
+        fields.Should().Equal(0u, 3u, 0u, timestamp, 3u);
+    }
+
     private static byte[] WithChecksum(byte[] block, string decoded)
     {
         var sum = (uint)Encoding.ASCII.GetBytes(decoded).Sum(x => x);

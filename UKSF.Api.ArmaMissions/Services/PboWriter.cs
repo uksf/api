@@ -27,8 +27,8 @@ public static class PboWriter
                 WriteAsciiz(writer, file.Name);
                 writer.Write(0u);
                 writer.Write((uint)info.Length);
-                writer.Write((uint)new DateTimeOffset(info.LastWriteTimeUtc).ToUnixTimeSeconds());
                 writer.Write(0u);
+                writer.Write((uint)new DateTimeOffset(info.LastWriteTimeUtc).ToUnixTimeSeconds());
                 writer.Write((uint)info.Length);
             }
 
