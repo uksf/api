@@ -10,22 +10,22 @@ public static class PboReader
     private const int MaxLzssExpansion = 9;
     public const long MaxExtractedBytes = 512L * 1024 * 1024;
     public const int MaxEntries = 50_000;
+    public const int MaxPathComponents = 200_000;
     private static readonly string[] CanonicalMissionFiles = ["mission.sqm", "description.ext", "cba_settings.sqf"];
 
-    private record Entry(string Name, string[] Parts, uint Method, uint OriginalSize, uint DataSize);
-
-    public static void Extract(string pboPath, string folderPath, int maxEntries = MaxEntries)
+    public static void Extract(string pboPath, string folderPath, int maxEntries = MaxEntries, int maxPathComponents = MaxPathComponents)
     {
-        var bytes = File.ReadAllBytes(pboPath);
-        var position = 0;
+        byte[] bytes = File.ReadAllBytes(pboPath);
+        int position = 0;
+        int pathComponents = 0;
         List<Entry> entries = [];
         while (true)
         {
-            var name = ReadString(bytes, ref position);
-            var method = ReadUInt(bytes, ref position);
-            var originalSize = ReadUInt(bytes, ref position);
+            string name = ReadString(bytes, ref position);
+            uint method = ReadUInt(bytes, ref position);
+            uint originalSize = ReadUInt(bytes, ref position);
             position += 8;
-            var dataSize = ReadUInt(bytes, ref position);
+            uint dataSize = ReadUInt(bytes, ref position);
             if (name.Length == 0 && method == ProductEntryMethod)
             {
                 SkipProductProperties(bytes, ref position);
@@ -42,7 +42,13 @@ public static class PboReader
                 throw new PboOperationException($"pbo has more than {maxEntries} files");
             }
 
-            var parts = PathParts(name);
+            string[] parts = PathParts(name);
+            pathComponents += parts.Length;
+            if (pathComponents > maxPathComponents)
+            {
+                throw new PboOperationException($"pbo paths have more than {maxPathComponents} folders and files");
+            }
+
             entries.Add(new Entry(string.Join('\\', parts), parts, method, originalSize, dataSize));
         }
 
@@ -54,16 +60,16 @@ public static class PboReader
         CheckEntries(entries);
 
         Directory.CreateDirectory(folderPath);
-        foreach (var entry in entries)
+        foreach (Entry entry in entries)
         {
             if (position + entry.DataSize > bytes.Length)
             {
                 throw new PboOperationException($"{entry.Name}: data past end of file");
             }
 
-            var block = bytes.AsSpan(position, (int)entry.DataSize);
+            Span<byte> block = bytes.AsSpan(position, (int)entry.DataSize);
             position += (int)entry.DataSize;
-            var outputPath = Path.Combine([folderPath, ..entry.Parts]);
+            string outputPath = Path.Combine([folderPath, ..entry.Parts]);
             Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
             File.WriteAllBytes(outputPath, IsCompressed(entry) ? Decompress(block, entry) : block.ToArray());
         }
@@ -71,13 +77,13 @@ public static class PboReader
 
     public static byte[] LzssDecode(ReadOnlySpan<byte> input, int outputSize, out int consumed)
     {
-        var output = new byte[outputSize];
-        var outputPosition = 0;
-        var inputPosition = 0;
+        byte[] output = new byte[outputSize];
+        int outputPosition = 0;
+        int inputPosition = 0;
         while (outputPosition < outputSize)
         {
-            var flags = ReadByte(input, ref inputPosition);
-            for (var bit = 0; bit < 8 && outputPosition < outputSize; bit++)
+            byte flags = ReadByte(input, ref inputPosition);
+            for (int bit = 0; bit < 8 && outputPosition < outputSize; bit++)
             {
                 if ((flags & (1 << bit)) != 0)
                 {
@@ -85,13 +91,13 @@ public static class PboReader
                     continue;
                 }
 
-                var low = ReadByte(input, ref inputPosition);
-                var high = ReadByte(input, ref inputPosition);
-                var distance = low | ((high & 0xF0) << 4);
-                var length = (high & 0x0F) + 3;
-                for (var i = 0; i < length && outputPosition < outputSize; i++)
+                byte low = ReadByte(input, ref inputPosition);
+                byte high = ReadByte(input, ref inputPosition);
+                int distance = low | ((high & 0xF0) << 4);
+                int length = (high & 0x0F) + 3;
+                for (int i = 0; i < length && outputPosition < outputSize; i++)
                 {
-                    var source = outputPosition - distance;
+                    int source = outputPosition - distance;
                     output[outputPosition++] = source < 0 ? (byte)0x20 : output[source];
                 }
             }
@@ -103,7 +109,7 @@ public static class PboReader
 
     private static string[] PathParts(string entryName)
     {
-        var parts = entryName.Split('\\', '/');
+        string[] parts = entryName.Split('\\', '/');
         if (parts.Any(x => x is "" or ".." or "." || x.Contains(':')))
         {
             throw new PboOperationException($"{entryName}: unsafe path in pbo");
@@ -119,16 +125,16 @@ public static class PboReader
 
     private static void CheckEntries(List<Entry> entries)
     {
-        var duplicate = entries.GroupBy(entry => entry.Name, StringComparer.OrdinalIgnoreCase).FirstOrDefault(group => group.Count() > 1);
+        IGrouping<string, Entry> duplicate = entries.GroupBy(entry => entry.Name, StringComparer.OrdinalIgnoreCase).FirstOrDefault(group => group.Count() > 1);
         if (duplicate is not null)
         {
             throw new PboOperationException($"{duplicate.Key}: pbo has more than one entry with this name");
         }
 
         long total = 0;
-        foreach (var entry in entries)
+        foreach (Entry entry in entries)
         {
-            var size = IsCompressed(entry) ? entry.OriginalSize : entry.DataSize;
+            uint size = IsCompressed(entry) ? entry.OriginalSize : entry.DataSize;
             if (IsCompressed(entry) && entry.OriginalSize > (long)entry.DataSize * MaxLzssExpansion)
             {
                 throw new PboOperationException($"{entry.Name}: declared size {entry.OriginalSize} is too large for {entry.DataSize} compressed bytes");
@@ -142,10 +148,7 @@ public static class PboReader
         }
     }
 
-    private static bool IsCompressed(Entry entry)
-    {
-        return entry.Method == CompressedEntryMethod || (entry.OriginalSize != 0 && entry.OriginalSize != entry.DataSize);
-    }
+    private static bool IsCompressed(Entry entry) => entry.Method == CompressedEntryMethod || (entry.OriginalSize != 0 && entry.OriginalSize != entry.DataSize);
 
     private static byte[] Decompress(ReadOnlySpan<byte> block, Entry entry)
     {
@@ -165,10 +168,10 @@ public static class PboReader
             throw new PboOperationException($"{entry.Name}: compressed data has no checksum");
         }
 
-        var checksum = BitConverter.ToUInt32(block.Slice(consumed, 4));
+        uint checksum = BitConverter.ToUInt32(block.Slice(consumed, 4));
         uint unsignedSum = 0;
         uint signedSum = 0;
-        foreach (var value in data)
+        foreach (byte value in data)
         {
             unsignedSum += value;
             signedSum += (uint)(sbyte)value;
@@ -192,13 +195,13 @@ public static class PboReader
 
     private static string ReadString(byte[] bytes, ref int position)
     {
-        var end = Array.IndexOf(bytes, (byte)0, position);
+        int end = Array.IndexOf(bytes, (byte)0, position);
         if (end < 0)
         {
             throw new PboOperationException("pbo header is truncated");
         }
 
-        var value = Encoding.UTF8.GetString(bytes, position, end - position);
+        string value = Encoding.UTF8.GetString(bytes, position, end - position);
         position = end + 1;
         return value;
     }
@@ -210,13 +213,12 @@ public static class PboReader
             throw new PboOperationException("pbo header is truncated");
         }
 
-        var value = BitConverter.ToUInt32(bytes, position);
+        uint value = BitConverter.ToUInt32(bytes, position);
         position += 4;
         return value;
     }
 
-    private static byte ReadByte(ReadOnlySpan<byte> input, ref int position)
-    {
-        return input[position++];
-    }
+    private static byte ReadByte(ReadOnlySpan<byte> input, ref int position) => input[position++];
+
+    private record Entry(string Name, string[] Parts, uint Method, uint OriginalSize, uint DataSize);
 }
