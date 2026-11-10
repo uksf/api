@@ -80,11 +80,12 @@ public class BuildStepSignDependencies : FileBuildStep
 
         List<FileInfo> changedPbos = [];
         List<FileInfo> missingSignaturePbos = [];
+        var publicKey = CurrentPublicKey();
 
         foreach (var pbo in pboFiles)
         {
             var bisigns = Bisigns(pbo);
-            if (bisigns.Count != 1)
+            if (bisigns.Count != 1 || (publicKey is not null && !IsSignedWith(bisigns[0], publicKey)))
             {
                 missingSignaturePbos.Add(pbo);
             }
@@ -227,6 +228,18 @@ public class BuildStepSignDependencies : FileBuildStep
     private static List<FileInfo> Bisigns(FileInfo pbo)
     {
         return pbo.Directory!.GetFiles($"{pbo.Name}.*.bisign").ToList();
+    }
+
+    private byte[] CurrentPublicKey()
+    {
+        var bikey = Path.Join(GetBuildEnvironmentPath(), "Repo", "@uksf_dependencies", "keys", $"{GetKeyname()}.bikey");
+        return File.Exists(bikey) ? File.ReadAllBytes(bikey) : null;
+    }
+
+    private static bool IsSignedWith(FileInfo bisign, byte[] publicKey)
+    {
+        var bytes = File.ReadAllBytes(bisign.FullName);
+        return bytes.AsSpan().StartsWith(publicKey);
     }
 
     private static bool IsDependenciesSignature(FileInfo bisign)
