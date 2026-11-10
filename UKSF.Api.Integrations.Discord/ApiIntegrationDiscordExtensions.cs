@@ -1,6 +1,7 @@
 using Discord;
 using Discord.WebSocket;
 using UKSF.Api.Core.Extensions;
+using UKSF.Api.Integrations.Discord.Context;
 using UKSF.Api.Integrations.Discord.EventHandlers;
 using UKSF.Api.Integrations.Discord.Services;
 
@@ -12,7 +13,12 @@ public static class ApiIntegrationDiscordExtensions
     {
         public IServiceCollection AddUksfIntegrationDiscord()
         {
-            return services.AddEventHandlers().AddServices().AddDiscord();
+            return services.AddContexts().AddEventHandlers().AddServices().AddDiscord();
+        }
+
+        private IServiceCollection AddContexts()
+        {
+            return services.AddContext<IDiscordChannelContentsContext, DiscordChannelContentsContext>();
         }
 
         private IServiceCollection AddEventHandlers()
@@ -24,7 +30,8 @@ public static class ApiIntegrationDiscordExtensions
         {
             return services.AddSingleton<IDiscordActivationService, DiscordActivationService>()
                            .AddSingleton<IDiscordClientService, DiscordClientService>()
-                           .AddSingleton<IDiscordTextService, DiscordTextService>();
+                           .AddSingleton<IDiscordTextService, DiscordTextService>()
+                           .AddSingleton<IDiscordChannelContentService, DiscordChannelContentService>();
         }
 
         private IServiceCollection AddDiscord()
