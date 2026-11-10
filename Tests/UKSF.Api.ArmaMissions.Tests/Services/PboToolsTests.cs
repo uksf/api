@@ -1,296 +1,249 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Microsoft.Extensions.Configuration;
-using Moq;
 using UKSF.Api.ArmaMissions.Exceptions;
 using UKSF.Api.ArmaMissions.Services;
-using UKSF.Api.Core;
-using UKSF.Api.Core.Processes;
 using Xunit;
 
 namespace UKSF.Api.ArmaMissions.Tests.Services;
 
-public class PboToolsTests : IDisposable
+public sealed class PboToolsTests : IDisposable
 {
-    private readonly string _tempDir;
-    private readonly Mock<IProcessCommandFactory> _mockProcessCommandFactory = new();
-    private readonly Mock<IConfiguration> _mockConfiguration = new();
-    private readonly Mock<IUksfLogger> _mockLogger = new();
-    private readonly PboTools _pboTools;
-
-    public PboToolsTests()
-    {
-        _tempDir = Path.Combine(Path.GetTempPath(), $"uksf_pbo_test_{Guid.NewGuid():N}");
-        Directory.CreateDirectory(_tempDir);
-
-        _mockConfiguration.Setup(c => c.GetSection(It.IsAny<string>()).Value).Returns((string)null);
-
-        _pboTools = new PboTools(_mockProcessCommandFactory.Object, _mockConfiguration.Object);
-    }
+    private readonly PboTools _pboTools = new();
+    private readonly string _tempDir = Directory.CreateTempSubdirectory("uksf_pbo_test_").FullName;
 
     public void Dispose()
     {
-        try
-        {
-            if (Directory.Exists(_tempDir))
-            {
-                Directory.Delete(_tempDir, true);
-            }
-        }
-        catch
-        {
-            // best-effort cleanup
-        }
+        Directory.Delete(_tempDir, true);
     }
 
     [Fact]
-    public async Task ExtractPbo_WhenFolderCreated_Succeeds()
+    public async Task MakePbo_then_ExtractPbo_returns_the_kept_files_unchanged()
     {
-        var pboPath = Path.Combine(_tempDir, "testmission.pbo");
-        File.WriteAllText(pboPath, "fake pbo");
+        var source = CreateMission(
+            new Dictionary<string, string>
+            {
+                ["mission.sqm"] = "version = 54;\n",
+                ["description.ext"] = "onLoadName = \"Op\";\n",
+                ["scripts\\init.sqf"] = "hint \"x\";\n",
+                ["README.txt"] = "readme",
+                ["defines.h"] = "#define X 1",
+                ["scripts\\data.cpp"] = "x",
+                ["Thumbs.db"] = "x",
+                ["loading.PNG"] = "x"
+            }
+        );
+        var pboPath = Path.Combine(_tempDir, "op.VR.pbo");
 
-        SetupProcessCommand("echo extracting", onExecute: () => { Directory.CreateDirectory(Path.Combine(_tempDir, "testmission")); });
+        await _pboTools.MakePbo(source, pboPath, _tempDir);
+        await _pboTools.ExtractPbo(pboPath, Path.Combine(_tempDir, "out"));
+
+        ReadTree(Path.Combine(_tempDir, "out", "op.VR"))
+            .Should()
+            .BeEquivalentTo(
+                new Dictionary<string, string>
+                {
+                    ["mission.sqm"] = "version = 54;\n",
+                    ["description.ext"] = "onLoadName = \"Op\";\n",
+                    [Path.Combine("scripts", "init.sqf")] = "hint \"x\";\n"
+                }
+            );
+    }
+
+    [Fact]
+    public async Task SimplePackPbo_keeps_every_file()
+    {
+        var source = CreateMission(new Dictionary<string, string> { ["mission.sqm"] = "a", ["README.txt"] = "b" });
+        var pboPath = Path.Combine(_tempDir, "op.VR.pbo");
+
+        await _pboTools.SimplePackPbo(source, pboPath, _tempDir);
+        await _pboTools.ExtractPbo(pboPath, Path.Combine(_tempDir, "out"));
+
+        ReadTree(Path.Combine(_tempDir, "out", "op.VR")).Keys.Should().BeEquivalentTo("mission.sqm", "README.txt");
+    }
+
+    [Fact]
+    public async Task MakePbo_writes_a_sha1_trailer_over_the_header_and_data()
+    {
+        var source = CreateMission(new Dictionary<string, string> { ["mission.sqm"] = "version = 54;\n" });
+        var pboPath = Path.Combine(_tempDir, "op.VR.pbo");
+
+        await _pboTools.MakePbo(source, pboPath, _tempDir);
+
+        var bytes = File.ReadAllBytes(pboPath);
+        bytes[^21].Should().Be(0);
+        bytes[^20..].Should().Equal(SHA1.HashData(bytes.AsSpan(0, bytes.Length - 21)));
+    }
+
+    [Fact]
+    public async Task ExtractPbo_replaces_an_existing_folder()
+    {
+        var pboPath = WritePbo(("mission.sqm", 0u, Encoding.ASCII.GetBytes("new"), 3u));
+        var stale = Path.Combine(_tempDir, "op.VR", "stale.sqf");
+        Directory.CreateDirectory(Path.GetDirectoryName(stale)!);
+        File.WriteAllText(stale, "old");
 
         await _pboTools.ExtractPbo(pboPath, _tempDir);
 
-        Directory.Exists(Path.Combine(_tempDir, "testmission")).Should().BeTrue();
+        ReadTree(Path.Combine(_tempDir, "op.VR")).Should().BeEquivalentTo(new Dictionary<string, string> { ["mission.sqm"] = "new" });
     }
 
     [Fact]
-    public async Task ExtractPbo_WhenFolderNotCreated_ThrowsPboOperationExceptionWithOutput()
+    public async Task ExtractPbo_decompresses_lzss_entries()
     {
-        var pboPath = Path.Combine(_tempDir, "testmission.pbo");
-        File.WriteAllText(pboPath, "fake pbo");
+        byte[] block = [0x07, (byte)'a', (byte)'b', (byte)'c', 0x03, 0x03];
+        var pboPath = WritePbo(("init.sqf", 0x43707273u, WithChecksum(block, "abcabcabc"), 9u));
 
-        SetupProcessCommand("echo done");
+        await _pboTools.ExtractPbo(pboPath, _tempDir);
+
+        File.ReadAllText(Path.Combine(_tempDir, "op.VR", "init.sqf")).Should().Be("abcabcabc");
+    }
+
+    [Fact]
+    public async Task ExtractPbo_rejects_a_compressed_entry_with_a_bad_checksum()
+    {
+        byte[] block = [0x07, (byte)'a', (byte)'b', (byte)'c', 0x03, 0x03, 1, 0, 0, 0];
+        var pboPath = WritePbo(("init.sqf", 0x43707273u, block, 9u));
 
         var act = () => _pboTools.ExtractPbo(pboPath, _tempDir);
 
-        await act.Should().ThrowAsync<PboOperationException>().WithMessage("ExtractPboDos failed:*");
+        await act.Should().ThrowAsync<PboOperationException>().WithMessage("init.sqf: checksum mismatch");
     }
 
-    [Fact]
-    public async Task ExtractPbo_WhenFolderNotCreatedAndNoOutput_ThrowsPboOperationExceptionWithFallback()
+    [Theory]
+    [InlineData("..\\evil.sqf")]
+    [InlineData("\\evil.sqf")]
+    [InlineData("C:\\evil.sqf")]
+    public async Task ExtractPbo_rejects_entries_outside_the_folder(string entryName)
     {
-        var pboPath = Path.Combine(_tempDir, "testmission.pbo");
-        File.WriteAllText(pboPath, "fake pbo");
-
-        SetupProcessCommand("echo.");
+        var pboPath = WritePbo((entryName, 0u, Encoding.ASCII.GetBytes("x"), 1u));
 
         var act = () => _pboTools.ExtractPbo(pboPath, _tempDir);
 
-        await act.Should().ThrowAsync<PboOperationException>();
+        await act.Should().ThrowAsync<PboOperationException>().WithMessage($"{entryName}: unsafe path in pbo");
+        File.Exists(Path.Combine(_tempDir, "evil.sqf")).Should().BeFalse();
     }
 
     [Fact]
-    public async Task ExtractPbo_WhenExistingFolderExists_DeletesItFirst()
+    public async Task ExtractPbo_rejects_a_truncated_header()
     {
-        var pboPath = Path.Combine(_tempDir, "testmission.pbo");
-        File.WriteAllText(pboPath, "fake pbo");
+        var pboPath = Path.Combine(_tempDir, "op.VR.pbo");
+        File.WriteAllBytes(pboPath, Encoding.ASCII.GetBytes("mission.sqm\0\0\0"));
 
-        var existingFolder = Path.Combine(_tempDir, "testmission");
-        Directory.CreateDirectory(existingFolder);
-        File.WriteAllText(Path.Combine(existingFolder, "old_file.txt"), "old content");
+        var act = () => _pboTools.ExtractPbo(pboPath, _tempDir);
 
-        SetupProcessCommand(
-            "echo extracting",
-            onExecute: () =>
+        await act.Should().ThrowAsync<PboOperationException>().WithMessage("pbo header is truncated");
+    }
+
+    [Fact]
+    public async Task ExtractPbo_rejects_a_declared_size_beyond_lzss_expansion_before_decoding()
+    {
+        var pboPath = WritePbo(("init.sqf", 0x43707273u, new byte[4], 0x40000000u));
+
+        var act = () => _pboTools.ExtractPbo(pboPath, _tempDir);
+
+        await act.Should().ThrowAsync<PboOperationException>().WithMessage("init.sqf: declared size 1073741824 is too large for 4 compressed bytes");
+    }
+
+    [Fact]
+    public async Task ExtractPbo_rejects_a_pbo_that_extracts_past_the_budget()
+    {
+        var pboPath = Path.Combine(_tempDir, "op.VR.pbo");
+        using (var writer = new BinaryWriter(File.Create(pboPath)))
+        {
+            foreach (var name in new[] { "a.paa", "b.paa" })
             {
-                Directory.CreateDirectory(existingFolder);
-                File.WriteAllText(Path.Combine(existingFolder, "new_file.txt"), "new content");
+                writer.Write(Encoding.ASCII.GetBytes(name + "\0"));
+                writer.Write(0u);
+                writer.Write(0u);
+                writer.Write(0L);
+                writer.Write(300u * 1024 * 1024);
             }
+
+            writer.Write(new byte[21]);
+        }
+
+        var act = () => _pboTools.ExtractPbo(pboPath, _tempDir);
+
+        await act.Should().ThrowAsync<PboOperationException>().WithMessage("pbo extracts to more than 536870912 bytes");
+    }
+
+    [Theory]
+    [InlineData("Mission.sqm", "mission.sqm")]
+    [InlineData("scripts\\A.sqf", "Scripts/a.sqf")]
+    public async Task ExtractPbo_rejects_names_that_differ_only_by_case(string first, string second)
+    {
+        var pboPath = WritePbo((first, 0u, new byte[] { 1 }, 1u), (second, 0u, new byte[] { 2 }, 1u));
+
+        var act = () => _pboTools.ExtractPbo(pboPath, _tempDir);
+
+        await act.Should().ThrowAsync<PboOperationException>().WithMessage("*more than one entry with this name");
+    }
+
+    [Fact]
+    public async Task ExtractPbo_writes_the_mission_files_the_patcher_opens_in_lower_case()
+    {
+        var pboPath = WritePbo(
+            ("Mission.sqm", 0u, new byte[] { 1 }, 1u),
+            ("Description.EXT", 0u, new byte[] { 1 }, 1u),
+            ("CBA_Settings.sqf", 0u, new byte[] { 1 }, 1u),
+            ("Scripts\\Init.sqf", 0u, new byte[] { 1 }, 1u)
         );
 
         await _pboTools.ExtractPbo(pboPath, _tempDir);
 
-        File.Exists(Path.Combine(existingFolder, "old_file.txt")).Should().BeFalse();
-        File.Exists(Path.Combine(existingFolder, "new_file.txt")).Should().BeTrue();
+        ReadTree(Path.Combine(_tempDir, "op.VR"))
+            .Keys.Should()
+            .BeEquivalentTo("mission.sqm", "description.ext", "cba_settings.sqf", Path.Combine("Scripts", "Init.sqf"));
     }
 
-    [Fact]
-    public async Task ExtractPbo_WhenStderrOutputButFolderCreated_Succeeds()
+    [Theory]
+    [InlineData(1700000000u)]
+    [InlineData(0u)]
+    public async Task MakePbo_writes_reserved_before_the_timestamp(uint timestamp)
     {
-        var pboPath = Path.Combine(_tempDir, "testmission.pbo");
-        File.WriteAllText(pboPath, "fake pbo");
+        var source = CreateMission(new Dictionary<string, string> { ["mission.sqm"] = "abc" });
+        File.SetLastWriteTimeUtc(Path.Combine(source, "mission.sqm"), DateTime.UnixEpoch.AddSeconds(timestamp));
+        var pboPath = Path.Combine(_tempDir, "op.VR.pbo");
 
-        SetupProcessCommandWithStderr("echo version banner info >&2", onExecute: () => { Directory.CreateDirectory(Path.Combine(_tempDir, "testmission")); });
+        await _pboTools.MakePbo(source, pboPath, _tempDir);
 
-        await _pboTools.ExtractPbo(pboPath, _tempDir);
-
-        Directory.Exists(Path.Combine(_tempDir, "testmission")).Should().BeTrue();
+        var bytes = File.ReadAllBytes(pboPath);
+        var fields = Enumerable.Range(0, 5).Select(i => BitConverter.ToUInt32(bytes, "mission.sqm\0".Length + i * 4));
+        fields.Should().Equal(0u, 3u, 0u, timestamp, 3u);
     }
 
-    [Fact]
-    public async Task ExtractPbo_WhenStderrOutputAndFolderNotCreated_ThrowsWithOutput()
+    private static byte[] WithChecksum(byte[] block, string decoded)
     {
-        var pboPath = Path.Combine(_tempDir, "testmission.pbo");
-        File.WriteAllText(pboPath, "fake pbo");
-
-        SetupProcessCommandWithStderr("echo some error >&2");
-
-        var act = () => _pboTools.ExtractPbo(pboPath, _tempDir);
-
-        await act.Should().ThrowAsync<PboOperationException>().WithMessage("ExtractPboDos failed:*");
+        var sum = (uint)Encoding.ASCII.GetBytes(decoded).Sum(x => x);
+        return [..block, ..BitConverter.GetBytes(sum)];
     }
 
-    [Fact]
-    public async Task MakePbo_WhenPboFileCreated_Succeeds()
+    private string WritePbo(params (string Name, uint Method, byte[] Data, uint OriginalSize)[] entries)
     {
-        var folderPath = Path.Combine(_tempDir, "testmission");
-        var pboPath = Path.Combine(_tempDir, "testmission.pbo");
-        Directory.CreateDirectory(folderPath);
-
-        SetupProcessCommand("echo packing", onExecute: () => { File.WriteAllText(pboPath, "packed pbo"); });
-
-        await _pboTools.MakePbo(folderPath, pboPath, _tempDir);
-
-        File.Exists(pboPath).Should().BeTrue();
+        return PboFixture.Write(Path.Combine(_tempDir, "op.VR.pbo"), entries);
     }
 
-    [Fact]
-    public async Task MakePbo_WhenPboFileNotCreated_ThrowsPboOperationException()
+    private string CreateMission(Dictionary<string, string> files)
     {
-        var folderPath = Path.Combine(_tempDir, "testmission");
-        var pboPath = Path.Combine(_tempDir, "testmission.pbo");
-        Directory.CreateDirectory(folderPath);
-
-        SetupProcessCommand("echo some error output");
-
-        var act = () => _pboTools.MakePbo(folderPath, pboPath, _tempDir);
-
-        await act.Should().ThrowAsync<PboOperationException>();
-    }
-
-    [Fact]
-    public async Task MakePbo_UsesCorrectArguments()
-    {
-        var folderPath = Path.Combine(_tempDir, "testmission");
-        var pboPath = Path.Combine(_tempDir, "testmission.pbo");
-        Directory.CreateDirectory(folderPath);
-
-        SetupProcessCommand("echo done", onExecute: () => { File.WriteAllText(pboPath, "packed"); });
-
-        await _pboTools.MakePbo(folderPath, pboPath, _tempDir);
-
-        _mockProcessCommandFactory.Verify(
-            x => x.CreateCommand(
-                It.IsAny<string>(),
-                It.Is<string>(d => d == _tempDir),
-                It.Is<string>(a => a.Contains("-Z -BD -P -X=") && a.Contains(folderPath))
-            ),
-            Times.Once
-        );
-    }
-
-    [Fact]
-    public async Task SimplePackPbo_WhenPboFileCreated_Succeeds()
-    {
-        var folderPath = Path.Combine(_tempDir, "testmission");
-        var pboPath = Path.Combine(_tempDir, "testmission.pbo");
-        Directory.CreateDirectory(folderPath);
-
-        SetupProcessCommand("echo packing", onExecute: () => { File.WriteAllText(pboPath, "packed pbo"); });
-
-        await _pboTools.SimplePackPbo(folderPath, pboPath, _tempDir);
-
-        File.Exists(pboPath).Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task SimplePackPbo_WhenPboFileCreated_DeletesBackupFile()
-    {
-        var folderPath = Path.Combine(_tempDir, "testmission");
-        var pboPath = Path.Combine(_tempDir, "testmission.pbo");
-        Directory.CreateDirectory(folderPath);
-
-        SetupProcessCommand(
-            "echo packing",
-            onExecute: () =>
-            {
-                File.WriteAllText(pboPath, "packed pbo");
-                File.WriteAllText($"{pboPath}.bak", "backup");
-            }
-        );
-
-        await _pboTools.SimplePackPbo(folderPath, pboPath, _tempDir);
-
-        File.Exists($"{pboPath}.bak").Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task SimplePackPbo_WhenPboFileNotCreated_ThrowsPboOperationException()
-    {
-        var folderPath = Path.Combine(_tempDir, "testmission");
-        var pboPath = Path.Combine(_tempDir, "testmission.pbo");
-        Directory.CreateDirectory(folderPath);
-
-        SetupProcessCommand("echo some error output");
-
-        var act = () => _pboTools.SimplePackPbo(folderPath, pboPath, _tempDir);
-
-        await act.Should().ThrowAsync<PboOperationException>();
-    }
-
-    [Fact]
-    public async Task SimplePackPbo_UsesCorrectArguments()
-    {
-        var folderPath = Path.Combine(_tempDir, "testmission");
-        var pboPath = Path.Combine(_tempDir, "testmission.pbo");
-        Directory.CreateDirectory(folderPath);
-
-        SetupProcessCommand("echo done", onExecute: () => { File.WriteAllText(pboPath, "packed"); });
-
-        await _pboTools.SimplePackPbo(folderPath, pboPath, _tempDir);
-
-        _mockProcessCommandFactory.Verify(
-            x => x.CreateCommand(
-                It.IsAny<string>(),
-                It.Is<string>(d => d == _tempDir),
-                It.Is<string>(a => a.Contains("-pack") && a.Contains(folderPath) && a.Contains(pboPath))
-            ),
-            Times.Once
-        );
-    }
-
-    private void SetupProcessCommand(string shellCommand, Action onExecute = null)
-    {
-        GetPlatformCommand(out var executable, out var args, shellCommand);
-
-        _mockProcessCommandFactory.Setup(x => x.CreateCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                                  .Returns((string _, string workingDir, string _) =>
-                                      {
-                                          onExecute?.Invoke();
-                                          return new ProcessCommand(_mockLogger.Object, executable, workingDir, args).WithTimeout(TimeSpan.FromSeconds(5));
-                                      }
-                                  );
-    }
-
-    private void SetupProcessCommandWithStderr(string shellCommand, Action onExecute = null)
-    {
-        GetPlatformCommand(out var executable, out var args, shellCommand);
-
-        _mockProcessCommandFactory.Setup(x => x.CreateCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                                  .Returns((string _, string workingDir, string _) =>
-                                      {
-                                          onExecute?.Invoke();
-                                          return new ProcessCommand(_mockLogger.Object, executable, workingDir, args).WithTimeout(TimeSpan.FromSeconds(5));
-                                      }
-                                  );
-    }
-
-    private static void GetPlatformCommand(out string executable, out string args, string command)
-    {
-        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+        var folder = Path.Combine(_tempDir, "op.VR");
+        foreach (var (name, content) in files)
         {
-            executable = "cmd.exe";
-            args = $"/c \"{command}\"";
+            var path = Path.Combine(folder, name.Replace('\\', Path.DirectorySeparatorChar));
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, content);
         }
-        else
-        {
-            executable = "sh";
-            args = $"-c \"{command}\"";
-        }
+
+        return folder;
+    }
+
+    private static Dictionary<string, string> ReadTree(string folder)
+    {
+        return PboFixture.ReadTree(folder);
     }
 }

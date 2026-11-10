@@ -1,189 +1,98 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Microsoft.Extensions.Configuration;
-using Moq;
+using UKSF.Api.ArmaMissions.Exceptions;
 using UKSF.Api.ArmaMissions.Services;
-using UKSF.Api.Core;
-using UKSF.Api.Core.Processes;
 using Xunit;
 
 namespace UKSF.Api.ArmaMissions.Tests.Services;
 
-public class SqmDecompilerTests : IDisposable
+public sealed class SqmDecompilerTests : IDisposable
 {
-    private readonly string _tempDir;
-    private readonly Mock<IProcessCommandFactory> _mockProcessCommandFactory = new();
-    private readonly Mock<IConfiguration> _mockConfiguration = new();
-    private readonly Mock<IUksfLogger> _mockLogger = new();
-    private readonly SqmDecompiler _sqmDecompiler;
-
-    public SqmDecompilerTests()
-    {
-        _tempDir = Path.Combine(Path.GetTempPath(), $"uksf_sqm_test_{Guid.NewGuid():N}");
-        Directory.CreateDirectory(_tempDir);
-
-        _mockConfiguration.Setup(c => c.GetSection("MissionPatching:DeRapDosPath").Value).Returns((string)null);
-
-        _sqmDecompiler = new SqmDecompiler(_mockProcessCommandFactory.Object, _mockConfiguration.Object);
-    }
+    private readonly SqmDecompiler _decompiler = new();
+    private readonly string _sqmPath = Path.Combine(Directory.CreateTempSubdirectory("uksf_sqm_test_").FullName, "mission.sqm");
 
     public void Dispose()
     {
-        try
-        {
-            if (Directory.Exists(_tempDir))
-            {
-                Directory.Delete(_tempDir, true);
-            }
-        }
-        catch
-        {
-            // best-effort cleanup
-        }
+        Directory.Delete(Path.GetDirectoryName(_sqmPath)!, true);
     }
 
     [Fact]
-    public async Task IsBinarized_WhenExitCodeIsZero_ReturnsTrue()
+    public async Task IsBinarized_is_true_for_a_rapified_file()
     {
-        var sqmPath = Path.Combine(_tempDir, "mission.sqm");
-        File.WriteAllText(sqmPath, "test");
+        File.WriteAllBytes(_sqmPath, Rapify());
 
-        SetupProcessCommand("exit 0");
+        (await _decompiler.IsBinarized(_sqmPath)).Should().BeTrue();
+    }
 
-        var result = await _sqmDecompiler.IsBinarized(sqmPath);
+    [Theory]
+    [InlineData("version=54;")]
+    [InlineData("")]
+    public async Task IsBinarized_is_false_for_text(string text)
+    {
+        File.WriteAllText(_sqmPath, text);
 
-        result.Should().BeTrue();
+        (await _decompiler.IsBinarized(_sqmPath)).Should().BeFalse();
     }
 
     [Fact]
-    public async Task IsBinarized_WhenExitCodeIsNonZero_ReturnsFalse()
+    public async Task Decompile_writes_every_entry_type_as_config_text()
     {
-        var sqmPath = Path.Combine(_tempDir, "mission.sqm");
-        File.WriteAllText(sqmPath, "test");
+        File.WriteAllBytes(_sqmPath, Rapify());
 
-        SetupProcessCommand("exit 1");
+        await _decompiler.Decompile(_sqmPath);
 
-        var result = await _sqmDecompiler.IsBinarized(sqmPath);
-
-        result.Should().BeFalse();
+        File.ReadAllText(_sqmPath)
+            .Should()
+            .Be(
+                "version = 54;\n" +
+                "class Mission: Base\n{\n" +
+                "\tname = \"He said \"\"hi\"\"\";\n" +
+                "\tgrid = 1.5707964;\n" +
+                "\ttiny = -9.205038e-05;\n" +
+                "\tposition[] = {1.5,{2,\"x\"}};\n" +
+                "\tclass Ext;\n" +
+                "\tdelete Old;\n" +
+                "\tkeys[] += {3};\n" +
+                "};\n"
+            );
     }
 
     [Fact]
-    public async Task Decompile_WhenOutputFileExists_MovesFileToOriginalPath()
+    public async Task Decompile_rejects_a_truncated_file()
     {
-        var sqmPath = Path.Combine(_tempDir, "mission.sqm");
-        File.WriteAllText(sqmPath, "binary content");
+        File.WriteAllBytes(_sqmPath, Rapify()[..40]);
 
-        SetupProcessCommand("echo decompiled", onExecute: () => { File.WriteAllText($"{sqmPath}.txt", "decompiled content"); });
+        var act = () => _decompiler.Decompile(_sqmPath);
 
-        await _sqmDecompiler.Decompile(sqmPath);
-
-        File.Exists(sqmPath).Should().BeTrue();
-        File.ReadAllText(sqmPath).Should().Be("decompiled content");
-        File.Exists($"{sqmPath}.txt").Should().BeFalse();
+        await act.Should().ThrowAsync<PboOperationException>();
     }
 
-    [Fact]
-    public async Task Decompile_WhenOutputFileDoesNotExist_ThrowsInvalidOperationException()
+    private static byte[] Rapify()
     {
-        var sqmPath = Path.Combine(_tempDir, "mission.sqm");
-        File.WriteAllText(sqmPath, "binary content");
-
-        SetupProcessCommand("echo done");
-
-        var act = () => _sqmDecompiler.Decompile(sqmPath);
-
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("DeRapDos failed:*");
+        List<byte> mission =
+        [
+            ..Asciiz("Base"), 7,
+            1, 0, ..Asciiz("name"), ..Asciiz("He said \"hi\""),
+            1, 1, ..Asciiz("grid"), ..BitConverter.GetBytes(1.5707964f),
+            1, 1, ..Asciiz("tiny"), ..BitConverter.GetBytes(-9.205038e-05f),
+            2, ..Asciiz("position"), 2, 1, ..BitConverter.GetBytes(1.5f), 3, 2, 2, ..BitConverter.GetBytes(2), 0, ..Asciiz("x"),
+            3, ..Asciiz("Ext"),
+            4, ..Asciiz("Old"),
+            5, 1, 0, 0, 0, ..Asciiz("keys"), 1, 2, ..BitConverter.GetBytes(3)
+        ];
+        List<byte> root = [0, 2, 1, 2, ..Asciiz("version"), ..BitConverter.GetBytes(54), 0, ..Asciiz("Mission")];
+        var missionOffset = 16 + root.Count + 4;
+        root.AddRange(BitConverter.GetBytes(missionOffset));
+        var enumOffset = missionOffset + mission.Count;
+        return [0, (byte)'r', (byte)'a', (byte)'P', 0, 0, 0, 0, 8, 0, 0, 0, ..BitConverter.GetBytes(enumOffset), ..root, ..mission, 0, 0, 0, 0];
     }
 
-    [Fact]
-    public async Task Decompile_WhenStderrOutputButFileExists_Succeeds()
+    private static byte[] Asciiz(string value)
     {
-        var sqmPath = Path.Combine(_tempDir, "mission.sqm");
-        File.WriteAllText(sqmPath, "binary content");
-
-        SetupProcessCommandWithStderr("echo version banner >&2", onExecute: () => { File.WriteAllText($"{sqmPath}.txt", "decompiled content"); });
-
-        await _sqmDecompiler.Decompile(sqmPath);
-
-        File.ReadAllText(sqmPath).Should().Be("decompiled content");
-    }
-
-    [Fact]
-    public async Task IsBinarized_UsesProcessCommandFactory()
-    {
-        var sqmPath = Path.Combine(_tempDir, "mission.sqm");
-        File.WriteAllText(sqmPath, "test");
-
-        SetupProcessCommand("exit 0");
-
-        await _sqmDecompiler.IsBinarized(sqmPath);
-
-        _mockProcessCommandFactory.Verify(
-            x => x.CreateCommand(It.IsAny<string>(), It.Is<string>(d => d == _tempDir), It.Is<string>(a => a.Contains("-p -q") && a.Contains(sqmPath))),
-            Times.Once
-        );
-    }
-
-    [Fact]
-    public async Task Decompile_UsesProcessCommandFactory()
-    {
-        var sqmPath = Path.Combine(_tempDir, "mission.sqm");
-        File.WriteAllText(sqmPath, "binary content");
-
-        SetupProcessCommand("echo done", onExecute: () => { File.WriteAllText($"{sqmPath}.txt", "decompiled"); });
-
-        await _sqmDecompiler.Decompile(sqmPath);
-
-        _mockProcessCommandFactory.Verify(
-            x => x.CreateCommand(
-                It.IsAny<string>(),
-                It.Is<string>(d => d == _tempDir),
-                It.Is<string>(a => a.Contains("-p") && !a.Contains("-q") && a.Contains(sqmPath))
-            ),
-            Times.Once
-        );
-    }
-
-    private void SetupProcessCommand(string shellCommand, Action onExecute = null)
-    {
-        GetPlatformCommand(out var executable, out var args, shellCommand);
-
-        _mockProcessCommandFactory.Setup(x => x.CreateCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                                  .Returns((string _, string workingDir, string _) =>
-                                      {
-                                          onExecute?.Invoke();
-                                          return new ProcessCommand(_mockLogger.Object, executable, workingDir, args).WithTimeout(TimeSpan.FromSeconds(5));
-                                      }
-                                  );
-    }
-
-    private void SetupProcessCommandWithStderr(string shellCommand, Action onExecute = null)
-    {
-        GetPlatformCommand(out var executable, out var args, shellCommand);
-
-        _mockProcessCommandFactory.Setup(x => x.CreateCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                                  .Returns((string _, string workingDir, string _) =>
-                                      {
-                                          onExecute?.Invoke();
-                                          return new ProcessCommand(_mockLogger.Object, executable, workingDir, args).WithTimeout(TimeSpan.FromSeconds(5));
-                                      }
-                                  );
-    }
-
-    private static void GetPlatformCommand(out string executable, out string args, string command)
-    {
-        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-        {
-            executable = "cmd.exe";
-            args = $"/c \"{command}\"";
-        }
-        else
-        {
-            executable = "sh";
-            args = $"-c \"{command}\"";
-        }
+        return [..Encoding.ASCII.GetBytes(value), 0];
     }
 }
