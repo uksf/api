@@ -1,11 +1,9 @@
-using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Processes;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Integrations.Teamspeak.Models;
-using UKSF.Api.Integrations.Teamspeak.Signalr.Clients;
-using UKSF.Api.Integrations.Teamspeak.Signalr.Hubs;
+using UKSF.Api.Integrations.Teamspeak.Query;
 
 namespace UKSF.Api.Integrations.Teamspeak.Services;
 
@@ -13,169 +11,155 @@ public interface ITeamspeakManagerService
 {
     void Start();
     void Stop();
-    Task SendGroupProcedure(TeamspeakProcedureType procedure, TeamspeakGroupProcedure groupProcedure);
-    Task SendProcedure(TeamspeakProcedureType procedure, object args);
+    void Reload();
+    Task Sync();
 }
 
 public class TeamspeakManagerService(
-    IHubContext<TeamspeakHub, ITeamspeakClient> hub,
+    ITeamspeakQuery teamspeakQuery,
+    ITeamspeakService teamspeakService,
+    ITeamspeakGroupService teamspeakGroupService,
     IProcessUtilities processUtilities,
     IVariablesService variablesService,
     IUksfLogger logger
 ) : ITeamspeakManagerService
 {
-    private volatile bool _runTeamspeak;
+    private static readonly TimeSpan SyncInterval = TimeSpan.FromSeconds(5);
+    private Dictionary<int, string> _checkedServerGroups = [];
+    private string _publishedClients;
+    private bool _queryFailing;
     private CancellationTokenSource _token;
-    private Task _keepOnlineTask;
+    private Task _loopTask;
 
     public void Start()
     {
-        if (IsTeamspeakDisabled())
+        if (!variablesService.GetFeatureState("TEAMSPEAK"))
         {
             return;
         }
 
-        _runTeamspeak = true;
         _token = new CancellationTokenSource();
-        _keepOnlineTask = Task.Factory.StartNew(KeepOnline, TaskCreationOptions.LongRunning).Unwrap();
+        _loopTask = Task.Factory.StartNew(Loop, TaskCreationOptions.LongRunning).Unwrap();
     }
 
     public void Stop()
     {
-        if (IsTeamspeakDisabled())
-        {
-            return;
-        }
-
-        _runTeamspeak = false;
-
         if (_token is null)
         {
             return;
         }
 
         _token.Cancel();
-
         try
         {
-            _keepOnlineTask?.Wait(TimeSpan.FromSeconds(5));
+            _loopTask?.Wait(TimeSpan.FromSeconds(5));
         }
-        catch (AggregateException)
-        {
-            // Expected if KeepOnline had issues during shutdown
-        }
+        catch (AggregateException exception) when (exception.InnerExceptions.All(x => x is OperationCanceledException)) { }
 
-        try
-        {
-            ShutTeamspeak().Wait(TimeSpan.FromSeconds(5));
-        }
-        catch (AggregateException ex) when (ex.InnerException is OperationCanceledException)
-        {
-            // Expected during shutdown
-        }
-
+        teamspeakQuery.Disconnect();
         _token.Dispose();
         _token = null;
     }
 
-    public async Task SendGroupProcedure(TeamspeakProcedureType procedure, TeamspeakGroupProcedure groupProcedure)
+    public void Reload()
     {
-        if (IsTeamspeakDisabled())
-        {
-            return;
-        }
-
-        await hub.Clients.All.Receive(procedure, groupProcedure);
+        _checkedServerGroups = [];
+        _publishedClients = null;
     }
 
-    public async Task SendProcedure(TeamspeakProcedureType procedure, object args)
+    public async Task Sync()
     {
-        if (IsTeamspeakDisabled())
-        {
-            return;
-        }
-
-        await hub.Clients.All.Receive(procedure, args);
+        var clients = await teamspeakQuery.GetClients();
+        var channelNames = await teamspeakQuery.GetChannelNames();
+        await PublishClients(clients, channelNames);
+        await CheckChangedServerGroups(clients);
     }
 
-    private async Task KeepOnline()
+    private async Task Loop()
     {
-        await TaskUtilities.Delay(TimeSpan.FromSeconds(2), _token.Token);
-        while (_runTeamspeak)
+        while (!_token.IsCancellationRequested)
         {
             try
             {
-                if (variablesService.GetVariable("TEAMSPEAK_SERVER_RUN").AsBool())
+                await EnsureServerRunning();
+                if (teamspeakService.Enabled)
                 {
-                    if (processUtilities.GetProcessesByName("ts3server").Length == 0)
-                    {
-                        await LaunchTeamspeakServer();
-                    }
-                }
-
-                if (variablesService.GetVariable("TEAMSPEAK_RUN").AsBool())
-                {
-                    if (!TeamspeakHubState.Connected)
-                    {
-                        if (processUtilities.GetProcessesByName("ts3client_win64").Length == 0)
-                        {
-                            await LaunchTeamspeak();
-                        }
-                        else
-                        {
-                            await ShutTeamspeak();
-                            continue;
-                        }
-                    }
+                    await Sync();
+                    _queryFailing = false;
                 }
             }
-            catch (Exception ex)
+            catch (Exception exception) when (exception is not OperationCanceledException || !_token.IsCancellationRequested)
             {
-                logger.LogError("Teamspeak KeepOnline iteration failed", ex);
+                if (!_queryFailing)
+                {
+                    logger.LogError("Teamspeak sync failed", exception);
+                }
+
+                _queryFailing = true;
             }
 
-            await TaskUtilities.Delay(TimeSpan.FromSeconds(15), _token.Token);
+            await TaskUtilities.Delay(SyncInterval, _token.Token);
         }
     }
 
-    private async Task LaunchTeamspeakServer()
+    private async Task PublishClients(IReadOnlyList<TeamspeakQueryClient> clients, IReadOnlyDictionary<int, string> channelNames)
     {
-        var serverPath = variablesService.GetVariable("TEAMSPEAK_SERVER_PATH").AsString();
-        var serverDirectory = Path.GetDirectoryName(serverPath);
-        await processUtilities.LaunchExternalProcess("TeamspeakServer", $"start \"\" \"{serverPath}\"", serverDirectory);
-    }
-
-    private async Task LaunchTeamspeak()
-    {
-        await processUtilities.LaunchExternalProcess("Teamspeak", $"start \"\" \"{variablesService.GetVariable("TEAMSPEAK_PATH").AsString()}\"");
-    }
-
-    private async Task ShutTeamspeak()
-    {
-        logger.LogInfo("Teamspeak shutdown via process");
-        var process = processUtilities.FindProcessByName("ts3client_win64");
-        if (process == null)
+        var teamspeakClients = clients.Select(x => new TeamspeakClient
+                                          {
+                                              ClientDbId = x.ClientDbId,
+                                              ClientName = x.Nickname,
+                                              ChannelId = x.ChannelId,
+                                              ChannelName = channelNames.GetValueOrDefault(x.ChannelId)
+                                          }
+                                      )
+                                      .ToHashSet();
+        var published = string.Join(
+            '\n',
+            teamspeakClients.Select(x => $"{x.ClientDbId}|{x.ClientName}|{x.ChannelId}|{x.ChannelName}").Order(StringComparer.Ordinal)
+        );
+        if (published == _publishedClients)
         {
-            logger.LogInfo("Teamspeak process not found");
             return;
         }
 
-        await processUtilities.CloseProcessGracefully(process);
-        process.Refresh();
-        process.WaitForExit(5000);
-        process.Refresh();
-        if (!process.HasExited)
-        {
-            logger.LogInfo("Teamspeak process not shutdown, trying to kill");
-            process.Kill();
-            await TaskUtilities.Delay(TimeSpan.FromMilliseconds(100), _token.Token);
-        }
-
-        logger.LogInfo("Teamspeak process should be closed");
+        await teamspeakService.UpdateClients(teamspeakClients);
+        _publishedClients = published;
     }
 
-    private bool IsTeamspeakDisabled()
+    private async Task CheckChangedServerGroups(IReadOnlyList<TeamspeakQueryClient> clients)
     {
-        return !variablesService.GetFeatureState("TEAMSPEAK");
+        Dictionary<int, string> checkedServerGroups = [];
+        foreach (var client in clients)
+        {
+            var serverGroups = string.Join(',', client.ServerGroups.Order());
+            checkedServerGroups[client.ClientId] = serverGroups;
+            if (_checkedServerGroups.GetValueOrDefault(client.ClientId) == serverGroups)
+            {
+                continue;
+            }
+
+            try
+            {
+                await teamspeakGroupService.CheckClientGroups(client.ClientDbId, client.ServerGroups.ToList());
+            }
+            catch (Exception exception)
+            {
+                logger.LogError($"Teamspeak server group check failed for client {client.ClientDbId}", exception);
+                checkedServerGroups.Remove(client.ClientId);
+            }
+        }
+
+        _checkedServerGroups = checkedServerGroups;
+    }
+
+    private async Task EnsureServerRunning()
+    {
+        if (!variablesService.GetVariable("TEAMSPEAK_SERVER_RUN").AsBool() || processUtilities.GetProcessesByName("ts3server").Length > 0)
+        {
+            return;
+        }
+
+        var serverPath = variablesService.GetVariable("TEAMSPEAK_SERVER_PATH").AsString();
+        await processUtilities.LaunchExternalProcess("TeamspeakServer", $"start \"\" \"{serverPath}\"", Path.GetDirectoryName(serverPath));
     }
 }

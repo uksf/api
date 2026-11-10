@@ -3,7 +3,9 @@ using MongoDB.Driver;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Models.Domain;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Integrations.Teamspeak.Models;
+using UKSF.Api.Integrations.Teamspeak.Query;
 using UKSF.Api.Integrations.Teamspeak.Signalr.Clients;
 using UKSF.Api.Integrations.Teamspeak.Signalr.Hubs;
 
@@ -18,20 +20,23 @@ public interface ITeamspeakService
     Task UpdateAccountTeamspeakGroups(DomainAccount account);
     Task SendTeamspeakMessageToClient(DomainAccount account, string message);
     Task SendTeamspeakMessageToClient(IEnumerable<int> clientDbIds, string message);
-    Task Reload();
-    Task Shutdown();
     Task StoreTeamspeakServerSnapshot();
+    bool Enabled { get; }
 }
 
 public class TeamspeakService(
     IAccountContext accountContext,
     IMongoDatabase database,
     IHubContext<TeamspeakClientsHub, ITeamspeakClientsClient> teamspeakClientsHub,
-    ITeamspeakManagerService teamspeakManagerService,
+    ITeamspeakQuery teamspeakQuery,
+    ITeamspeakGroupService teamspeakGroupService,
+    IVariablesService variablesService,
     IHostEnvironment environment
 ) : ITeamspeakService
 {
     private volatile HashSet<TeamspeakClient> _clients = [];
+
+    public bool Enabled => variablesService.GetFeatureState("TEAMSPEAK") && teamspeakQuery.Configured;
 
     public IEnumerable<TeamspeakClient> GetOnlineTeamspeakClients()
     {
@@ -46,14 +51,15 @@ public class TeamspeakService(
 
     public async Task UpdateAccountTeamspeakGroups(DomainAccount account)
     {
-        if (account?.TeamspeakIdentities == null)
+        if (account?.TeamspeakIdentities == null || !Enabled)
         {
             return;
         }
 
         foreach (var clientDbId in account.TeamspeakIdentities)
         {
-            await teamspeakManagerService.SendProcedure(TeamspeakProcedureType.Groups, new { clientDbId });
+            var serverGroups = await teamspeakQuery.GetServerGroups(clientDbId);
+            await teamspeakGroupService.CheckClientGroups(clientDbId, serverGroups.ToList());
         }
     }
 
@@ -64,10 +70,16 @@ public class TeamspeakService(
 
     public async Task SendTeamspeakMessageToClient(IEnumerable<int> clientDbIds, string message)
     {
-        message = FormatTeamspeakMessage(message);
-        foreach (var clientDbId in clientDbIds)
+        if (!Enabled)
         {
-            await teamspeakManagerService.SendProcedure(TeamspeakProcedureType.Message, new { clientDbId, message });
+            return;
+        }
+
+        var targetDbIds = clientDbIds.ToHashSet();
+        message = FormatTeamspeakMessage(message);
+        foreach (var client in (await teamspeakQuery.GetClients()).Where(x => targetDbIds.Contains(x.ClientDbId)))
+        {
+            await teamspeakQuery.SendMessage(client.ClientId, message);
         }
     }
 
@@ -80,19 +92,8 @@ public class TeamspeakService(
             return;
         }
 
-        // TODO: Remove direct db call
         TeamspeakServerSnapshot teamspeakServerSnapshot = new() { Timestamp = DateTime.UtcNow, Users = clients };
         await database.GetCollection<TeamspeakServerSnapshot>("teamspeakSnapshots").InsertOneAsync(teamspeakServerSnapshot);
-    }
-
-    public async Task Reload()
-    {
-        await teamspeakManagerService.SendProcedure(TeamspeakProcedureType.Reload, new { });
-    }
-
-    public async Task Shutdown()
-    {
-        await teamspeakManagerService.SendProcedure(TeamspeakProcedureType.Shutdown, new { });
     }
 
     public List<TeamspeakConnectClient> GetFormattedClients()
@@ -125,7 +126,6 @@ public class TeamspeakService(
                       .ToList();
     }
 
-    // TODO: Change to use signalr (or hook into existing _teamspeakClientsHub)
     public OnlineState GetOnlineUserDetails(string accountId)
     {
         var account = accountContext.GetSingle(accountId);

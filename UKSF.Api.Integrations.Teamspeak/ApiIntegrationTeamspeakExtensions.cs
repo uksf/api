@@ -1,5 +1,6 @@
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Integrations.Teamspeak.EventHandlers;
+using UKSF.Api.Integrations.Teamspeak.Query;
 using UKSF.Api.Integrations.Teamspeak.ScheduledActions;
 using UKSF.Api.Integrations.Teamspeak.Services;
 using UKSF.Api.Integrations.Teamspeak.Signalr.Hubs;
@@ -22,13 +23,13 @@ public static class ApiIntegrationTeamspeakExtensions
 
         private IServiceCollection AddEventHandlers()
         {
-            return services.AddEventHandler<ITeamspeakEventHandler, TeamspeakEventHandler>()
-                           .AddEventHandler<ITeamspeakServerEventHandler, TeamspeakServerEventHandler>();
+            return services.AddEventHandler<ITeamspeakEventHandler, TeamspeakEventHandler>();
         }
 
         private IServiceCollection AddServices()
         {
-            return services.AddSingleton<ITeamspeakService, TeamspeakService>()
+            return services.AddSingleton<ITeamspeakQuery, TeamspeakQuery>()
+                           .AddSingleton<ITeamspeakService, TeamspeakService>()
                            .AddTransient<ITeamspeakMetricsService, TeamspeakMetricsService>()
                            .AddSingleton<ITeamspeakManagerService, TeamspeakManagerService>()
                            .AddTransient<ITeamspeakGroupService, TeamspeakGroupService>();
@@ -44,7 +45,6 @@ public static class ApiIntegrationTeamspeakExtensions
     {
         public void AddUksfIntegrationTeamspeakSignalr()
         {
-            builder.MapHub<TeamspeakHub>($"/hub/{TeamspeakHub.EndPoint}").RequireHost("localhost");
             builder.MapHub<TeamspeakClientsHub>($"/hub/{TeamspeakClientsHub.EndPoint}");
         }
     }

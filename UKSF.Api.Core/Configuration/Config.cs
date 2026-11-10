@@ -23,6 +23,7 @@ public class AppSettings
         public GithubConfig Github { get; set; }
         public EmailConfig Email { get; set; }
         public SteamCmdConfig SteamCmd { get; set; }
+        public TeamspeakQueryConfig TeamspeakQuery { get; set; }
 
         public class DiscordConfig
         {
@@ -49,6 +50,15 @@ public class AppSettings
             public string Username { get; set; }
             public string Password { get; set; }
             public string SharedSecret { get; set; }
+        }
+
+        public class TeamspeakQueryConfig
+        {
+            public string Host { get; set; }
+            public int? Port { get; set; }
+            public int? ServerPort { get; set; }
+            public string Username { get; set; }
+            public string Password { get; set; }
         }
     }
 }
