@@ -39,7 +39,7 @@ public class DevRunLauncher(ISyntheticServerLauncher syntheticLauncher, IVariabl
             ProfileName: profileName,
             ConfigFileName: $"{profileName}.cfg",
             MissionName: missionName,
-            ServerExecutablePath: Path.Combine(serverRoot, "arma3server_x64.exe"),
+            ServerExecutablePath: ArmaServerExecutable.PathIn(serverRoot),
             GamePort: GamePort,
             ApiPort: ApiPort,
             Mods: mods,

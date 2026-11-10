@@ -62,12 +62,6 @@ public class SteamCmdService : ISteamCmdService
         "failed", "no connection", "request revoked", "missing game files", "timeout downloading", "canceled", "cancelled"
     ];
 
-    /// <summary>
-    ///     True when SteamCMD's workshop download output indicates a failure that should be retried. SteamCMD does not use a
-    ///     reliable exit code, so the only signal is its stdout. Matching is case-insensitive and covers the transient
-    ///     content-delivery failures observed in practice (no connection, request revoked, missing game files, timeouts) in
-    ///     addition to the generic "failed" marker. A null output is treated as a failure.
-    /// </summary>
     public static bool IsDownloadFailure(string output)
     {
         return output is null ||
@@ -80,7 +74,6 @@ public class SteamCmdService : ISteamCmdService
         return await ExecuteAuthenticatedSteamCmd("+quit");
     }
 
-    /// <summary>True when SteamCMD rejected the login because of the Steam Guard code — retryable with a freshly generated code.</summary>
     public static bool IsTransientLoginFailure(string output)
     {
         return output is not null &&
@@ -88,11 +81,6 @@ public class SteamCmdService : ISteamCmdService
                 output.Contains("Account Logon Denied", StringComparison.OrdinalIgnoreCase));
     }
 
-    /// <summary>
-    ///     Runs an authenticated SteamCMD command, retrying when the Steam Guard code is rejected. A rejection is almost
-    ///     always a TOTP window boundary race (the code expired between generation and submission), so each retry waits for
-    ///     the next code window before generating a fresh code.
-    /// </summary>
     public static async Task<string> ExecuteWithCodeRetry(
         Func<Task<string>> execute,
         Func<TimeSpan> timeUntilNextCode,
@@ -134,11 +122,9 @@ public class SteamCmdService : ISteamCmdService
     private async Task<string> ExecuteSteamCmd(string arguments)
     {
         var steamPath = _variablesService.GetVariable("SERVER_PATH_STEAM").AsString();
-        var cmdPath = Path.Combine(steamPath, "steamcmd.exe");
+        var cmdPath = Path.Combine(steamPath, OperatingSystem.IsWindows() ? "steamcmd.exe" : "steamcmd.sh");
 
-        // SteamCMD shares one install directory and one Steam session per machine. Running two processes concurrently
-        // races the workshop manifest and triggers Steam to revoke download requests, so every invocation is serialised.
-        await SteamCmdGate.WaitAsync();
+        await OneSteamCmdProcessPerMachine.WaitAsync();
         try
         {
             var result = await Cli.Wrap(cmdPath)
@@ -151,9 +137,9 @@ public class SteamCmdService : ISteamCmdService
         }
         finally
         {
-            SteamCmdGate.Release();
+            OneSteamCmdProcessPerMachine.Release();
         }
     }
 
-    private static readonly SemaphoreSlim SteamCmdGate = new(1, 1);
+    private static readonly SemaphoreSlim OneSteamCmdProcessPerMachine = new(1, 1);
 }

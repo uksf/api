@@ -78,7 +78,7 @@ public class GameServerHelpersTests
 
         var result = _sut.GetGameServerExecutablePath(CreateGameServer(GameEnvironment.Release));
 
-        result.Should().Be(Path.Join("C:/servers/release", "arma3server_x64.exe"));
+        result.Should().Be(Path.Join("C:/servers/release", ArmaServerExecutable.FileName));
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public class GameServerHelpersTests
 
         var result = _sut.GetGameServerExecutablePath(CreateGameServer(GameEnvironment.Rc));
 
-        result.Should().Be(Path.Join("C:/servers/rc", "arma3server_x64.exe"));
+        result.Should().Be(Path.Join("C:/servers/rc", ArmaServerExecutable.FileName));
     }
 
     [Fact]
@@ -98,7 +98,7 @@ public class GameServerHelpersTests
 
         var result = _sut.GetGameServerExecutablePath(CreateGameServer(GameEnvironment.Development));
 
-        result.Should().Be(Path.Join("C:/servers/dev", "arma3server_x64.exe"));
+        result.Should().Be(Path.Join("C:/servers/dev", ArmaServerExecutable.FileName));
     }
 
     [Fact]

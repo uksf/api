@@ -24,7 +24,7 @@ public class GameDataExportProcessLauncher(ISyntheticServerLauncher syntheticLau
             ProfileName: ProfileName,
             ConfigFileName: ConfigFileName,
             MissionName: MissionName,
-            ServerExecutablePath: Path.Combine(serverRoot, "arma3server_x64.exe"),
+            ServerExecutablePath: ArmaServerExecutable.PathIn(serverRoot),
             GamePort: GamePort,
             ApiPort: ApiPort,
             Mods: ResolveMods(Path.Combine(modpackRoot, "Repo")),
@@ -47,8 +47,6 @@ public class GameDataExportProcessLauncher(ISyntheticServerLauncher syntheticLau
         );
     }
 
-    // @ocap is a server mod (lives in the arma server install dir, not the modpack Repo). It must be
-    // loaded so its CBA settings appear in the exported settings reference json.
     private IReadOnlyList<string> ResolveMods(string modPath)
     {
         var repoMods = ResolveRepoMods(modPath);
@@ -72,8 +70,6 @@ public class GameDataExportProcessLauncher(ISyntheticServerLauncher syntheticLau
         return Directory.Exists(ocapPath) ? ocapPath : null;
     }
 
-    // persistent = 1 in server.cfg + respawn = "INSTANT" in description.ext are both required
-    // for -autoInit to actually fire (and INSTANT does not need a respawn marker — BASE would).
     private static string BuildConfig(string commandPassword) =>
         $$"""
           hostname = "Game Data Export";
@@ -95,13 +91,6 @@ public class GameDataExportProcessLauncher(ISyntheticServerLauncher syntheticLau
           };
           """;
 
-    // INSTANT respawn does not need a respawn_<side> marker (BASE does and falls back to
-    // INSTANT silently if missing). A persistent mission requires either INSTANT or BASE
-    // respawn AND server.cfg persistent = 1; for -autoInit to fire.
-    //
-    // CfgFunctions postInit = 1 fires the registered function after mission init. On Arma 2.22
-    // postInit runs scheduled (canSuspend=true), so RunExportSqf wraps the export in isNil to
-    // force non-scheduled execution; see the comment there.
     private const string DescriptionExt = """
                                           onLoadName = "Game Data Export";
                                           briefingName = "Game Data Export";
@@ -129,14 +118,6 @@ public class GameDataExportProcessLauncher(ISyntheticServerLauncher syntheticLau
                                           };
                                           """;
 
-    // Raw (unbinarized) mission.sqm needs binarizationWanted=0 + sourceName + explicit addons[]
-    // + AddonsMetaData. Without these the engine auto-detects deps from entities, fails the DLC
-    // validation path, and rejects the mission with "dependent on downloadable content that has
-    // been deleted" — silent abort, autoInit no-ops. PBO-packed missions get this baked at
-    // binarize time; raw missions must declare it.
-    //
-    // Playable B_Soldier_F (flags=7, isPlayable=1) gives -autoInit a slot to simulate "first
-    // client" into; without it autoInit has nothing to initialise.
     private const string MissionSqm = """
                                       version=54;
                                       binarizationWanted=0;
@@ -207,9 +188,6 @@ public class GameDataExportProcessLauncher(ISyntheticServerLauncher syntheticLau
                                       };
                                       """;
 
-    // Registered as UKSF_Export_fnc_runExport via CfgFunctions postInit = 1 in description.ext.
-    // isNil forces non-scheduled execution. Scheduled, the traversal shares the scheduler with
-    // every CBA/ACE script: a 1.36M-entry walk took 122.8 s scheduled against 6.6 s in isNil.
     private const string RunExportSqf = """
                                         private _result = "";
                                         isNil { _result = [configFile, false] call uksf_common_fnc_gameDataExport; };
