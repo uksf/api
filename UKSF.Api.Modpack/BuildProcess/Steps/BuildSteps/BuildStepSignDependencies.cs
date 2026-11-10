@@ -217,7 +217,7 @@ public class BuildStepSignDependencies : FileBuildStep
             var addons = new DirectoryInfo(Path.Join(repoPath, mod, "addons"));
             if (addons.Exists)
             {
-                pbos.AddRange(addons.GetFiles("*.pbo").Where(pbo => Bisigns(pbo).Count == PatchedPboSignatureFiles(pbo).Count));
+                pbos.AddRange(addons.GetFiles("*.pbo").Where(pbo => Bisigns(pbo).All(IsDependenciesSignature)));
             }
         }
 
@@ -227,6 +227,11 @@ public class BuildStepSignDependencies : FileBuildStep
     private static List<FileInfo> Bisigns(FileInfo pbo)
     {
         return pbo.Directory!.GetFiles($"{pbo.Name}.*.bisign").ToList();
+    }
+
+    private static bool IsDependenciesSignature(FileInfo bisign)
+    {
+        return bisign.Name.Contains(".uksf_dependencies_", StringComparison.OrdinalIgnoreCase);
     }
 
     private static List<FileInfo> PatchedPboSignatureFiles(FileInfo pbo)
