@@ -52,6 +52,20 @@ public class BuildStepSignPatchedModsTests : IDisposable
         pbos.Should().BeEquivalentTo(Path.Combine(dependencies, "dep.pbo"), Path.Combine(cup, "patched.pbo"), Path.Combine(cup, "resigned.pbo"));
     }
 
+    [Fact]
+    public void DependencyPbos_Should_Include_PatchedPbo_When_Its_Signatures_Have_Zsync_Files()
+    {
+        var cup = Addons("@CUP_Vehicles", "cup_wheeledvehicles_tigr.pbo");
+        File.WriteAllBytes(Path.Combine(cup, "cup_wheeledvehicles_tigr.pbo.uksf_dependencies_dev.bisign"), [0]);
+        File.WriteAllBytes(Path.Combine(cup, "cup_wheeledvehicles_tigr.pbo.uksf_dependencies_dev.bisign.zsync"), [0]);
+        File.WriteAllBytes(Path.Combine(cup, "cup_wheeledvehicles_tigr.pbo.cup_vehicles-1.19.2.bisign.zsync"), [0]);
+        Directory.CreateDirectory(Path.Combine(_tempDir, "PatcherState", "@CUP_Vehicles"));
+
+        var pbos = CreateStep().DependencyPbos().Select(x => x.FullName);
+
+        pbos.Should().BeEquivalentTo(Path.Combine(cup, "cup_wheeledvehicles_tigr.pbo"));
+    }
+
     private string Addons(string mod, params string[] pbos)
     {
         var addons = Path.Combine(_tempDir, "Repo", mod, "addons");
