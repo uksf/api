@@ -12,7 +12,7 @@ public interface ITeamspeakManagerService
     void Start();
     void Stop();
     void Reload();
-    Task Sync();
+    Task Sync(CancellationToken cancellationToken = default);
 }
 
 public class TeamspeakManagerService(
@@ -25,8 +25,11 @@ public class TeamspeakManagerService(
 ) : ITeamspeakManagerService
 {
     private static readonly TimeSpan SyncInterval = TimeSpan.FromSeconds(5);
-    private Dictionary<int, string> _checkedServerGroups = [];
+    private static readonly TimeSpan StopTimeout = TimeSpan.FromSeconds(30);
+    private readonly Lock _lifecycle = new();
+    private Dictionary<(int ClientId, int ClientDbId), string> _checkedServerGroups = [];
     private string _publishedClients;
+    private int _reloadGeneration;
     private bool _queryFailing;
     private CancellationTokenSource _token;
     private Task _loopTask;
@@ -38,57 +41,89 @@ public class TeamspeakManagerService(
             return;
         }
 
-        _token = new CancellationTokenSource();
-        _loopTask = Task.Factory.StartNew(Loop, TaskCreationOptions.LongRunning).Unwrap();
+        lock (_lifecycle)
+        {
+            if (_loopTask is not null)
+            {
+                return;
+            }
+
+            _token = new CancellationTokenSource();
+            var token = _token.Token;
+            _loopTask = Task.Factory.StartNew(() => Loop(token), TaskCreationOptions.LongRunning).Unwrap();
+        }
     }
 
     public void Stop()
     {
-        if (_token is null)
+        lock (_lifecycle)
         {
-            return;
-        }
+            if (_loopTask is null)
+            {
+                return;
+            }
 
-        _token.Cancel();
-        try
-        {
-            _loopTask?.Wait(TimeSpan.FromSeconds(5));
-        }
-        catch (AggregateException exception) when (exception.InnerExceptions.All(x => x is OperationCanceledException)) { }
+            _token.Cancel();
+            teamspeakQuery.Disconnect();
+            try
+            {
+                if (!_loopTask.Wait(StopTimeout))
+                {
+                    logger.LogWarning("Teamspeak sync loop did not stop in time");
+                }
+            }
+            catch (AggregateException exception)
+            {
+                logger.LogError("Teamspeak sync loop faulted while stopping", exception);
+            }
 
-        teamspeakQuery.Disconnect();
-        _token.Dispose();
-        _token = null;
+            teamspeakQuery.Disconnect();
+            _token.Dispose();
+            _token = null;
+            _loopTask = null;
+        }
     }
 
     public void Reload()
     {
+        Interlocked.Increment(ref _reloadGeneration);
         _checkedServerGroups = [];
         _publishedClients = null;
     }
 
-    public async Task Sync()
+    public async Task Sync(CancellationToken cancellationToken = default)
     {
+        var generation = Volatile.Read(ref _reloadGeneration);
         var clients = await teamspeakQuery.GetClients();
         var channelNames = await teamspeakQuery.GetChannelNames();
-        await PublishClients(clients, channelNames);
-        await CheckChangedServerGroups(clients);
+        cancellationToken.ThrowIfCancellationRequested();
+        await PublishClients(clients, channelNames, generation);
+        await CheckChangedServerGroups(clients, generation, cancellationToken);
     }
 
-    private async Task Loop()
+    private bool StillCurrent(int generation)
     {
-        while (!_token.IsCancellationRequested)
+        return generation == Volatile.Read(ref _reloadGeneration);
+    }
+
+    private async Task Loop(CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
         {
             try
             {
                 await EnsureServerRunning();
                 if (teamspeakService.Enabled)
                 {
-                    await Sync();
+                    await Sync(token);
                     _queryFailing = false;
                 }
             }
-            catch (Exception exception) when (exception is not OperationCanceledException || !_token.IsCancellationRequested)
+            catch (Exception) when (token.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception exception)
             {
                 if (!_queryFailing)
                 {
@@ -98,11 +133,11 @@ public class TeamspeakManagerService(
                 _queryFailing = true;
             }
 
-            await TaskUtilities.Delay(SyncInterval, _token.Token);
+            await TaskUtilities.Delay(SyncInterval, token);
         }
     }
 
-    private async Task PublishClients(IReadOnlyList<TeamspeakQueryClient> clients, IReadOnlyDictionary<int, string> channelNames)
+    private async Task PublishClients(IReadOnlyList<TeamspeakQueryClient> clients, IReadOnlyDictionary<int, string> channelNames, int generation)
     {
         var teamspeakClients = clients.Select(x => new TeamspeakClient
                                           {
@@ -123,17 +158,23 @@ public class TeamspeakManagerService(
         }
 
         await teamspeakService.UpdateClients(teamspeakClients);
-        _publishedClients = published;
+        if (StillCurrent(generation))
+        {
+            _publishedClients = published;
+        }
     }
 
-    private async Task CheckChangedServerGroups(IReadOnlyList<TeamspeakQueryClient> clients)
+    private async Task CheckChangedServerGroups(IReadOnlyList<TeamspeakQueryClient> clients, int generation, CancellationToken cancellationToken)
     {
-        Dictionary<int, string> checkedServerGroups = [];
+        var previous = _checkedServerGroups;
+        Dictionary<(int ClientId, int ClientDbId), string> checkedServerGroups = [];
         foreach (var client in clients)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            var key = (client.ClientId, client.ClientDbId);
             var serverGroups = string.Join(',', client.ServerGroups.Order());
-            checkedServerGroups[client.ClientId] = serverGroups;
-            if (_checkedServerGroups.GetValueOrDefault(client.ClientId) == serverGroups)
+            checkedServerGroups[key] = serverGroups;
+            if (previous.GetValueOrDefault(key) == serverGroups)
             {
                 continue;
             }
@@ -145,11 +186,14 @@ public class TeamspeakManagerService(
             catch (Exception exception)
             {
                 logger.LogError($"Teamspeak server group check failed for client {client.ClientDbId}", exception);
-                checkedServerGroups.Remove(client.ClientId);
+                checkedServerGroups.Remove(key);
             }
         }
 
-        _checkedServerGroups = checkedServerGroups;
+        if (StillCurrent(generation))
+        {
+            _checkedServerGroups = checkedServerGroups;
+        }
     }
 
     private async Task EnsureServerRunning()

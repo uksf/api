@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -56,18 +57,18 @@ public class TeamspeakManagerServiceTests
 
         _publishedClients.Should().ContainSingle();
         _publishedClients[0]
-        .Should()
-        .BeEquivalentTo(
-            [
-                new TeamspeakClient
-                {
-                    ClientDbId = 70,
-                    ClientName = "Sgt.Smith",
-                    ChannelId = 3,
-                    ChannelName = "Briefing Room"
-                }
-            ]
-        );
+            .Should()
+            .BeEquivalentTo(
+                [
+                    new TeamspeakClient
+                    {
+                        ClientDbId = 70,
+                        ClientName = "Sgt.Smith",
+                        ChannelId = 3,
+                        ChannelName = "Briefing Room"
+                    }
+                ]
+            );
     }
 
     [Fact]
@@ -153,7 +154,96 @@ public class TeamspeakManagerServiceTests
         _subject.Start();
         _subject.Stop();
 
-        _mockQuery.Verify(x => x.Disconnect(), Times.Once);
+        _mockQuery.Verify(x => x.Disconnect(), Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task Sync_checks_groups_when_a_client_id_is_reused_by_another_identity()
+    {
+        await _subject.Sync();
+        _clients = [new(7, 80, "Pte.Jones", 3, [10, 11])];
+        await _subject.Sync();
+
+        _checkedGroups.Select(x => x.ClientDbId).Should().Equal(70, 80);
+    }
+
+    [Fact]
+    public async Task Reload_during_publication_still_forces_the_next_publication()
+    {
+        var release = new TaskCompletionSource();
+        _mockTeamspeakService.Setup(x => x.UpdateClients(It.IsAny<HashSet<TeamspeakClient>>()))
+                             .Returns(() => _publishedClients.Count == 1 ? release.Task : Task.CompletedTask)
+                             .Callback((HashSet<TeamspeakClient> clients) => _publishedClients.Add(clients));
+
+        var inFlight = _subject.Sync();
+        _subject.Reload();
+        release.SetResult();
+        await inFlight;
+        await _subject.Sync();
+
+        _publishedClients.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Reload_during_group_check_still_forces_the_next_group_check()
+    {
+        var release = new TaskCompletionSource();
+        _mockGroupService.Setup(x => x.CheckClientGroups(It.IsAny<int>(), It.IsAny<ICollection<int>>()))
+                         .Returns(() => _checkedGroups.Count == 1 ? release.Task : Task.CompletedTask)
+                         .Callback((int clientDbId, ICollection<int> groups) => _checkedGroups.Add((clientDbId, groups.ToList())));
+
+        var inFlight = _subject.Sync();
+        _subject.Reload();
+        release.SetResult();
+        await inFlight;
+        await _subject.Sync();
+
+        _checkedGroups.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Stop_cancels_an_in_flight_query_and_sends_nothing_after_it()
+    {
+        var blocked = new TaskCompletionSource<IReadOnlyList<TeamspeakQueryClient>>();
+        var started = new TaskCompletionSource();
+        _mockVariablesService.Setup(x => x.GetFeatureState("TEAMSPEAK")).Returns(true);
+        _mockTeamspeakService.Setup(x => x.Enabled).Returns(true);
+        _mockQuery.Setup(x => x.GetClients()).Callback(() => started.TrySetResult()).Returns(blocked.Task);
+        _mockQuery.Setup(x => x.Disconnect()).Callback(() => blocked.TrySetCanceled());
+
+        _subject.Start();
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        _subject.Stop();
+
+        _mockQuery.Verify(x => x.GetChannelNames(), Times.Never);
+        _mockLogger.Verify(x => x.LogError(It.IsAny<string>(), It.IsAny<Exception>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Starting_twice_runs_one_loop_that_stop_ends()
+    {
+        var calls = 0;
+        var started = new TaskCompletionSource();
+        _mockVariablesService.Setup(x => x.GetFeatureState("TEAMSPEAK")).Returns(true);
+        _mockTeamspeakService.Setup(x => x.Enabled).Returns(true);
+        _mockQuery.Setup(x => x.GetClients())
+                  .Callback(() =>
+                      {
+                          Interlocked.Increment(ref calls);
+                          started.TrySetResult();
+                      }
+                  )
+                  .ReturnsAsync(() => _clients);
+
+        _subject.Start();
+        _subject.Start();
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        _subject.Stop();
+        var callsAtStop = calls;
+        await Task.Delay(TimeSpan.FromSeconds(6));
+
+        callsAtStop.Should().Be(1);
+        calls.Should().Be(callsAtStop);
     }
 
     [Fact]

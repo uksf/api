@@ -1,4 +1,3 @@
-using System.Net.Sockets;
 using Microsoft.Extensions.Options;
 using UKSF.Api.Core.Configuration;
 using static UKSF.Api.Integrations.Teamspeak.Query.TeamspeakQueryProtocol;
@@ -19,13 +18,17 @@ public interface ITeamspeakQuery
     void Disconnect();
 }
 
-public sealed class TeamspeakQuery(IOptions<AppSettings> options) : ITeamspeakQuery, IDisposable
+public sealed class TeamspeakQuery(IOptions<AppSettings> options, TimeSpan operationTimeout) : ITeamspeakQuery, IDisposable
 {
     private const int NicknameInUseErrorId = 513;
     private const string Nickname = "UKSF";
-    private readonly SemaphoreSlim _lock = new(1, 1);
+    private static readonly TimeSpan DefaultOperationTimeout = TimeSpan.FromSeconds(15);
     private readonly AppSettings.SecretsConfig.TeamspeakQueryConfig _config = options.Value.Secrets?.TeamspeakQuery;
+    private readonly SemaphoreSlim _lock = new(1, 1);
+    private CancellationTokenSource _disconnecting = new();
     private TeamspeakQueryConnection _connection;
+
+    public TeamspeakQuery(IOptions<AppSettings> options) : this(options, DefaultOperationTimeout) { }
 
     public bool Configured => !string.IsNullOrEmpty(_config?.Username);
 
@@ -79,6 +82,20 @@ public sealed class TeamspeakQuery(IOptions<AppSettings> options) : ITeamspeakQu
 
     public void Disconnect()
     {
+        Interlocked.Exchange(ref _disconnecting, new CancellationTokenSource()).Cancel();
+        _lock.Wait();
+        try
+        {
+            DisposeConnection();
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    private void DisposeConnection()
+    {
         _connection?.Dispose();
         _connection = null;
     }
@@ -90,15 +107,17 @@ public sealed class TeamspeakQuery(IOptions<AppSettings> options) : ITeamspeakQu
             throw new InvalidOperationException("TeamSpeak query login is not configured");
         }
 
-        await _lock.WaitAsync();
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(_disconnecting.Token);
+        deadline.CancelAfter(operationTimeout);
+        await _lock.WaitAsync(deadline.Token);
         try
         {
-            _connection ??= await Connect();
-            return await _connection.Execute(command);
+            _connection ??= await Connect(deadline.Token);
+            return await _connection.Execute(command, deadline.Token);
         }
-        catch (Exception exception) when (exception is IOException or SocketException or OperationCanceledException)
+        catch (Exception exception) when (exception is not TeamspeakQueryException)
         {
-            Disconnect();
+            DisposeConnection();
             throw;
         }
         finally
@@ -107,14 +126,17 @@ public sealed class TeamspeakQuery(IOptions<AppSettings> options) : ITeamspeakQu
         }
     }
 
-    private async Task<TeamspeakQueryConnection> Connect()
+    private async Task<TeamspeakQueryConnection> Connect(CancellationToken cancellationToken)
     {
-        var connection = await TeamspeakQueryConnection.Open(_config.Host ?? "127.0.0.1", _config.Port ?? 10011);
+        var connection = await TeamspeakQueryConnection.Open(_config.Host ?? "127.0.0.1", _config.Port ?? 10011, cancellationToken);
         try
         {
-            await connection.Execute($"login client_login_name={Escape(_config.Username)} client_login_password={Escape(_config.Password ?? string.Empty)}");
-            await connection.Execute($"use port={_config.ServerPort ?? 9987}");
-            await SetNickname(connection);
+            await connection.Execute(
+                $"login client_login_name={Escape(_config.Username)} client_login_password={Escape(_config.Password ?? string.Empty)}",
+                cancellationToken
+            );
+            await connection.Execute($"use port={_config.ServerPort ?? 9987}", cancellationToken);
+            await SetNickname(connection, cancellationToken);
             return connection;
         }
         catch
@@ -124,11 +146,11 @@ public sealed class TeamspeakQuery(IOptions<AppSettings> options) : ITeamspeakQu
         }
     }
 
-    private static async Task SetNickname(TeamspeakQueryConnection connection)
+    private static async Task SetNickname(TeamspeakQueryConnection connection, CancellationToken cancellationToken)
     {
         try
         {
-            await connection.Execute($"clientupdate client_nickname={Escape(Nickname)}");
+            await connection.Execute($"clientupdate client_nickname={Escape(Nickname)}", cancellationToken);
         }
         catch (TeamspeakQueryException exception) when (exception.Id == NicknameInUseErrorId) { }
     }

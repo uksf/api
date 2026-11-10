@@ -5,7 +5,6 @@ namespace UKSF.Api.Integrations.Teamspeak.Query;
 
 public sealed class TeamspeakQueryConnection : IDisposable
 {
-    private static readonly TimeSpan CommandTimeout = TimeSpan.FromSeconds(10);
     private readonly TcpClient _client;
     private readonly StreamReader _reader;
     private readonly StreamWriter _writer;
@@ -25,15 +24,14 @@ public sealed class TeamspeakQueryConnection : IDisposable
         _client.Dispose();
     }
 
-    public static async Task<TeamspeakQueryConnection> Open(string host, int port)
+    public static async Task<TeamspeakQueryConnection> Open(string host, int port, CancellationToken cancellationToken)
     {
-        using var timeout = new CancellationTokenSource(CommandTimeout);
         var client = new TcpClient();
         try
         {
-            await client.ConnectAsync(host, port, timeout.Token);
+            await client.ConnectAsync(host, port, cancellationToken);
             var connection = new TeamspeakQueryConnection(client);
-            while (!(await connection.ReadLine(timeout.Token)).StartsWith("Welcome", StringComparison.Ordinal)) { }
+            while (!(await connection.ReadLine(cancellationToken)).StartsWith("Welcome", StringComparison.Ordinal)) { }
 
             return connection;
         }
@@ -44,15 +42,14 @@ public sealed class TeamspeakQueryConnection : IDisposable
         }
     }
 
-    public async Task<IReadOnlyList<IReadOnlyDictionary<string, string>>> Execute(string command)
+    public async Task<IReadOnlyList<IReadOnlyDictionary<string, string>>> Execute(string command, CancellationToken cancellationToken)
     {
-        using var timeout = new CancellationTokenSource(CommandTimeout);
-        await _writer.WriteLineAsync(command.AsMemory(), timeout.Token);
+        await _writer.WriteLineAsync(command.AsMemory(), cancellationToken);
 
         var data = string.Empty;
         while (true)
         {
-            var line = await ReadLine(timeout.Token);
+            var line = await ReadLine(cancellationToken);
             if (line.Length == 0 || line.StartsWith("notify", StringComparison.Ordinal))
             {
                 continue;
