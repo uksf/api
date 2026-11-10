@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using FluentAssertions;
 using UKSF.Api.Core.Processes;
@@ -20,56 +21,101 @@ public class LinuxProcessesTests : IDisposable
     }
 
     [Fact]
-    public void LogPath_uses_profiles_directory_and_rpt_name()
+    public void SplitArguments_removes_quotes_and_keeps_quoted_whitespace()
     {
-        var path = LinuxProcesses.LogPath("/opt/arma/release/arma3server_x64", "-port=2302 -profiles=/srv/profiles/Main -config=x.cfg", Now);
-
-        path.Should().Be(Path.Combine("/srv/profiles/Main", "arma3server_x64_2026-11-10_17-05-09-042.rpt"));
+        LinuxProcesses.SplitArguments("-port=2302  -profiles=\"/srv/Arma Profiles/DevRun_ab\" -mod=\"@a;@b\" \"\" -password=pa$HOME")
+                      .Should()
+                      .Equal("-port=2302", "-profiles=/srv/Arma Profiles/DevRun_ab", "-mod=@a;@b", "", "-password=pa$HOME");
     }
 
     [Fact]
-    public void LogPath_reads_quoted_profiles_argument()
+    public void LogPath_uses_profiles_argument_with_spaces()
     {
-        var path = LinuxProcesses.LogPath("/opt/arma/arma3server_x64", "-profiles=\"/srv/profiles/DevRun_ab\" -port=2402", Now);
+        var argv = LinuxProcesses.SplitArguments("-port=2302 -profiles=\"/srv/Arma Profiles/Main\" -config=x.cfg");
 
-        path.Should().Be(Path.Combine("/srv/profiles/DevRun_ab", "arma3server_x64_2026-11-10_17-05-09-042.rpt"));
+        LinuxProcesses.LogPath("/opt/arma/arma3server_x64", argv, Now)
+                      .Should()
+                      .Be(Path.Combine("/srv/Arma Profiles/Main", "arma3server_x64_2026-11-10_17-05-09-042.rpt"));
     }
 
     [Fact]
-    public void LogPath_falls_back_to_executable_directory()
+    public void LogPath_ignores_profiles_text_inside_another_argument()
     {
-        var path = LinuxProcesses.LogPath("/opt/arma/arma3server_x64", "-port=2302", Now);
+        var argv = LinuxProcesses.SplitArguments("-name=\"x -profiles=/wrong\" -port=2302");
 
-        path.Should().Be(Path.Combine(Path.GetDirectoryName("/opt/arma/arma3server_x64")!, "arma3server_x64_2026-11-10_17-05-09-042.rpt"));
+        LinuxProcesses.LogPath("/opt/arma/arma3server_x64", argv, Now)
+                      .Should()
+                      .Be(Path.Combine(Path.GetDirectoryName("/opt/arma/arma3server_x64")!, "arma3server_x64_2026-11-10_17-05-09-042.rpt"));
     }
 
     [Fact]
-    public void ShellScript_execs_executable_with_arguments_and_redirects_output()
+    public void SetsidArguments_pass_log_executable_and_argv_as_separate_values()
     {
-        var script = LinuxProcesses.ShellScript("/opt/arma/arma3server_x64", "-port=2302 -mod=\"@a;@b\"", "/srv/p/x.rpt");
-
-        script.Should().Be("exec \"/opt/arma/arma3server_x64\" -port=2302 -mod=\"@a;@b\" < /dev/null >> \"/srv/p/x.rpt\" 2>&1");
+        LinuxProcesses.SetsidArguments("/opt/arma/arma3server_x64", ["-password=$(touch x)", "-port=2302"], "/srv/p/x.rpt")
+                      .Should()
+                      .Equal(
+                          "sh",
+                          "-c",
+                          "log=\"$1\"; shift; exec \"$@\" < /dev/null >> \"$log\" 2>&1",
+                          "sh",
+                          "/srv/p/x.rpt",
+                          "/opt/arma/arma3server_x64",
+                          "-password=$(touch x)",
+                          "-port=2302"
+                      );
     }
 
     [Fact]
-    public void GetProcessesWithCommandLine_matches_executable_name_prefix_and_joins_cmdline()
+    public void LaunchDetached_passes_shell_metacharacters_literally()
     {
-        WriteProcess("101", "/opt/arma/arma3server_x64\0-port=2302\0-profiles=/srv/p/Main\0");
+        if (!OperatingSystem.IsLinux())
+        {
+            return;
+        }
+
+        Directory.CreateDirectory(_procRoot);
+        var marker = Path.Combine(_procRoot, "marker");
+        var printer = Path.Combine(_procRoot, "printargs");
+        File.WriteAllText(printer, "#!/bin/sh\nfor a in \"$@\"; do echo \"[$a]\"; done\n");
+        File.SetUnixFileMode(printer, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        var profiles = Path.Combine(_procRoot, "my profiles");
+
+        var pid = LinuxProcesses.LaunchDetached(printer, $"\"-password=$(touch {marker})\" -x=`id`;$HOME&* -profiles=\"{profiles}\"", Now);
+        Process.GetProcessById(pid).WaitForExit(5000);
+
+        File.Exists(marker).Should().BeFalse();
+        File.ReadAllText(Path.Combine(profiles, "printargs_2026-11-10_17-05-09-042.rpt"))
+            .Should()
+            .Be($"[-password=$(touch {marker})]\n[-x=`id`;$HOME&*]\n[-profiles={profiles}]\n");
+    }
+
+    [Fact]
+    public void GetProcessesWithCommandLine_matches_executable_name_prefix_and_quotes_arguments_with_spaces()
+    {
+        WriteProcess("101", "/opt/arma/arma3server_x64\0-port=2302\0-profiles=/srv/Arma Profiles/Main\0");
         WriteProcess("102", "bash\0-c\0arma3server_x64\0");
         WriteProcess("104", "");
         WriteProcess("self", "/opt/arma/arma3server_x64\0");
 
         var result = LinuxProcesses.GetProcessesWithCommandLine("arma3server", _procRoot);
 
-        result.Should().ContainSingle().Which.Should().Be(new ProcessCommandLineInfo(101, "/opt/arma/arma3server_x64 -port=2302 -profiles=/srv/p/Main"));
+        result.Should()
+              .ContainSingle()
+              .Which.Should()
+              .Be(new ProcessCommandLineInfo(101, "/opt/arma/arma3server_x64 -port=2302 \"-profiles=/srv/Arma Profiles/Main\""));
     }
 
     [Fact]
-    public void GetProcessesWithCommandLine_skips_process_that_exited_mid_scan()
+    public void GetProcessesWithCommandLine_keeps_healthy_processes_when_one_has_no_cmdline()
     {
         Directory.CreateDirectory(Path.Combine(_procRoot, "103"));
+        WriteProcess("105", "/opt/arma/arma3server_x64\0-port=2302\0");
 
-        LinuxProcesses.GetProcessesWithCommandLine("arma3server", _procRoot).Should().BeEmpty();
+        LinuxProcesses.GetProcessesWithCommandLine("arma3server", _procRoot)
+                      .Should()
+                      .ContainSingle()
+                      .Which.Should()
+                      .Be(new ProcessCommandLineInfo(105, "/opt/arma/arma3server_x64 -port=2302"));
     }
 
     private void WriteProcess(string pid, string cmdline)

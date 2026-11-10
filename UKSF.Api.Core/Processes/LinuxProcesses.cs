@@ -1,33 +1,80 @@
 using System.Diagnostics;
-using System.Text.RegularExpressions;
+using System.Text;
 
 namespace UKSF.Api.Core.Processes;
 
-public static partial class LinuxProcesses
+public static class LinuxProcesses
 {
+    private const string RedirectAndExec = "log=\"$1\"; shift; exec \"$@\" < /dev/null >> \"$log\" 2>&1";
+
     public static int LaunchDetached(string executable, string arguments, DateTime now)
     {
         var workingDirectory = Path.GetDirectoryName(executable) ?? "/";
-        var logPath = LogPath(executable, arguments, now);
+        var argv = SplitArguments(arguments);
+        var logPath = LogPath(executable, argv, now);
         Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
 
         var startInfo = new ProcessStartInfo("setsid") { WorkingDirectory = workingDirectory, UseShellExecute = false };
-        startInfo.ArgumentList.Add("sh");
-        startInfo.ArgumentList.Add("-c");
-        startInfo.ArgumentList.Add(ShellScript(executable, arguments, logPath));
+        foreach (var argument in SetsidArguments(executable, argv, logPath))
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
         using var process = Process.Start(startInfo);
         return process?.Id ?? 0;
     }
 
-    public static string ShellScript(string executable, string arguments, string logPath)
+    public static IReadOnlyList<string> SetsidArguments(string executable, IReadOnlyList<string> argv, string logPath)
     {
-        return $"exec \"{executable}\" {arguments} < /dev/null >> \"{logPath}\" 2>&1";
+        return ["sh", "-c", RedirectAndExec, "sh", logPath, executable, .. argv];
     }
 
-    public static string LogPath(string executable, string arguments, DateTime now)
+    public static IReadOnlyList<string> SplitArguments(string arguments)
     {
-        var match = ProfilesArgument().Match(arguments ?? string.Empty);
-        var directory = match.Success ? match.Groups[1].Value : Path.GetDirectoryName(executable) ?? "/";
+        List<string> result = [];
+        var current = new StringBuilder();
+        var inQuotes = false;
+        var inArgument = false;
+        foreach (var character in arguments ?? string.Empty)
+        {
+            if (character == '"')
+            {
+                inQuotes = !inQuotes;
+                inArgument = true;
+            }
+            else if (char.IsWhiteSpace(character) && !inQuotes)
+            {
+                if (inArgument)
+                {
+                    result.Add(current.ToString());
+                    current.Clear();
+                    inArgument = false;
+                }
+            }
+            else
+            {
+                current.Append(character);
+                inArgument = true;
+            }
+        }
+
+        if (inArgument)
+        {
+            result.Add(current.ToString());
+        }
+
+        return result;
+    }
+
+    public static string JoinArguments(IEnumerable<string> argv)
+    {
+        return string.Join(' ', argv.Select(argument => argument.Any(char.IsWhiteSpace) ? $"\"{argument}\"" : argument));
+    }
+
+    public static string LogPath(string executable, IReadOnlyList<string> argv, DateTime now)
+    {
+        var profiles = argv.LastOrDefault(argument => argument.StartsWith("-profiles=", StringComparison.OrdinalIgnoreCase));
+        var directory = profiles is null ? Path.GetDirectoryName(executable) ?? "/" : profiles["-profiles=".Length..];
         var name = Path.GetFileNameWithoutExtension(executable);
         return Path.Combine(directory, $"{name}_{now:yyyy-MM-dd_HH-mm-ss-fff}.rpt");
     }
@@ -44,20 +91,17 @@ public static partial class LinuxProcesses
 
             try
             {
-                var arguments = File.ReadAllText(Path.Combine(directory, "cmdline")).Split('\0', StringSplitOptions.RemoveEmptyEntries);
-                if (arguments.Length == 0 || !Path.GetFileName(arguments[0]).StartsWith(processNamePrefix, StringComparison.Ordinal))
+                var argv = File.ReadAllText(Path.Combine(directory, "cmdline")).Split('\0', StringSplitOptions.RemoveEmptyEntries);
+                if (argv.Length == 0 || !Path.GetFileName(argv[0]).StartsWith(processNamePrefix, StringComparison.Ordinal))
                 {
                     continue;
                 }
 
-                results.Add(new ProcessCommandLineInfo(pid, string.Join(' ', arguments)));
+                results.Add(new ProcessCommandLineInfo(pid, JoinArguments(argv)));
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { }
         }
 
         return results;
     }
-
-    [GeneratedRegex("""-profiles="?([^"\s]+)""", RegexOptions.IgnoreCase)]
-    private static partial Regex ProfilesArgument();
 }
