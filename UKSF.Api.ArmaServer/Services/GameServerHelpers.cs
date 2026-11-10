@@ -106,7 +106,7 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
             GameEnvironment.Development => "SERVER_PATH_DEV",
             _                           => throw new ArgumentException("Server environment is invalid")
         };
-        return Path.Join(variablesService.GetVariable(variableKey).AsString(), "arma3server_x64.exe");
+        return ArmaServerExecutable.PathIn(variablesService.GetVariable(variableKey).AsString());
     }
 
     public string GetGameServerSettingsPath()

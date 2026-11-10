@@ -14,6 +14,7 @@
         <PackageReference Include="Markdig" Version="0.44.0" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.2" />
         <PackageReference Include="Microsoft.AspNetCore.Hosting.WindowsServices" Version="10.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="10.0.2" />
         <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.2" />
         <PackageReference Include="NameCase" Version="1.0.0" />
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />

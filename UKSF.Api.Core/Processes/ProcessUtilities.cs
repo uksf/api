@@ -27,12 +27,18 @@ public class ProcessUtilities : IProcessUtilities
 {
     private const int ScClose = 0xF060;
     private const int WmSysCommand = 0x0112;
+    private const string PostMessageExecutableOnPath = "UKSF.PostMessage";
 
     public int LaunchManagedProcess(string executable, string arguments = null)
     {
+        if (OperatingSystem.IsLinux())
+        {
+            return LinuxProcesses.LaunchDetached(executable, arguments, DateTime.Now);
+        }
+
         if (!OperatingSystem.IsWindows())
         {
-            throw new InvalidOperationException("Not running on windows, stopping");
+            throw new PlatformNotSupportedException("Managed processes need Windows or Linux");
         }
 
         var processId = 0;
@@ -55,6 +61,11 @@ public class ProcessUtilities : IProcessUtilities
 
     public async Task LaunchExternalProcess(string name, string command, string workingDirectory = null)
     {
+        if (!OperatingSystem.IsWindows())
+        {
+            throw new PlatformNotSupportedException("External processes use the Windows Task Scheduler");
+        }
+
         TaskService.Instance.RootFolder.DeleteTask(name, false);
         using var taskDefinition = TaskService.Instance.NewTask();
         taskDefinition.Actions.Add(new ExecAction("cmd", $"/C {command}", workingDirectory));
@@ -65,8 +76,7 @@ public class ProcessUtilities : IProcessUtilities
 
     public async Task CloseProcessGracefully(Process process)
     {
-        // UKSF.PostMessage exe location should be set as a PATH variable
-        await LaunchExternalProcess("CloseProcess", $"start \"\" \"UKSF.PostMessage\" {process.ProcessName} {WmSysCommand} {ScClose} 0");
+        await LaunchExternalProcess("CloseProcess", $"start \"\" \"{PostMessageExecutableOnPath}\" {process.ProcessName} {WmSysCommand} {ScClose} 0");
     }
 
     public void KillProcess(Process process, bool entireProcessTree = true)
@@ -113,6 +123,11 @@ public class ProcessUtilities : IProcessUtilities
 
     public IReadOnlyList<ProcessCommandLineInfo> GetProcessesWithCommandLine(string processNamePrefix)
     {
+        if (OperatingSystem.IsLinux())
+        {
+            return LinuxProcesses.GetProcessesWithCommandLine(processNamePrefix);
+        }
+
         if (!OperatingSystem.IsWindows())
         {
             return [];

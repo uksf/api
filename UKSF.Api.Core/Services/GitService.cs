@@ -23,19 +23,18 @@ public class GitService(IProcessCommandFactory processCommandFactory, IUksfLogge
         {
             var timeoutMs = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;
 
-            var fullCommand = $"git {GitConfig} {command}";
+            var arguments = $"{GitConfig} {command}";
             if (gitCommandArgs.Quiet)
             {
-                fullCommand += " --quiet";
+                arguments += " --quiet";
             }
 
-            var results = await RunProcess(gitCommandArgs, "cmd.exe", $"/c \"{fullCommand}\"", timeoutMs, cancellationToken);
+            var results = await RunProcess(gitCommandArgs, "git", arguments, timeoutMs, cancellationToken);
             results = [.. results.Where(x => !x.Contains("Process exited"))];
             return results.Count > 0 ? results.Last() : string.Empty;
         }
         catch (OperationCanceledException)
         {
-            // Re-throw cancellation exceptions to preserve cancellation behavior
             throw;
         }
         catch (Exception ex)
@@ -60,9 +59,7 @@ public class GitService(IProcessCommandFactory processCommandFactory, IUksfLogge
 
             switch (outputLine.Type)
             {
-                case ProcessOutputType.Output:
-                    // Just collect output, don't log
-                    break;
+                case ProcessOutputType.Output: break;
 
                 case ProcessOutputType.Error:
                     var shouldIgnoreError = gitCommandArgs.ErrorFilter.ShouldIgnoreError(outputLine.Content);

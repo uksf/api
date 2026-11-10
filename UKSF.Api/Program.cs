@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.Hosting.Systemd;
 using Microsoft.Extensions.Hosting.WindowsServices;
 using UKSF.Api.AppStart;
 using UKSF.Api.ArmaServer;
@@ -26,6 +27,11 @@ if (WindowsServiceHelpers.IsWindowsService())
     builder.Configuration.GetSection(nameof(AppSettings)).Bind(appSettings);
 
     InitServiceLogging(appSettings);
+}
+else if (SystemdHelpers.IsSystemdService())
+{
+    builder = WebApplication.CreateBuilder(new WebApplicationOptions { ContentRootPath = AppContext.BaseDirectory, Args = args });
+    builder.Host.UseSystemd();
 }
 else
 {

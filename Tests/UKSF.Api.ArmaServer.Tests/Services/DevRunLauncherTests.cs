@@ -43,10 +43,10 @@ public class DevRunLauncherTests
         captured.MissionName.Should().Be("DevRun_8c1f9d22.VR");
         captured.GamePort.Should().Be(3304);
         captured.ApiPort.Should().Be(3305);
-        captured.ServerExecutablePath.Should().Be(Path.Combine(@"C:/dev/server", "arma3server_x64.exe"));
+        captured.ServerExecutablePath.Should().Be(Path.Combine(@"C:/dev/server", ArmaServerExecutable.FileName));
         captured.Mods.Should().ContainSingle().Which.Should().Be(modPath);
         captured.FunctionFiles.Should().ContainKey("fn_runUserSqf.sqf");
         captured.FunctionFiles["fn_runUserSqf.sqf"].Should().Contain("uksf_dev_runId = \"8c1f9d22-1234\"");
-        captured.FunctionFiles["fn_runUserSqf.sqf"].Should().Contain("diag_log \"\"hello\"\";"); // SQF doubled-quote escape
+        captured.FunctionFiles["fn_runUserSqf.sqf"].Should().Contain("diag_log \"\"hello\"\";");
     }
 }
