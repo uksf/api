@@ -17,7 +17,7 @@ public interface ICommandRequestCompletionService
     Task Resolve(string id);
 }
 
-public class CommandRequestCompletionService(
+public partial class CommandRequestCompletionService(
     IDischargeContext dischargeContext,
     ICommandRequestContext commandRequestContext,
     IAccountContext accountContext,
@@ -50,10 +50,10 @@ public class CommandRequestCompletionService(
                 case CommandRequestType.Transfer:
                 case CommandRequestType.AuxiliaryTransfer:
                 case CommandRequestType.SecondaryTransfer: await Transfer(request); break;
-                case CommandRequestType.UnitRemoval:       await UnitRemoval(request); break;
-                case CommandRequestType.ReinstateMember:   await Reinstate(request); break;
-                case CommandRequestType.MedicAttachment:   await MedicAttachment(request); break;
-                default:                                   throw new BadRequestException($"Request type not recognized: '{request.Type}'");
+                case CommandRequestType.UnitRemoval:     await UnitRemoval(request); break;
+                case CommandRequestType.ReinstateMember: await Reinstate(request); break;
+                case CommandRequestType.MedicAttachment: await MedicAttachment(request); break;
+                default:                                 throw new BadRequestException($"Request type not recognized: '{request.Type}'");
             }
         }
 
@@ -64,7 +64,7 @@ public class CommandRequestCompletionService(
     {
         if (commandRequestService.IsRequestApproved(request.Id))
         {
-            var role = HandleRecruitToPrivate(request.Recipient, request.Value);
+            var role = HandleRecruitPromotion(request.Recipient, request.Value);
             var notification = await assignmentService.UpdateUnitRankAndRole(request.Recipient, rankString: request.Value, role: role, reason: request.Reason);
             notificationsService.Add(notification);
         }
@@ -81,55 +81,6 @@ public class CommandRequestCompletionService(
         else if (commandRequestService.IsRequestRejected(request.Id))
         {
             await loaService.SetLoaState(request.Value, LoaReviewState.Rejected);
-        }
-
-        await ResolveAndAudit(request);
-    }
-
-    private async Task Discharge(DomainCommandRequest request)
-    {
-        if (commandRequestService.IsRequestApproved(request.Id))
-        {
-            var account = accountContext.GetSingle(request.Recipient);
-            DomainDischarge discharge = new()
-            {
-                Rank = account.Rank,
-                Unit = account.UnitAssignment,
-                Role = account.RoleAssignment,
-                DischargedBy = request.DisplayRequester,
-                Reason = request.Reason
-            };
-            var dischargeCollection = dischargeContext.GetSingle(x => x.AccountId == account.Id);
-            if (dischargeCollection == null)
-            {
-                dischargeCollection = new DomainDischargeCollection { AccountId = account.Id, Name = $"{account.Lastname}.{account.Firstname[0]}" };
-                dischargeCollection.Discharges.Add(discharge);
-                await dischargeContext.Add(dischargeCollection);
-            }
-            else
-            {
-                dischargeCollection.Discharges.Add(discharge);
-                await dischargeContext.Update(
-                    dischargeCollection.Id,
-                    Builders<DomainDischargeCollection>.Update.Set(x => x.Reinstated, false)
-                                                       .Set(x => x.Name, $"{account.Lastname}.{account.Firstname[0]}")
-                                                       .Set(x => x.Discharges, dischargeCollection.Discharges)
-                );
-            }
-
-            await accountContext.Update(account.Id, x => x.MembershipState, MembershipState.Discharged);
-
-            var notification = await assignmentService.UpdateUnitRankAndRole(
-                account.Id,
-                AssignmentService.RemoveFlag,
-                AssignmentService.RemoveFlag,
-                AssignmentService.RemoveFlag,
-                request.Reason,
-                "",
-                AssignmentService.RemoveFlag
-            );
-            notificationsService.Add(notification);
-            await assignmentService.UnassignAllUnits(account.Id);
         }
 
         await ResolveAndAudit(request);
@@ -265,13 +216,15 @@ public class CommandRequestCompletionService(
             {
                 var troop = unitsContext.GetSingle(request.Value);
                 await accountContext.Update(request.Recipient, x => x.AttachedTroop, request.Value);
-                notificationsService.Add(new DomainNotification
-                {
-                    Owner = request.Recipient,
-                    Icon = Icons.MedicAttachment,
-                    Message = $"You have been attached as a medic to {troop?.Name ?? "a troop"}",
-                    Link = "/units"
-                });
+                notificationsService.Add(
+                    new DomainNotification
+                    {
+                        Owner = request.Recipient,
+                        Icon = Icons.MedicAttachment,
+                        Message = $"You have been attached as a medic to {troop?.Name ?? "a troop"}",
+                        Link = "/units"
+                    }
+                );
             }
         }
 
@@ -294,10 +247,10 @@ public class CommandRequestCompletionService(
         logger.LogAudit($"{request.Type} request {verbClause} for {request.DisplayRecipient} from {displayFrom} to {displayValue}{reasonClause}");
     }
 
-    private string HandleRecruitToPrivate(string id, string targetRank)
+    private string HandleRecruitPromotion(string id, string targetRank)
     {
         var account = accountContext.GetSingle(id);
-        return account.Rank == "Recruit" && targetRank == "Private" ? "Rifleman" : account.RoleAssignment;
+        return account.Rank == "Recruit" && targetRank is "Private" or "Trooper" ? "Rifleman" : account.RoleAssignment;
     }
 
     private static string FormatDate(string input)
