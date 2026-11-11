@@ -7,6 +7,7 @@ public class BuildStepPatchDependencies : FileBuildStep
 {
     public const string Name = "Patches";
     public const string DependenciesMod = "@uksf_dependencies";
+    public static string PatcherFileName => OperatingSystem.IsWindows() ? "uksf-patcher.exe" : "uksf-patcher";
     private readonly int _patcherTimeout = (int)TimeSpan.FromMinutes(10).TotalMilliseconds;
     private string _patcher;
 
@@ -33,7 +34,7 @@ public class BuildStepPatchDependencies : FileBuildStep
 
     protected override Task SetupExecute()
     {
-        _patcher = Path.Join(VariablesService.GetVariable("BUILD_PATH_PATCHER").AsString(), "uksf-patcher.exe");
+        _patcher = Path.Join(VariablesService.GetVariable("BUILD_PATH_PATCHER").AsString(), PatcherFileName);
         if (!File.Exists(_patcher))
         {
             throw new Exception($"uksf-patcher not found at '{_patcher}' (variable BUILD_PATH_PATCHER)");

@@ -133,7 +133,7 @@ public class BuildStepPatchDependenciesTests : IDisposable
         await step.Setup();
         await step.Process();
 
-        var patcher = Path.Join(_patcherDir, "uksf-patcher.exe");
+        var patcher = Path.Join(_patcherDir, OperatingSystem.IsWindows() ? "uksf-patcher.exe" : "uksf-patcher");
         var cupArgs = $"--addons \"{CupAddons}\" --patches \"{Path.Join(Patches, "@CUP_Vehicles")}\" --state \"{Path.Join(State, "@CUP_Vehicles")}\"";
         var depArgs = $"--addons \"{Addons}\" --patches \"{Path.Join(Patches, "@uksf_dependencies")}\" --state \"{Path.Join(State, "@uksf_dependencies")}\"";
         _commands.Should().Equal((patcher, $"apply {cupArgs}"), (patcher, $"verify {cupArgs}"), (patcher, $"apply {depArgs}"), (patcher, $"verify {depArgs}"));
@@ -240,7 +240,7 @@ public class BuildStepPatchDependenciesTests : IDisposable
     private void CreatePatcher()
     {
         Directory.CreateDirectory(_patcherDir);
-        File.WriteAllBytes(Path.Join(_patcherDir, "uksf-patcher.exe"), [0]);
+        File.WriteAllBytes(Path.Join(_patcherDir, BuildStepPatchDependencies.PatcherFileName), [0]);
     }
 
     private void SetVariable(string key, object value)
