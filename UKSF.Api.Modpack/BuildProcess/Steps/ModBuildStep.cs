@@ -29,8 +29,10 @@ public class ModBuildStep : FileBuildStep
         return $"make.py {arguments}";
     }
 
+    internal const string Hemtt = "hemtt";
+
     internal static string HemttCommand(string arguments = "")
     {
-        return $"/c \"hemtt {arguments} -v\"";
+        return $"{arguments} -v";
     }
 }
