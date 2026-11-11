@@ -32,7 +32,6 @@ public class BuildStepBuildModpackProcessTests : IDisposable
 
         SetVariable("BUILD_FORCE_LOGS", false);
         SetVariable("BUILD_STATE_UPDATE_INTERVAL", 1.0);
-        SetVariable("BUILD_PATH_PYTHON", "python");
         SetVariable("BUILD_PATH_SOURCES", Path.Combine(_root, "sources"));
         SetVariable("MODPACK_PATH_DEV", Path.Combine(_root, "env"));
 
@@ -41,7 +40,7 @@ public class BuildStepBuildModpackProcessTests : IDisposable
                                       {
                                           _commands.Add((executable, workingDir, args));
                                           FakeOutputs(executable, workingDir, args);
-                                          return new ProcessCommand(_mockLogger.Object, "cmd.exe", workingDir, $"/c exit {_exitCode}");
+                                          return ExitProcess.Command(_mockLogger.Object, workingDir, _exitCode);
                                       }
                                   );
     }
