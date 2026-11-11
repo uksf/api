@@ -56,6 +56,33 @@ public class TeamspeakGroupServiceSkipTests : TeamspeakGroupServiceTestBase
     }
 
     [Fact]
+    public async Task Should_never_add_group_zero_when_unit_and_parents_have_no_teamspeak_group()
+    {
+        var id = ObjectId.GenerateNewId().ToString();
+        var parentId = ObjectId.GenerateNewId().ToString();
+        DomainUnit unit = new()
+        {
+            Name = "Basic Training Unit",
+            Members = [id],
+            Parent = parentId
+        };
+        DomainUnit unitParent = new()
+        {
+            Id = parentId,
+            Name = "Strike Element",
+            TeamspeakGroup = null,
+            Parent = ObjectId.GenerateNewId().ToString()
+        };
+        SetupUnitsContext([unit, unitParent, _elcomUnit]);
+        SetupRank("Recruit", "19");
+
+        await _teamspeakGroupService.UpdateAccountGroups(CreateMember(id, "Recruit", "Basic Training Unit"), new List<int>(), 1540);
+
+        _addedGroups.Should().BeEquivalentTo([19, 3]);
+        _mockTeamspeakQuery.Verify(x => x.AddServerGroup(It.IsAny<int>(), 0), Times.Never);
+    }
+
+    [Fact]
     public async Task Should_skip_parent_groups_already_in_assigned_groups()
     {
         var id = ObjectId.GenerateNewId().ToString();
