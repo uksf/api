@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using MongoDB.Bson;
 using Moq;
+using UKSF.Api.Integrations.Teamspeak.Query;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
@@ -80,6 +81,36 @@ public class TeamspeakGroupServiceSkipTests : TeamspeakGroupServiceTestBase
 
         _addedGroups.Should().BeEquivalentTo([19, 3]);
         _mockTeamspeakQuery.Verify(x => x.AddServerGroup(It.IsAny<int>(), 0), Times.Never);
+    }
+
+    [Fact]
+    public async Task Should_add_remaining_groups_and_warn_once_when_a_group_no_longer_exists_on_teamspeak()
+    {
+        const int deletedGroup = 4059;
+        var id = ObjectId.GenerateNewId().ToString();
+        SetupUnitsContext([_elcomUnit]);
+        SetupRank("Recruit", deletedGroup.ToString());
+        _mockTeamspeakQuery.Setup(x => x.AddServerGroup(It.IsAny<int>(), deletedGroup)).ThrowsAsync(new TeamspeakQueryException(2560, "invalid group ID"));
+
+        await _teamspeakGroupService.UpdateAccountGroups(CreateMember(id, "Recruit"), new List<int>(), 645);
+        await _teamspeakGroupService.UpdateAccountGroups(CreateMember(id, "Recruit"), new List<int>(), 677);
+
+        _mockTeamspeakQuery.Verify(x => x.AddServerGroup(645, 3), Times.Once);
+        _mockTeamspeakQuery.Verify(x => x.AddServerGroup(677, 3), Times.Once);
+        _mockLogger.Verify(x => x.LogWarning(It.Is<string>(message => message.Contains("4059"))), Times.Once);
+    }
+
+    [Fact]
+    public async Task Should_fail_when_adding_a_group_fails_for_another_reason()
+    {
+        var id = ObjectId.GenerateNewId().ToString();
+        SetupUnitsContext([_elcomUnit]);
+        SetupRank("Recruit", "19");
+        _mockTeamspeakQuery.Setup(x => x.AddServerGroup(It.IsAny<int>(), 19)).ThrowsAsync(new TeamspeakQueryException(2568, "insufficient client permissions"));
+
+        var act = () => _teamspeakGroupService.UpdateAccountGroups(CreateMember(id, "Recruit"), new List<int>(), 645);
+
+        await act.Should().ThrowAsync<TeamspeakQueryException>();
     }
 
     [Fact]

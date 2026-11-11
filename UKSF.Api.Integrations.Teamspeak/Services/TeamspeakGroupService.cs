@@ -1,4 +1,6 @@
+using System.Collections.Concurrent;
 using MongoDB.Bson;
+using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
@@ -21,9 +23,12 @@ public class TeamspeakGroupService(
     IUnitsService unitsService,
     ITeamspeakQuery teamspeakQuery,
     IVariablesService variablesService,
-    ITrainingsContext trainingsContext
+    ITrainingsContext trainingsContext,
+    IUksfLogger logger
 ) : ITeamspeakGroupService
 {
+    private const int InvalidGroupIdErrorId = 2560;
+    private static readonly ConcurrentDictionary<int, bool> ReportedInvalidGroupIds = new();
     private const string TeamspeakGidUnverified = "TEAMSPEAK_GID_UNVERIFIED";
     private const string TeamspeakGidDischarged = "TEAMSPEAK_GID_DISCHARGED";
     private const string TeamspeakGidRoot = "TEAMSPEAK_GID_ROOT";
@@ -102,7 +107,17 @@ public class TeamspeakGroupService(
     {
         foreach (var serverGroup in groupIdsToAssign.Where(serverGroup => !assignedGroupIds.Contains(serverGroup)))
         {
-            await teamspeakQuery.AddServerGroup(clientDbId, serverGroup);
+            try
+            {
+                await teamspeakQuery.AddServerGroup(clientDbId, serverGroup);
+            }
+            catch (TeamspeakQueryException exception) when (exception.Id == InvalidGroupIdErrorId)
+            {
+                if (ReportedInvalidGroupIds.TryAdd(serverGroup, true))
+                {
+                    logger.LogWarning($"TeamSpeak server group {serverGroup} does not exist. Fix the rank, unit, training, or variable that maps to it.");
+                }
+            }
         }
     }
 
