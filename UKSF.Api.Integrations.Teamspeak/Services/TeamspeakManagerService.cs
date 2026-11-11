@@ -204,6 +204,6 @@ public class TeamspeakManagerService(
         }
 
         var serverPath = variablesService.GetVariable("TEAMSPEAK_SERVER_PATH").AsString();
-        await processUtilities.LaunchExternalProcess("TeamspeakServer", $"start \"\" \"{serverPath}\"", Path.GetDirectoryName(serverPath));
+        await processUtilities.LaunchExternalProcess("TeamspeakServer", $"start \"\" /abovenormal \"{serverPath}\"", Path.GetDirectoryName(serverPath));
     }
 }
