@@ -187,8 +187,8 @@ public class GameServerProcessManagerLaunchKillTests : GameServerProcessManagerT
         _mockHelpers.Setup(x => x.FormatHeadlessClientLaunchArguments(server, 0)).Returns("-port=2302 -client");
         _mockHelpers.Setup(x => x.GetGameServerConfigPath(server)).Returns(Path.Combine(Path.GetTempPath(), "test_config.cfg"));
         _mockHelpers.Setup(x => x.FormatGameServerConfig(server, 40, "mission.Altis.pbo")).Returns("config content");
-        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("arma3server_x64.exe", "-port=2302")).Returns(1234);
-        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("arma3server_x64.exe", "-port=2302 -client")).Returns(5001);
+        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("arma3server_x64.exe", "-port=2302", ProcessPriorityClass.AboveNormal)).Returns(1234);
+        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("arma3server_x64.exe", "-port=2302 -client", ProcessPriorityClass.AboveNormal)).Returns(5001);
         _mockProcessUtilities.Setup(x => x.FindProcessById(5001)).Returns(Process.GetCurrentProcess());
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([new ProcessCommandLineInfo(1, ""), new ProcessCommandLineInfo(2, "")]);
 
@@ -221,8 +221,8 @@ public class GameServerProcessManagerLaunchKillTests : GameServerProcessManagerT
         _mockHelpers.Setup(x => x.FormatHeadlessClientLaunchArguments(server, 0)).Returns("-port=2302 -client");
         _mockHelpers.Setup(x => x.GetGameServerConfigPath(server)).Returns(Path.Combine(Path.GetTempPath(), "test_config.cfg"));
         _mockHelpers.Setup(x => x.FormatGameServerConfig(server, 40, "mission.Altis.pbo")).Returns("config content");
-        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("arma3server_x64.exe", "-port=2302")).Returns(1234);
-        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("arma3server_x64.exe", "-port=2302 -client")).Returns(5001);
+        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("arma3server_x64.exe", "-port=2302", ProcessPriorityClass.AboveNormal)).Returns(1234);
+        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("arma3server_x64.exe", "-port=2302 -client", ProcessPriorityClass.AboveNormal)).Returns(5001);
         _mockProcessUtilities.Setup(x => x.FindProcessById(5001)).Returns(Process.GetCurrentProcess());
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
@@ -247,7 +247,7 @@ public class GameServerProcessManagerLaunchKillTests : GameServerProcessManagerT
         _mockHelpers.Setup(x => x.FormatGameServerLaunchArguments(server)).Returns("-port=2302");
         _mockHelpers.Setup(x => x.GetGameServerConfigPath(server)).Returns(Path.Combine(Path.GetTempPath(), "test_config.cfg"));
         _mockHelpers.Setup(x => x.FormatGameServerConfig(server, 40, "mission.Altis")).Returns("config content");
-        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("arma3server_x64.exe", "-port=2302")).Returns(1234);
+        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("arma3server_x64.exe", "-port=2302", ProcessPriorityClass.AboveNormal)).Returns(1234);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
         await _sut.LaunchServerAsync(server, "mission.Altis", "user1", 40);

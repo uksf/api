@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -80,7 +81,7 @@ public class DevRunHeadlessClientTests : IDisposable
     [Fact]
     public void Synthetic_launcher_starts_only_the_server_and_returns_headless_clients_that_dial_the_server_port()
     {
-        _processUtilities.Setup(x => x.LaunchManagedProcess(It.IsAny<string>(), It.IsAny<string>())).Returns(100);
+        _processUtilities.Setup(x => x.LaunchManagedProcess(It.IsAny<string>(), It.IsAny<string>(), ProcessPriorityClass.Normal)).Returns(100);
         var profiles = Path.Combine(_tempRoot, "profiles");
         var launcher = new SyntheticServerLauncher(_processUtilities.Object, profiles, _tempRoot, _tempRoot);
         var spec = new SyntheticLaunchSpec(
@@ -101,7 +102,7 @@ public class DevRunHeadlessClientTests : IDisposable
         var result = launcher.Launch(spec);
 
         result.ProcessId.Should().Be(100);
-        _processUtilities.Verify(x => x.LaunchManagedProcess(It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        _processUtilities.Verify(x => x.LaunchManagedProcess(It.IsAny<string>(), It.IsAny<string>(), ProcessPriorityClass.Normal), Times.Once);
         result.PendingHeadlessClients.Should().HaveCount(2).And.OnlyContain(x => x.Executable == "C:/dev/arma3server_x64.exe");
         var helpers = new GameServerHelpers(
             new Mock<IVariablesService>().Object,
@@ -128,8 +129,8 @@ public class DevRunHeadlessClientTests : IDisposable
         var launcher = new Mock<IDevRunLauncher>();
         launcher.Setup(x => x.Launch(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IReadOnlyList<string>>(), It.IsAny<string>(), 2))
                 .Returns(new SyntheticLaunchResult(10, "p", "m", [new ProcessLaunch("exe", "hc1"), new ProcessLaunch("exe", "hc2")]));
-        _processUtilities.Setup(x => x.LaunchManagedProcess("exe", "hc1")).Returns(11);
-        _processUtilities.Setup(x => x.LaunchManagedProcess("exe", "hc2")).Returns(12);
+        _processUtilities.Setup(x => x.LaunchManagedProcess("exe", "hc1", ProcessPriorityClass.Normal)).Returns(11);
+        _processUtilities.Setup(x => x.LaunchManagedProcess("exe", "hc2", ProcessPriorityClass.Normal)).Returns(12);
         var serverAlive = true;
         _processUtilities.Setup(x => x.IsProcessAlive(10)).Returns(() => serverAlive);
         var released = new TaskCompletionSource();
@@ -151,12 +152,12 @@ public class DevRunHeadlessClientTests : IDisposable
         );
 
         var runId = service.Trigger("diag_log 1;", [], null, null, 2).RunId;
-        _processUtilities.Verify(x => x.LaunchManagedProcess(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _processUtilities.Verify(x => x.LaunchManagedProcess(It.IsAny<string>(), It.IsAny<string>(), ProcessPriorityClass.Normal), Times.Never);
 
         await service.AppendLogAsync(runId, DevRunLauncher.MissionRunningLogLine);
         await service.AppendLogAsync(runId, DevRunLauncher.MissionRunningLogLine);
-        _processUtilities.Verify(x => x.LaunchManagedProcess("exe", "hc1"), Times.Once);
-        _processUtilities.Verify(x => x.LaunchManagedProcess("exe", "hc2"), Times.Once);
+        _processUtilities.Verify(x => x.LaunchManagedProcess("exe", "hc1", ProcessPriorityClass.Normal), Times.Once);
+        _processUtilities.Verify(x => x.LaunchManagedProcess("exe", "hc2", ProcessPriorityClass.Normal), Times.Once);
 
         serverAlive = false;
         await released.Task.WaitAsync(TimeSpan.FromSeconds(5));

@@ -7,7 +7,7 @@ public static class LinuxProcesses
 {
     private const string RedirectAndExec = "log=\"$1\"; shift; exec \"$@\" < /dev/null >> \"$log\" 2>&1";
 
-    public static int LaunchDetached(string executable, string arguments, DateTime now)
+    public static int LaunchDetached(string executable, string arguments, ProcessPriorityClass priority, DateTime now)
     {
         var workingDirectory = Path.GetDirectoryName(executable) ?? "/";
         var argv = SplitArguments(arguments);
@@ -15,7 +15,7 @@ public static class LinuxProcesses
         Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
 
         var startInfo = new ProcessStartInfo("setsid") { WorkingDirectory = workingDirectory, UseShellExecute = false };
-        foreach (var argument in SetsidArguments(executable, argv, logPath))
+        foreach (var argument in SetsidArguments(executable, argv, logPath, priority))
         {
             startInfo.ArgumentList.Add(argument);
         }
@@ -24,9 +24,28 @@ public static class LinuxProcesses
         return process?.Id ?? 0;
     }
 
-    public static IReadOnlyList<string> SetsidArguments(string executable, IReadOnlyList<string> argv, string logPath)
+    public static IReadOnlyList<string> SetsidArguments(string executable, IReadOnlyList<string> argv, string logPath, ProcessPriorityClass priority)
     {
-        return ["sh", "-c", RedirectAndExec, "sh", logPath, executable, .. argv];
+        string[] command = [executable, .. argv];
+        if (NiceValue(priority) is { } niceness)
+        {
+            command = ["nice", "-n", niceness.ToString(), .. command];
+        }
+
+        return ["sh", "-c", RedirectAndExec, "sh", logPath, .. command];
+    }
+
+    private static int? NiceValue(ProcessPriorityClass priority)
+    {
+        return priority switch
+        {
+            ProcessPriorityClass.Idle => 19,
+            ProcessPriorityClass.BelowNormal => 10,
+            ProcessPriorityClass.AboveNormal => -5,
+            ProcessPriorityClass.High => -10,
+            ProcessPriorityClass.RealTime => -20,
+            _ => null
+        };
     }
 
     public static IReadOnlyList<string> SplitArguments(string arguments)

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -34,7 +35,7 @@ public class SyntheticServerLauncherTests : IDisposable
         Directory.CreateDirectory(_configsRoot);
         Directory.CreateDirectory(_missionsRoot);
         Directory.CreateDirectory(_modPath);
-        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess(It.IsAny<string>(), It.IsAny<string>())).Returns(7777);
+        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess(It.IsAny<string>(), It.IsAny<string>(), ProcessPriorityClass.Normal)).Returns(7777);
     }
 
     public void Dispose()
@@ -45,7 +46,6 @@ public class SyntheticServerLauncherTests : IDisposable
         }
         catch
         {
-            /* best-effort */
         }
     }
 
@@ -94,7 +94,7 @@ public class SyntheticServerLauncherTests : IDisposable
                                                                args.Contains($"-mod=\"{_modPath}\"") &&
                                                                args.Contains("-port=3304") &&
                                                                args.Contains("-apiport=3305")
-                                         )
+                                         ), ProcessPriorityClass.Normal
                                      )
         );
     }
@@ -119,6 +119,6 @@ public class SyntheticServerLauncherTests : IDisposable
 
         launcher.Launch(BuildSpec(new[] { _modPath, modB }));
 
-        _mockProcessUtilities.Verify(x => x.LaunchManagedProcess(It.IsAny<string>(), It.Is<string>(args => args.Contains($"-mod=\"{_modPath};{modB}\""))));
+        _mockProcessUtilities.Verify(x => x.LaunchManagedProcess(It.IsAny<string>(), It.Is<string>(args => args.Contains($"-mod=\"{_modPath};{modB}\"")), ProcessPriorityClass.Normal));
     }
 }

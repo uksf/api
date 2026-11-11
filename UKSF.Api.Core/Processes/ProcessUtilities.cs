@@ -10,7 +10,7 @@ public record ProcessCommandLineInfo(int ProcessId, string CommandLine);
 
 public interface IProcessUtilities
 {
-    int LaunchManagedProcess(string executable, string arguments = null);
+    int LaunchManagedProcess(string executable, string arguments, ProcessPriorityClass priority);
     Task LaunchExternalProcess(string name, string command, string workingDirectory = null);
     void KillProcess(Process process, bool entireProcessTree = true);
     Process FindProcessById(int id);
@@ -24,11 +24,11 @@ public interface IProcessUtilities
 [ExcludeFromCodeCoverage]
 public class ProcessUtilities : IProcessUtilities
 {
-    public int LaunchManagedProcess(string executable, string arguments = null)
+    public int LaunchManagedProcess(string executable, string arguments, ProcessPriorityClass priority)
     {
         if (OperatingSystem.IsLinux())
         {
-            return LinuxProcesses.LaunchDetached(executable, arguments, DateTime.Now);
+            return LinuxProcesses.LaunchDetached(executable, arguments, priority, DateTime.Now);
         }
 
         if (!OperatingSystem.IsWindows())
@@ -40,6 +40,7 @@ public class ProcessUtilities : IProcessUtilities
         using ManagementClass managementClass = new("Win32_Process");
         ManagementClass processInfo = new("Win32_ProcessStartup");
         processInfo.Properties["CreateFlags"].Value = 0x00000008;
+        processInfo.Properties["PriorityClass"].Value = (uint)priority;
 
         var inParameters = managementClass.GetMethodParameters("Create");
         inParameters["CommandLine"] = $"\"{executable}\" {arguments}";
