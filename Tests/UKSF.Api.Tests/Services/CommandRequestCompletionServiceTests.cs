@@ -19,7 +19,7 @@ using Xunit;
 
 namespace UKSF.Api.Tests.Services;
 
-public class CommandRequestCompletionServiceTests
+public partial class CommandRequestCompletionServiceTests
 {
     private readonly Mock<IDischargeContext> _mockDischargeContext = new();
     private readonly Mock<ICommandRequestContext> _mockCommandRequestContext = new();
@@ -852,14 +852,19 @@ public class CommandRequestCompletionServiceTests
         var request = CreateRequest(id, CommandRequestType.MedicAttachment, recipient: "rec", value: "troop");
         SetupApproved(id, request);
         _mockAccountContext.Setup(x => x.GetSingle("rec")).Returns(new DomainAccount { Id = "rec" });
-        _mockUnitsContext.Setup(x => x.GetSingle("troop")).Returns(new DomainUnit { Id = "troop", Name = "3 Troop", ChainOfCommand = new() });
+        _mockUnitsContext.Setup(x => x.GetSingle("troop"))
+        .Returns(
+            new DomainUnit
+            {
+                Id = "troop",
+                Name = "3 Troop",
+                ChainOfCommand = new()
+            }
+        );
 
         await _subject.Resolve(id);
 
-        _mockAccountContext.Verify(
-            x => x.Update("rec", It.IsAny<Expression<Func<DomainAccount, string>>>(), "troop"),
-            Times.Once
-        );
+        _mockAccountContext.Verify(x => x.Update("rec", It.IsAny<Expression<Func<DomainAccount, string>>>(), "troop"), Times.Once);
     }
 
     [Fact]
@@ -873,40 +878,6 @@ public class CommandRequestCompletionServiceTests
         await _subject.Resolve(id);
 
         _mockMedicAttachmentService.Verify(x => x.SeverAttachment("rec", It.IsAny<string>()), Times.Once);
-    }
-
-    #endregion
-
-    #region HandleRecruitToPrivate (tested indirectly through Rank)
-
-    [Fact]
-    public async Task Resolve_WhenPromotion_RecruitToPrivate_ShouldReturnRifleman()
-    {
-        var id = "request-1";
-        var request = CreateRequest(id, CommandRequestType.Promotion, recipient: "account-1", value: "Private");
-        SetupApproved(id, request);
-        SetupAccountForRank("account-1", "Recruit", "SomeRole");
-        var notification = new DomainNotification();
-        _mockAssignmentService.Setup(x => x.UpdateUnitRankAndRole("account-1", "", "Rifleman", "Private", "", "", "")).ReturnsAsync(notification);
-
-        await _subject.Resolve(id);
-
-        _mockAssignmentService.Verify(x => x.UpdateUnitRankAndRole("account-1", "", "Rifleman", "Private", "", "", ""), Times.Once);
-    }
-
-    [Fact]
-    public async Task Resolve_WhenPromotion_NonRecruitToSergeant_ShouldReturnExistingRole()
-    {
-        var id = "request-1";
-        var request = CreateRequest(id, CommandRequestType.Promotion, recipient: "account-1", value: "Sergeant");
-        SetupApproved(id, request);
-        SetupAccountForRank("account-1", "Corporal", "Medic");
-        var notification = new DomainNotification();
-        _mockAssignmentService.Setup(x => x.UpdateUnitRankAndRole("account-1", "", "Medic", "Sergeant", "", "", "")).ReturnsAsync(notification);
-
-        await _subject.Resolve(id);
-
-        _mockAssignmentService.Verify(x => x.UpdateUnitRankAndRole("account-1", "", "Medic", "Sergeant", "", "", ""), Times.Once);
     }
 
     #endregion
