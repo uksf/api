@@ -33,6 +33,7 @@ public class TeamspeakGroupService(
     public async Task UpdateAccountGroups(DomainAccount account, ICollection<int> assignedGroupIds, int clientDbId)
     {
         var groupIdsToAssign = ResolveMembershipGroups(account);
+        groupIdsToAssign.RemoveWhere(groupId => groupId <= 0);
         await ApplyGroupChanges(groupIdsToAssign, assignedGroupIds, clientDbId);
     }
 
