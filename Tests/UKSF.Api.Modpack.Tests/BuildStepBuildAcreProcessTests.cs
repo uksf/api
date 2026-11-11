@@ -23,6 +23,7 @@ public class BuildStepBuildAcreProcessTests : IDisposable
     private readonly Mock<IVariablesService> _mockVariablesService = new();
     private readonly string _root;
     private int _exitCode;
+    private int _hemttExitCode;
 
     public BuildStepBuildAcreProcessTests()
     {
@@ -43,6 +44,7 @@ public class BuildStepBuildAcreProcessTests : IDisposable
                                               var addons = Path.Join(workingDir, ".hemttout", "release", "addons");
                                               Directory.CreateDirectory(addons);
                                               File.WriteAllText(Path.Join(addons, "acre_main.pbo"), "pbo");
+                                              return ExitProcess.WarnOnStderr(_mockLogger.Object, workingDir, _hemttExitCode);
                                           }
 
                                           return ExitProcess.Command(_mockLogger.Object, workingDir, _exitCode);
@@ -84,6 +86,18 @@ public class BuildStepBuildAcreProcessTests : IDisposable
 
         await act.Should().ThrowAsync<Exception>().WithMessage("*exit code 1*");
         _commands.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task Process_Should_Fail_When_HemttExitsNonZero()
+    {
+        var step = CreateStep(true);
+        await step.Setup();
+        _hemttExitCode = 1;
+
+        var act = () => step.Process();
+
+        await act.Should().ThrowAsync<Exception>().WithMessage("*exit code 1*");
     }
 
     [Fact]
