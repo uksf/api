@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using FluentAssertions;
 using UKSF.Api.Core.Processes;
 using Xunit;
@@ -51,7 +52,7 @@ public class LinuxProcessesTests : IDisposable
     [Fact]
     public void SetsidArguments_pass_log_executable_and_argv_as_separate_values()
     {
-        LinuxProcesses.SetsidArguments("/opt/arma/arma3server_x64", ["-password=$(touch x)", "-port=2302"], "/srv/p/x.rpt")
+        LinuxProcesses.SetsidArguments("/opt/arma/arma3server_x64", ["-password=$(touch x)", "-port=2302"], "/srv/p/x.rpt", ProcessPriorityClass.Normal)
                       .Should()
                       .Equal(
                           "sh",
@@ -63,6 +64,15 @@ public class LinuxProcessesTests : IDisposable
                           "-password=$(touch x)",
                           "-port=2302"
                       );
+    }
+
+    [Fact]
+    public void SetsidArguments_run_above_normal_priority_through_nice()
+    {
+        LinuxProcesses.SetsidArguments("/opt/arma/arma3server_x64", ["-port=2302"], "/srv/p/x.rpt", ProcessPriorityClass.AboveNormal)
+                      .Skip(5)
+                      .Should()
+                      .Equal("nice", "-n", "-5", "/opt/arma/arma3server_x64", "-port=2302");
     }
 
     [Fact]
@@ -80,7 +90,7 @@ public class LinuxProcessesTests : IDisposable
         File.SetUnixFileMode(printer, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         var profiles = Path.Combine(_procRoot, "my profiles");
 
-        var pid = LinuxProcesses.LaunchDetached(printer, $"\"-password=$(touch {marker})\" -x=`id`;$HOME&* -profiles=\"{profiles}\"", Now);
+        var pid = LinuxProcesses.LaunchDetached(printer, $"\"-password=$(touch {marker})\" -x=`id`;$HOME&* -profiles=\"{profiles}\"", ProcessPriorityClass.Normal, Now);
         Process.GetProcessById(pid).WaitForExit(5000);
 
         File.Exists(marker).Should().BeFalse();

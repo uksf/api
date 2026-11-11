@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core.Extensions;
@@ -84,7 +85,7 @@ public class SyntheticServerLauncher : ISyntheticServerLauncher
                    $" -apiUrl=\"{_apiUrl()}\"" +
                    " -bandwidthAlg=2 -hugepages -filePatching -limitFPS=200";
 
-        var pid = _processUtilities.LaunchManagedProcess(spec.ServerExecutablePath, args);
+        var pid = _processUtilities.LaunchManagedProcess(spec.ServerExecutablePath, args, ProcessPriorityClass.Normal);
         var headlessClients = Enumerable.Range(1, spec.HeadlessClients)
                                         .Select(index => new ProcessLaunch(
                                                     spec.ServerExecutablePath,

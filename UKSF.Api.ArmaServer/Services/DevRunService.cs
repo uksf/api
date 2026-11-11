@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Collections.Concurrent;
 using System.Text;
 using UKSF.Api.ArmaServer.DataContext;
@@ -254,7 +255,7 @@ public class DevRunService : IDevRunService
             return;
         }
 
-        var launched = headlessClients.Select(x => _processUtilities.LaunchManagedProcess(x.Executable, x.Arguments)).ToList();
+        var launched = headlessClients.Select(x => _processUtilities.LaunchManagedProcess(x.Executable, x.Arguments, ProcessPriorityClass.Normal)).ToList();
         _activePids.AddOrUpdate(runId, launched, (_, existing) => [.. existing, .. launched]);
     }
 

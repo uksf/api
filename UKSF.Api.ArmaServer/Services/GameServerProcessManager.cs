@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.ArmaServer.DataContext;
@@ -159,7 +160,7 @@ public partial class GameServerProcessManager(
         }
 
         var launchArguments = gameServerHelpers.FormatGameServerLaunchArguments(server);
-        server.ProcessId = processUtilities.LaunchManagedProcess(gameServerHelpers.GetGameServerExecutablePath(server), launchArguments);
+        server.ProcessId = processUtilities.LaunchManagedProcess(gameServerHelpers.GetGameServerExecutablePath(server), launchArguments, ProcessPriorityClass.AboveNormal);
         server.ProcessStartedAt = Track(server.ProcessId.Value)?.StartedAt;
 
         await Task.Delay(TimeSpan.FromMilliseconds(50));
@@ -167,7 +168,7 @@ public partial class GameServerProcessManager(
         for (var index = 0; index < server.NumberHeadlessClients; index++)
         {
             launchArguments = gameServerHelpers.FormatHeadlessClientLaunchArguments(server, index);
-            var headlessClient = Track(processUtilities.LaunchManagedProcess(gameServerHelpers.GetGameServerExecutablePath(server), launchArguments));
+            var headlessClient = Track(processUtilities.LaunchManagedProcess(gameServerHelpers.GetGameServerExecutablePath(server), launchArguments, ProcessPriorityClass.AboveNormal));
             if (headlessClient is not null)
             {
                 server.HeadlessClients.Add(headlessClient);
