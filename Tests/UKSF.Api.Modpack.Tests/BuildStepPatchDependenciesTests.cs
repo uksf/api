@@ -41,7 +41,7 @@ public class BuildStepPatchDependenciesTests : IDisposable
         SetVariable("MODPACK_PATH_DEV", _envDir);
         SetVariable("MODPACK_PATH_RC", _envDir);
         SetVariable("BUILD_PATH_SOURCES", _sourcesDir);
-        SetVariable("BUILD_PATH_PATCHER", _patcherDir);
+        SetVariable(UksfTooling.PathVariable, _patcherDir);
 
         _mockProcessCommandFactory.Setup(x => x.CreateCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                                   .Returns((string executable, string workingDir, string args) =>
@@ -92,7 +92,7 @@ public class BuildStepPatchDependenciesTests : IDisposable
     {
         var act = () => CreateStep().Setup();
 
-        await act.Should().ThrowAsync<Exception>().WithMessage("*uksf-patcher not found*BUILD_PATH_PATCHER*");
+        await act.Should().ThrowAsync<Exception>().WithMessage("*uksf-patcher not found*BUILD_PATH_TOOLING*");
     }
 
     [Fact]
@@ -240,7 +240,7 @@ public class BuildStepPatchDependenciesTests : IDisposable
     private void CreatePatcher()
     {
         Directory.CreateDirectory(_patcherDir);
-        File.WriteAllBytes(Path.Join(_patcherDir, BuildStepPatchDependencies.PatcherFileName), [0]);
+        File.WriteAllBytes(Path.Join(_patcherDir, UksfTooling.FileName("uksf-patcher")), [0]);
     }
 
     private void SetVariable(string key, object value)

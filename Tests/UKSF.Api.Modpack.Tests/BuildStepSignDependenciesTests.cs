@@ -32,7 +32,8 @@ public class BuildStepSignDependenciesTests : IDisposable
                              .Returns(new DomainVariableItem { Key = "BUILD_STATE_UPDATE_INTERVAL", Item = 1.0 });
         _mockVariablesService.Setup(x => x.GetVariable("BUILD_SIGNATURES_BATCH_SIZE"))
                              .Returns(new DomainVariableItem { Key = "BUILD_SIGNATURES_BATCH_SIZE", Item = 10 });
-        _mockVariablesService.Setup(x => x.GetVariable("BUILD_PATH_DSSIGN")).Returns(new DomainVariableItem { Key = "BUILD_PATH_DSSIGN", Item = "C:\\fake" });
+        _mockVariablesService.Setup(x => x.GetVariable(UksfTooling.PathVariable))
+                             .Returns(new DomainVariableItem { Key = UksfTooling.PathVariable, Item = "C:\\fake" });
         _mockVariablesService.Setup(x => x.GetVariable("MODPACK_PATH_DEV")).Returns(new DomainVariableItem { Key = "MODPACK_PATH_DEV", Item = _tempDir });
         _mockVariablesService.Setup(x => x.GetVariable("MODPACK_PATH_RC")).Returns(new DomainVariableItem { Key = "MODPACK_PATH_RC", Item = _tempDir });
 
@@ -89,7 +90,6 @@ public class BuildStepSignDependenciesTests : IDisposable
         File.SetLastWriteTimeUtc(Path.Combine(addonsPath, "mod_a.pbo"), now.AddMinutes(-5));
         File.SetLastWriteTimeUtc(Path.Combine(addonsPath, "mod_b.pbo"), now.AddMinutes(-5));
         CreateBisign(addonsPath, "mod_a.pbo", now);
-        // mod_b.pbo has no bisign
         CreatePrivateKey();
 
         var step = CreateStep(GameEnvironment.Development, 1, "1.0.0");
@@ -105,7 +105,6 @@ public class BuildStepSignDependenciesTests : IDisposable
         File.SetLastWriteTimeUtc(Path.Combine(addonsPath, "mod_a.pbo"), now.AddMinutes(-5));
         File.SetLastWriteTimeUtc(Path.Combine(addonsPath, "mod_b.pbo"), now.AddMinutes(-5));
         CreateBisign(addonsPath, "mod_a.pbo", now);
-        // mod_b.pbo has no bisign, no private key exists
 
         var step = CreateStep(GameEnvironment.Development, 1, "1.0.0");
         step.CheckGuards().Should().BeTrue();
@@ -131,10 +130,8 @@ public class BuildStepSignDependenciesTests : IDisposable
         var addonsPath = SetupAddonsDirectory("mod_a.pbo", "mod_b.pbo");
         var now = DateTime.UtcNow;
 
-        // mod_a is newer than its bisign (changed)
         CreateBisign(addonsPath, "mod_a.pbo", now.AddHours(-1));
         File.SetLastWriteTimeUtc(Path.Combine(addonsPath, "mod_a.pbo"), now);
-        // mod_b has no bisign (missing)
         File.SetLastWriteTimeUtc(Path.Combine(addonsPath, "mod_b.pbo"), now.AddMinutes(-5));
         CreatePrivateKey();
 
