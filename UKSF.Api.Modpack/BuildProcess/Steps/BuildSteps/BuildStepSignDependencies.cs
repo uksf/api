@@ -8,8 +8,7 @@ public class BuildStepSignDependencies : FileBuildStep
 {
     public const string Name = "Signatures";
     private int _batchSize = 10;
-    private string _dsCreateKey;
-    private string _dsSignFile;
+    private string _signer;
     private string _keyName;
     private readonly int _signProcessTimeout = (int)TimeSpan.FromSeconds(20).TotalMilliseconds;
 
@@ -26,8 +25,7 @@ public class BuildStepSignDependencies : FileBuildStep
 
     protected override async Task SetupExecute()
     {
-        _dsSignFile = Path.Join(VariablesService.GetVariable("BUILD_PATH_DSSIGN").AsString(), "DSSignFile.exe");
-        _dsCreateKey = Path.Join(VariablesService.GetVariable("BUILD_PATH_DSSIGN").AsString(), "DSCreateKey.exe");
+        _signer = UksfTooling.Find(VariablesService, "uksf-sign");
         _batchSize = VariablesService.GetVariable("BUILD_SIGNATURES_BATCH_SIZE").AsInt();
         _keyName = GetKeyname();
 
@@ -145,7 +143,7 @@ public class BuildStepSignDependencies : FileBuildStep
         StepLogger.LogSurround("Cleared keys directories");
 
         StepLogger.LogSurround("\nCreating key...");
-        await RunProcess(keygenPath, _dsCreateKey, _keyName, _signProcessTimeout, false, true);
+        await RunProcess(keygenPath, _signer, $"create-key \"{_keyName}\"", _signProcessTimeout, false, true);
         StepLogger.Log($"Created {_keyName}");
         await CopyFiles(keygen, keys, [new FileInfo(Path.Join(keygenPath, $"{_keyName}.bikey"))]);
         StepLogger.LogSurround("Created key");
@@ -263,7 +261,7 @@ public class BuildStepSignDependencies : FileBuildStep
             _batchSize,
             async file =>
             {
-                await RunProcess(Path.GetDirectoryName(file.FullName), _dsSignFile, $"\"{privateKey}\" \"{file.FullName}\"", _signProcessTimeout, false, true);
+                await RunProcess(Path.GetDirectoryName(file.FullName), _signer, $"sign \"{privateKey}\" \"{file.FullName}\"", _signProcessTimeout, false, true);
                 Interlocked.Increment(ref signed);
             },
             () => $"Signed {signed} of {total} files",
