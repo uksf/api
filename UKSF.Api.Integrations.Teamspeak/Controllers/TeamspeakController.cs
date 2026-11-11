@@ -20,12 +20,14 @@ public class TeamspeakController : ControllerBase
     private readonly INotificationsService _notificationsService;
     private readonly IRanksService _ranksService;
     private readonly IRecruitmentService _recruitmentService;
+    private readonly ITeamspeakManagerService _teamspeakManagerService;
     private readonly ITeamspeakService _teamspeakService;
     private readonly IUnitsService _unitsService;
 
     public TeamspeakController(
         IAccountContext accountContext,
         ITeamspeakService teamspeakService,
+        ITeamspeakManagerService teamspeakManagerService,
         IRanksService ranksService,
         IUnitsService unitsService,
         IRecruitmentService recruitmentService,
@@ -37,6 +39,7 @@ public class TeamspeakController : ControllerBase
     {
         _accountContext = accountContext;
         _teamspeakService = teamspeakService;
+        _teamspeakManagerService = teamspeakManagerService;
         _ranksService = ranksService;
         _unitsService = unitsService;
         _recruitmentService = recruitmentService;
@@ -71,19 +74,10 @@ public class TeamspeakController : ControllerBase
 
     [HttpGet("reload")]
     [Permissions(Permissions.Admin)]
-    public async Task Reload()
+    public void Reload()
     {
         _logger.LogInfo("Teamspeak reload via API");
-        await _teamspeakService.Reload();
-    }
-
-    [HttpGet("shutdown")]
-    [Permissions(Permissions.Admin)]
-    public async Task Shutdown()
-    {
-        _logger.LogInfo("Teamspeak shutdown via API");
-        await _teamspeakService.Shutdown();
-        await Task.Delay(TimeSpan.FromSeconds(3));
+        _teamspeakManagerService.Reload();
     }
 
     [HttpGet("onlineAccounts")]

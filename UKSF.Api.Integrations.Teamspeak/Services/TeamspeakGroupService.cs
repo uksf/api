@@ -4,20 +4,22 @@ using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
-using UKSF.Api.Integrations.Teamspeak.Models;
+using UKSF.Api.Integrations.Teamspeak.Query;
 
 namespace UKSF.Api.Integrations.Teamspeak.Services;
 
 public interface ITeamspeakGroupService
 {
     Task UpdateAccountGroups(DomainAccount account, ICollection<int> assignedGroupIds, int clientDbId);
+    Task CheckClientGroups(int clientDbId, ICollection<int> assignedGroupIds);
 }
 
 public class TeamspeakGroupService(
+    IAccountContext accountContext,
     IRanksContext ranksContext,
     IUnitsContext unitsContext,
     IUnitsService unitsService,
-    ITeamspeakManagerService teamspeakManagerService,
+    ITeamspeakQuery teamspeakQuery,
     IVariablesService variablesService,
     ITrainingsContext trainingsContext
 ) : ITeamspeakGroupService
@@ -32,6 +34,17 @@ public class TeamspeakGroupService(
     {
         var groupIdsToAssign = ResolveMembershipGroups(account);
         await ApplyGroupChanges(groupIdsToAssign, assignedGroupIds, clientDbId);
+    }
+
+    public async Task CheckClientGroups(int clientDbId, ICollection<int> assignedGroupIds)
+    {
+        var account = accountContext.Get(x => x.TeamspeakIdentities is not null && x.TeamspeakIdentities.Contains(clientDbId)).MaxBy(x => x.MembershipState);
+        if (account is null)
+        {
+            return;
+        }
+
+        await UpdateAccountGroups(account, assignedGroupIds, clientDbId);
     }
 
     private HashSet<int> ResolveMembershipGroups(DomainAccount account)
@@ -79,7 +92,7 @@ public class TeamspeakGroupService(
         {
             if (!groupIdsToAssign.Contains(assignedGroupId) && !groupIdBlacklist.Contains(assignedGroupId))
             {
-                await RemoveServerGroup(clientDbId, assignedGroupId);
+                await teamspeakQuery.RemoveServerGroup(clientDbId, assignedGroupId);
             }
         }
     }
@@ -88,7 +101,7 @@ public class TeamspeakGroupService(
     {
         foreach (var serverGroup in groupIdsToAssign.Where(serverGroup => !assignedGroupIds.Contains(serverGroup)))
         {
-            await AddServerGroup(clientDbId, serverGroup);
+            await teamspeakQuery.AddServerGroup(clientDbId, serverGroup);
         }
     }
 
@@ -200,21 +213,5 @@ public class TeamspeakGroupService(
     private IEnumerable<int> GetTrainingGroupIds(DomainAccount account)
     {
         return trainingsContext.Get().Where(x => account.Trainings.Contains(x.Id)).Select(training => training.TeamspeakGroup.ToInt());
-    }
-
-    private Task AddServerGroup(int clientDbId, int serverGroup)
-    {
-        return teamspeakManagerService.SendGroupProcedure(
-            TeamspeakProcedureType.Assign,
-            new TeamspeakGroupProcedure { ClientDbId = clientDbId, ServerGroup = serverGroup }
-        );
-    }
-
-    private Task RemoveServerGroup(int clientDbId, int serverGroup)
-    {
-        return teamspeakManagerService.SendGroupProcedure(
-            TeamspeakProcedureType.Unassign,
-            new TeamspeakGroupProcedure { ClientDbId = clientDbId, ServerGroup = serverGroup }
-        );
     }
 }

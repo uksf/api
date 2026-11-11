@@ -12,7 +12,6 @@ public interface IProcessUtilities
 {
     int LaunchManagedProcess(string executable, string arguments = null);
     Task LaunchExternalProcess(string name, string command, string workingDirectory = null);
-    Task CloseProcessGracefully(Process process);
     void KillProcess(Process process, bool entireProcessTree = true);
     Process FindProcessById(int id);
     Process FindProcessByName(string name);
@@ -25,10 +24,6 @@ public interface IProcessUtilities
 [ExcludeFromCodeCoverage]
 public class ProcessUtilities : IProcessUtilities
 {
-    private const int ScClose = 0xF060;
-    private const int WmSysCommand = 0x0112;
-    private const string PostMessageExecutableOnPath = "UKSF.PostMessage";
-
     public int LaunchManagedProcess(string executable, string arguments = null)
     {
         if (OperatingSystem.IsLinux())
@@ -72,11 +67,6 @@ public class ProcessUtilities : IProcessUtilities
         taskDefinition.Triggers.Add(new TimeTrigger(DateTime.UtcNow.AddSeconds(1)));
         TaskService.Instance.RootFolder.RegisterTaskDefinition(name, taskDefinition);
         await Task.Delay(TimeSpan.FromSeconds(1));
-    }
-
-    public async Task CloseProcessGracefully(Process process)
-    {
-        await LaunchExternalProcess("CloseProcess", $"start \"\" \"{PostMessageExecutableOnPath}\" {process.ProcessName} {WmSysCommand} {ScClose} 0");
     }
 
     public void KillProcess(Process process, bool entireProcessTree = true)
