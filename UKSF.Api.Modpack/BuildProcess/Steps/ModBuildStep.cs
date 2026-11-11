@@ -19,4 +19,9 @@ public class ModBuildStep : FileBuildStep
     {
         return $"{arguments} -v";
     }
+
+    internal Task RunHemttRelease(string rootPath, TimeSpan timeout)
+    {
+        return RunProcess(rootPath, Hemtt, HemttCommand("release --no-archive"), (int)timeout.TotalMilliseconds, true, redirectStderrToOutput: true);
+    }
 }

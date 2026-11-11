@@ -72,7 +72,7 @@ public class BuildStepBuildModpack : ModBuildStep
         StepLogger.LogSurround("Set configuration");
 
         StepLogger.LogSurround("\nRunning hemtt release...");
-        await RunProcess(rootPath, Hemtt, HemttCommand("release --no-archive"), (int)TimeSpan.FromMinutes(5).TotalMilliseconds, true);
+        await RunHemttRelease(rootPath, TimeSpan.FromMinutes(5));
         StepLogger.LogSurround("Hemtt release complete");
 
         StepLogger.LogSurround("\nMoving UKSF release to build...");
