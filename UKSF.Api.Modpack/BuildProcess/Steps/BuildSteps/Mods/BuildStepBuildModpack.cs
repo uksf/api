@@ -35,29 +35,30 @@ public class BuildStepBuildModpack : ModBuildStep
             StepLogger.LogSurround("Set extension version");
         }
 
-        StepLogger.LogSurround("\nBuilding Rust extension...");
-        await RunProcess(
-            extensionPath,
-            "cmd.exe",
-            "/c \"..\\tools\\build_extension.bat --release\"",
-            (int)TimeSpan.FromMinutes(10).TotalMilliseconds,
-            true,
-            redirectStderrToOutput: true
-        );
-        StepLogger.LogSurround("Rust extension built");
-
-        StepLogger.LogSurround("\nCopying extension DLL...");
-        var builtDll = Path.Join(extensionPath, "target", "release", "uksf_x64.dll");
-        var targetDll = Path.Join(rootPath, "uksf_x64.dll");
-        File.Copy(builtDll, targetDll, true);
-        StepLogger.Log($"Copied {builtDll} to {targetDll}");
-        StepLogger.LogSurround("Copied extension DLL");
+        foreach (var target in ExtensionTargets.For(OperatingSystem.IsWindows()))
+        {
+            StepLogger.LogSurround($"\nBuilding Rust extension {target.FileName}...");
+            await RunProcess(
+                extensionPath,
+                target.Executable,
+                target.Arguments,
+                (int)TimeSpan.FromMinutes(10).TotalMilliseconds,
+                true,
+                redirectStderrToOutput: true
+            );
+            var built = Path.Join(extensionPath, target.BuiltPath);
+            var destination = Path.Join(rootPath, target.FileName);
+            File.Copy(built, destination, true);
+            StepLogger.Log($"Copied {built} to {destination}");
+            StepLogger.LogSurround($"Built Rust extension {target.FileName}");
+        }
 
         StepLogger.LogSurround("\nProvisioning whisper STT model...");
+        var whisperCache = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "uksf", "whisper");
         await RunProcess(
             rootPath,
-            "cmd.exe",
-            "/c \"powershell -NoProfile -ExecutionPolicy Bypass -File tools\\fetch_whisper_model.ps1\"",
+            "pwsh",
+            $"-NoProfile -ExecutionPolicy Bypass -File {Path.Join("tools", "fetch_whisper_model.ps1")} -CacheDir \"{whisperCache}\"",
             (int)TimeSpan.FromMinutes(15).TotalMilliseconds,
             true,
             redirectStderrToOutput: true
@@ -71,7 +72,7 @@ public class BuildStepBuildModpack : ModBuildStep
         StepLogger.LogSurround("Set configuration");
 
         StepLogger.LogSurround("\nRunning hemtt release...");
-        await RunProcess(rootPath, "cmd.exe", HemttCommand("release --no-archive"), (int)TimeSpan.FromMinutes(5).TotalMilliseconds, true);
+        await RunProcess(rootPath, Hemtt, HemttCommand("release --no-archive"), (int)TimeSpan.FromMinutes(5).TotalMilliseconds, true);
         StepLogger.LogSurround("Hemtt release complete");
 
         StepLogger.LogSurround("\nMoving UKSF release to build...");

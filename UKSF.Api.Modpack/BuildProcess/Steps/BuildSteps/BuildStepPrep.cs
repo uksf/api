@@ -9,6 +9,12 @@ public class BuildStepPrep : BuildStep
 
     protected override async Task ProcessExecute()
     {
+        if (!OperatingSystem.IsWindows())
+        {
+            StepLogger.Log("No P: drive to mount on this host");
+            return;
+        }
+
         StepLogger.Log("Mounting build environment");
 
         var projectsPath = VariablesService.GetVariable("BUILD_PATH_PROJECTS").AsString();
