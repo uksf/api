@@ -49,7 +49,7 @@ public class BuildStepSignDependenciesProcessTests : IDisposable
                                               File.WriteAllBytes(Path.Combine(workingDir, "uksf_dependencies_dev.bikey"), [1]);
                                           }
 
-                                          return new ProcessCommand(_mockLogger.Object, "cmd.exe", workingDir, $"/c exit {_exitCode}");
+                                          return ExitProcess.Command(_mockLogger.Object, workingDir, _exitCode);
                                       }
                                   );
     }

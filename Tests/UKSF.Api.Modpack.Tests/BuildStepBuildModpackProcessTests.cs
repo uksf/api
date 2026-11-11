@@ -40,7 +40,7 @@ public class BuildStepBuildModpackProcessTests : IDisposable
                                       {
                                           _commands.Add((executable, workingDir, args));
                                           FakeOutputs(executable, workingDir, args);
-                                          return new ProcessCommand(_mockLogger.Object, "cmd.exe", workingDir, $"/c exit {_exitCode}");
+                                          return ExitProcess.Command(_mockLogger.Object, workingDir, _exitCode);
                                       }
                                   );
     }

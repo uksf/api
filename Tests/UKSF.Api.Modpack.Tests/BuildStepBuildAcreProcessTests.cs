@@ -45,7 +45,7 @@ public class BuildStepBuildAcreProcessTests : IDisposable
                                               File.WriteAllText(Path.Join(addons, "acre_main.pbo"), "pbo");
                                           }
 
-                                          return new ProcessCommand(_mockLogger.Object, "cmd.exe", workingDir, $"/c exit {_exitCode}");
+                                          return ExitProcess.Command(_mockLogger.Object, workingDir, _exitCode);
                                       }
                                   );
     }

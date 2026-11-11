@@ -11,13 +11,13 @@ public class BuildStepSources : GitBuildStep
     {
         StepLogger.Log("Checking out latest sources");
 
-        await CheckoutStaticSource("ACE", "ace", "@ace", "@uksf_ace", "uksfcustom");
-        await CheckoutStaticSource("ACRE", "acre", "@acre2", "@uksf_acre2", "customrelease");
-        await CheckoutStaticSource("UKSF Air", "uksf_air", "@uksf_air", "@uksf_air", "main");
+        await CheckoutStaticSource("ACE", "ace", "@uksf_ace", "uksfcustom");
+        await CheckoutStaticSource("ACRE", "acre", "@uksf_acre2", "customrelease");
+        await CheckoutStaticSource("UKSF Air", "uksf_air", "@uksf_air", "main");
         await CheckoutModpack();
     }
 
-    private async Task CheckoutStaticSource(string displayName, string modName, string releaseName, string repoName, string branchName)
+    private async Task CheckoutStaticSource(string displayName, string modName, string repoName, string branchName)
     {
         StepLogger.LogSurround($"\nChecking out latest {displayName}...");
 
@@ -28,7 +28,7 @@ public class BuildStepSources : GitBuildStep
             throw new Exception($"{displayName} source directory does not exist. {displayName} should be cloned before running a build.");
         }
 
-        var releasePath = Path.Join(GetBuildSourcesPath(), modName, "release", releaseName);
+        var releasePath = Path.Join(GetBuildSourcesPath(), modName, ".hemttout", "release");
         var repoPath = Path.Join(GetBuildEnvironmentPath(), "Repo", repoName);
         DirectoryInfo release = new(releasePath);
         DirectoryInfo repo = new(repoPath);
