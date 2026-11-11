@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using Moq;
+using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Mappers;
 using UKSF.Api.Core.Models;
@@ -38,6 +39,7 @@ public abstract class TeamspeakGroupServiceTestBase
     protected readonly Mock<ITrainingsContext> _mockTrainingsContext = new();
     protected readonly Mock<IUnitsContext> _mockUnitsContext = new();
     protected readonly Mock<IVariablesService> _mockVariablesService = new();
+    protected readonly Mock<IUksfLogger> _mockLogger = new();
     protected readonly List<int> _removedGroups = [];
     protected readonly TeamspeakGroupService _teamspeakGroupService;
 
@@ -78,7 +80,8 @@ public abstract class TeamspeakGroupServiceTestBase
             unitsService,
             _mockTeamspeakQuery.Object,
             _mockVariablesService.Object,
-            _mockTrainingsContext.Object
+            _mockTrainingsContext.Object,
+            _mockLogger.Object
         );
     }
 
