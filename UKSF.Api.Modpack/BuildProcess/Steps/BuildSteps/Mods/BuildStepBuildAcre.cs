@@ -10,26 +10,35 @@ public class BuildStepBuildAcre : ModBuildStep
     {
         StepLogger.Log("Running build for ACRE");
 
-        var toolsPath = Path.Join(GetBuildSourcesPath(), ModName, "tools");
-        var releasePath = Path.Join(GetBuildSourcesPath(), ModName, "release", "@acre2");
+        var rootPath = Path.Join(GetBuildSourcesPath(), ModName);
+        var extensionsPath = Path.Join(rootPath, "extensions");
+        var hemttReleasePath = Path.Join(rootPath, ".hemttout", "release");
         var buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf_acre2");
 
         if (IsBuildNeeded(ModName))
         {
-            StepLogger.LogSurround("\nRunning make.py...");
-            await RunProcess(
-                toolsPath,
-                PythonPath,
-                MakeCommand("redirect compile"),
-                (int)TimeSpan.FromMinutes(10).TotalMilliseconds,
-                log: true,
-                redirectStderrToOutput: true
-            );
-            StepLogger.LogSurround("Make.py complete");
+            StepLogger.LogSurround("\nBuilding ACRE extensions...");
+            foreach (var command in AcreExtensionCommands.For(OperatingSystem.IsWindows()))
+            {
+                await RunProcess(
+                    extensionsPath,
+                    command.Executable,
+                    command.Arguments,
+                    (int)TimeSpan.FromMinutes(10).TotalMilliseconds,
+                    log: true,
+                    redirectStderrToOutput: true
+                );
+            }
+
+            StepLogger.LogSurround("Built ACRE extensions");
+
+            StepLogger.LogSurround("\nRunning hemtt release...");
+            await RunProcess(rootPath, Hemtt, HemttCommand("release --no-archive"), (int)TimeSpan.FromMinutes(10).TotalMilliseconds, true);
+            StepLogger.LogSurround("Hemtt release complete");
         }
 
         StepLogger.LogSurround("\nMoving ACRE release to build...");
-        await CopyDirectory(releasePath, buildPath);
+        await CopyDirectory(hemttReleasePath, buildPath);
         StepLogger.LogSurround("Moved ACRE release to build");
     }
 }

@@ -32,7 +32,6 @@ public class BuildStepBuildModpackProcessTests : IDisposable
 
         SetVariable("BUILD_FORCE_LOGS", false);
         SetVariable("BUILD_STATE_UPDATE_INTERVAL", 1.0);
-        SetVariable("BUILD_PATH_PYTHON", "python");
         SetVariable("BUILD_PATH_SOURCES", Path.Combine(_root, "sources"));
         SetVariable("MODPACK_PATH_DEV", Path.Combine(_root, "env"));
 
