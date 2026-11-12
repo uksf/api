@@ -31,7 +31,7 @@ public class BackupFileWalkerTests
         _mockFileSystemProvider.Setup(x => x.GetFiles(path)).Returns(files.ToList());
     }
 
-    [Fact]
+    [WindowsFact]
     public void A_folder_is_walked_recursively_and_named_under_files()
     {
         GivenTree(@"C:\Server\Nginx", [@"C:\Server\Nginx\conf"], [@"C:\Server\Nginx\nginx.exe"]);
@@ -43,7 +43,7 @@ public class BackupFileWalkerTests
         result.Skips.Should().BeEmpty();
     }
 
-    [Fact]
+    [WindowsFact]
     public void A_non_recursive_folder_takes_only_its_own_files()
     {
         GivenTree(@"C:\Server\Nginx", [@"C:\Server\Nginx\conf"], [@"C:\Server\Nginx\nginx.exe"]);
@@ -63,7 +63,7 @@ public class BackupFileWalkerTests
         result.Files.Select(x => x.EntryName).Should().ContainSingle().Which.Should().Be("files/C/Server/Nginx/nginx.exe");
     }
 
-    [Fact]
+    [WindowsFact]
     public void An_excluded_folder_is_not_descended_into()
     {
         GivenTree(@"C:\Server\Nginx", [@"C:\Server\Nginx\logs", @"C:\Server\Nginx\conf"], []);
@@ -84,7 +84,7 @@ public class BackupFileWalkerTests
         result.Files.Select(x => x.EntryName).Should().ContainSingle().Which.Should().Be("files/C/Server/Nginx/conf/nginx.conf");
     }
 
-    [Fact]
+    [WindowsFact]
     public void An_excluded_file_is_dropped_while_its_siblings_are_kept()
     {
         GivenTree(@"C:\Server\Teamspeak", [], [@"C:\Server\Teamspeak\deets.txt", @"C:\Server\Teamspeak\ts3server.log"]);
@@ -103,7 +103,7 @@ public class BackupFileWalkerTests
         result.Files.Select(x => x.EntryName).Should().ContainSingle().Which.Should().Be("files/C/Server/Teamspeak/deets.txt");
     }
 
-    [Fact]
+    [WindowsFact]
     public void An_exclude_nested_deeper_than_the_selection_still_applies()
     {
         GivenTree(@"C:\Server", [@"C:\Server\Nginx"], []);
@@ -124,7 +124,7 @@ public class BackupFileWalkerTests
         result.Files.Should().BeEmpty();
     }
 
-    [Fact]
+    [WindowsFact]
     public void An_exclude_matches_a_path_the_provider_reports_differently_cased_or_slashed()
     {
         GivenTree(@"C:\Server\Nginx", [@"c:\SERVER\nginx\Logs\"], [@"C:\Server\Nginx\nginx.exe"]);
@@ -144,7 +144,7 @@ public class BackupFileWalkerTests
         result.Files.Select(x => x.EntryName).Should().ContainSingle().Which.Should().Be("files/C/Server/Nginx/nginx.exe");
     }
 
-    [Fact]
+    [WindowsFact]
     public void A_single_file_entry_is_taken_on_its_own()
     {
         var result = _subject.Walk([new DomainBackupEntry { Path = @"C:\Server\UKSF.Api\appsettings.json", EntryType = BackupEntryType.File }]);
@@ -152,7 +152,7 @@ public class BackupFileWalkerTests
         result.Files.Select(x => x.EntryName).Should().ContainSingle().Which.Should().Be("files/C/Server/UKSF.Api/appsettings.json");
     }
 
-    [Fact]
+    [WindowsFact]
     public void A_disabled_entry_is_ignored()
     {
         GivenTree(@"C:\Server\Nginx", [], [@"C:\Server\Nginx\nginx.exe"]);
@@ -171,7 +171,7 @@ public class BackupFileWalkerTests
         result.Files.Should().BeEmpty();
     }
 
-    [Fact]
+    [WindowsFact]
     public void A_source_that_vanished_since_selection_is_skipped_not_thrown()
     {
         _mockFileSystemProvider.Setup(x => x.DirectoryExists(@"C:\Server\Gone")).Returns(false);
@@ -189,7 +189,7 @@ public class BackupFileWalkerTests
         result.Skips.Should().OnlyContain(x => x.Reason.Contains("no longer exists"));
     }
 
-    [Fact]
+    [WindowsFact]
     public void A_directory_that_denies_access_is_recorded_as_a_skip_and_the_walk_continues()
     {
         GivenTree(@"C:\Server", [@"C:\Server\Locked", @"C:\Server\Open"], []);
@@ -202,7 +202,7 @@ public class BackupFileWalkerTests
         result.Skips.Should().ContainSingle().Which.Path.Should().Be(@"C:\Server\Locked");
     }
 
-    [Fact]
+    [WindowsFact]
     public void The_same_file_reached_twice_is_only_taken_once()
     {
         GivenTree(@"C:\Server\Nginx", [], [@"C:\Server\Nginx\nginx.exe"]);
@@ -217,7 +217,7 @@ public class BackupFileWalkerTests
         result.Files.Should().ContainSingle();
     }
 
-    [Fact]
+    [WindowsFact]
     public void A_locked_directory_listing_does_not_stop_files_already_found()
     {
         GivenTree(@"C:\Server", [], [@"C:\Server\keep.txt"]);

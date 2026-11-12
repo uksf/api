@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Processes;
@@ -204,6 +205,12 @@ public class TeamspeakManagerService(
         }
 
         var serverPath = variablesService.GetVariable("TEAMSPEAK_SERVER_PATH").AsString();
+        if (!OperatingSystem.IsWindows())
+        {
+            processUtilities.LaunchManagedProcess(serverPath, "license_accepted=1", ProcessPriorityClass.AboveNormal);
+            return;
+        }
+
         await processUtilities.LaunchExternalProcess("TeamspeakServer", $"start \"\" /abovenormal \"{serverPath}\"", Path.GetDirectoryName(serverPath));
     }
 }

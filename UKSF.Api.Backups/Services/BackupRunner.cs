@@ -11,7 +11,6 @@ public interface IBackupRunner
 {
     Task<DomainBackupRun> Run(CancellationToken cancellationToken = default);
 
-    /// <summary>Records the run and returns at once, so a manual trigger does not sit on an HTTP request for an hour.</summary>
     Task<DomainBackupRun> Start();
 }
 
@@ -30,7 +29,7 @@ public class BackupRunner(
     IUksfLogger logger
 ) : IBackupRunner
 {
-    private const string DefaultBackupPath = @"E:\Backups";
+    private static readonly string DefaultBackupPath = OperatingSystem.IsWindows() ? @"E:\Backups" : "/var/backups/uksf";
 
     public async Task<DomainBackupRun> Start()
     {

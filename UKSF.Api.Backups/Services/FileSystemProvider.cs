@@ -11,7 +11,7 @@ public interface IFileSystemProvider
     DateTime GetLastWriteTimeUtc(string path);
     Stream OpenRead(string path);
     void CreateDirectory(string path);
-    void WriteAllText(string path, string contents);
+    void WriteOwnerOnlyText(string path, string contents);
     void DeleteFile(string path);
     void DeleteDirectory(string path);
     Stream Create(string path);
@@ -41,7 +41,7 @@ public class FileSystemProvider : IFileSystemProvider
 
     public IEnumerable<string> GetDrives()
     {
-        return DriveInfo.GetDrives().Where(x => x.IsReady).Select(x => x.Name);
+        return OperatingSystem.IsWindows() ? DriveInfo.GetDrives().Where(x => x.IsReady).Select(x => x.Name) : ["/"];
     }
 
     public long GetFileSize(string path)
@@ -54,7 +54,6 @@ public class FileSystemProvider : IFileSystemProvider
         return File.GetLastWriteTimeUtc(path);
     }
 
-    // Sources are live: TeamSpeak's sqlite db, nginx logs and the API's own files are all open elsewhere.
     public Stream OpenRead(string path)
     {
         return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
@@ -65,9 +64,16 @@ public class FileSystemProvider : IFileSystemProvider
         Directory.CreateDirectory(path);
     }
 
-    public void WriteAllText(string path, string contents)
+    public void WriteOwnerOnlyText(string path, string contents)
     {
-        File.WriteAllText(path, contents);
+        var options = new FileStreamOptions { Mode = FileMode.Create, Access = FileAccess.Write };
+        if (!OperatingSystem.IsWindows())
+        {
+            options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        }
+
+        using var writer = new StreamWriter(path, options);
+        writer.Write(contents);
     }
 
     public void DeleteFile(string path)

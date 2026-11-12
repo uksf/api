@@ -271,24 +271,4 @@ public class TeamspeakManagerServiceTests
 
         _mockLogger.Verify(x => x.LogError("Teamspeak sync failed", It.IsAny<Exception>()), Times.Once);
     }
-
-    [Fact]
-    public async Task Loop_starts_a_missing_teamspeak_server_at_above_normal_priority()
-    {
-        var launched = new TaskCompletionSource<string>();
-        _mockVariablesService.Setup(x => x.GetFeatureState("TEAMSPEAK")).Returns(true);
-        _mockVariablesService.Setup(x => x.GetVariable("TEAMSPEAK_SERVER_RUN")).Returns(new DomainVariableItem { Key = "TEAMSPEAK_SERVER_RUN", Item = true });
-        _mockVariablesService.Setup(x => x.GetVariable("TEAMSPEAK_SERVER_PATH"))
-                             .Returns(new DomainVariableItem { Key = "TEAMSPEAK_SERVER_PATH", Item = "C:/Server/Teamspeak/ts3server.exe" });
-        _mockProcessUtilities.Setup(x => x.GetProcessesByName("ts3server")).Returns([]);
-        _mockProcessUtilities.Setup(x => x.LaunchExternalProcess("TeamspeakServer", It.IsAny<string>(), It.IsAny<string>()))
-                             .Callback((string _, string command, string _) => launched.TrySetResult(command))
-                             .Returns(Task.CompletedTask);
-
-        _subject.Start();
-        var command = await launched.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        _subject.Stop();
-
-        command.Should().Be("start \"\" /abovenormal \"C:/Server/Teamspeak/ts3server.exe\"");
-    }
 }

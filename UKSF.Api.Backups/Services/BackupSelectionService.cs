@@ -17,7 +17,7 @@ public class BackupSelectionService(IBackupEntriesContext context, IFileSystemPr
 {
     public IEnumerable<DomainBackupEntry> GetEntries()
     {
-        return context.Get().OrderBy(x => x.Path, StringComparer.OrdinalIgnoreCase);
+        return context.Get().OrderBy(x => x.Path, BackupPaths.Comparer);
     }
 
     public DomainBackupEntry GetEntry(string id)
@@ -74,12 +74,11 @@ public class BackupSelectionService(IBackupEntriesContext context, IFileSystemPr
                                              .Where(x => !string.IsNullOrWhiteSpace(x))
                                              .Distinct(StringComparer.OrdinalIgnoreCase)
                                              .ToList(),
-            Excludes = (entry.Excludes ?? []).Select(NormaliseExclude).Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
+            Excludes = (entry.Excludes ?? []).Select(NormaliseExclude).Distinct(BackupPaths.Comparer).ToList(),
             Enabled = entry.Enabled
         };
     }
 
-    /// <summary>A bare name pattern stays as typed; anything else is a real path and is normalised as one.</summary>
     private static string NormaliseExclude(string exclude)
     {
         return BackupGlob.IsGlob(exclude) && !BackupGlob.HasSeparator(exclude) ? exclude.Trim() : BackupPaths.Normalise(exclude);
@@ -142,9 +141,8 @@ public class BackupSelectionService(IBackupEntriesContext context, IFileSystemPr
             throw new UksfException("Excludes can only be set on a folder entry", 400);
         }
 
-        // A bare name pattern applies at any depth, so only real paths are checked for being inside the selection.
         var outside = entry.Excludes.Where(x => BackupGlob.HasSeparator(x) || !BackupGlob.IsGlob(x))
-                           .FirstOrDefault(x => !BackupPaths.Contains(entry.Path, x) || string.Equals(x, entry.Path, StringComparison.OrdinalIgnoreCase));
+                           .FirstOrDefault(x => !BackupPaths.Contains(entry.Path, x) || string.Equals(x, entry.Path, BackupPaths.Comparison));
         if (outside is not null)
         {
             throw new UksfException($"Exclude is not inside the selected folder: {outside}", 400);
@@ -155,7 +153,7 @@ public class BackupSelectionService(IBackupEntriesContext context, IFileSystemPr
     {
         var others = context.Get(x => x.Id != entry.Id).ToList();
 
-        if (others.Any(x => string.Equals(x.Path, entry.Path, StringComparison.OrdinalIgnoreCase)))
+        if (others.Any(x => string.Equals(x.Path, entry.Path, BackupPaths.Comparison)))
         {
             throw new UksfException($"Path is already selected: {entry.Path}", 400);
         }

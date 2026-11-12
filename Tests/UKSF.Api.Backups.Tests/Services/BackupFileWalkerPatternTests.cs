@@ -8,7 +8,6 @@ using Xunit;
 
 namespace UKSF.Api.Backups.Tests.Services;
 
-/// <summary>The Arma profiles case: folders appear and disappear with game server entries, only two file kinds matter.</summary>
 public class BackupFileWalkerPatternTests
 {
     private readonly Mock<IFileSystemProvider> _mockFileSystemProvider = new();
@@ -60,7 +59,7 @@ public class BackupFileWalkerPatternTests
         };
     }
 
-    [Fact]
+    [WindowsFact]
     public void Only_files_matching_a_pattern_are_taken()
     {
         var result = _subject.Walk([Profiles(["*.Arma3Profile", "*.vars.*"])]);
@@ -77,7 +76,7 @@ public class BackupFileWalkerPatternTests
               );
     }
 
-    [Fact]
+    [WindowsFact]
     public void A_profile_folder_added_later_is_picked_up_without_touching_the_selection()
     {
         GivenTree(
@@ -95,7 +94,7 @@ public class BackupFileWalkerPatternTests
         result.Files.Select(x => x.SourcePath).Should().Contain(@"C:\Server\Arma\Profiles\Quinary\Quinary.vars.Arma3Profile");
     }
 
-    [Fact]
+    [WindowsFact]
     public void A_name_pattern_exclude_prunes_folders_at_any_depth()
     {
         var result = _subject.Walk([Profiles(["*.Arma3Profile", "*.vars.*"], ["DevRun_*"])]);
@@ -104,7 +103,7 @@ public class BackupFileWalkerPatternTests
         result.Files.Should().HaveCount(3);
     }
 
-    [Fact]
+    [WindowsFact]
     public void A_path_exclude_still_works_alongside_patterns()
     {
         var result = _subject.Walk([Profiles(["*.Arma3Profile"], [@"C:\Server\Arma\Profiles\OLD USERS BACKUP"])]);
@@ -112,7 +111,7 @@ public class BackupFileWalkerPatternTests
         result.Files.Select(x => x.SourcePath).Should().NotContain(x => x.Contains("OLD USERS"));
     }
 
-    [Fact]
+    [WindowsFact]
     public void No_patterns_means_everything_as_before()
     {
         var result = _subject.Walk([Profiles([])]);

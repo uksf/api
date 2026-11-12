@@ -21,7 +21,7 @@ public class FileTreeServiceTests
         _subject = new FileTreeService(_mockFileSystemProvider.Object);
     }
 
-    [Fact]
+    [WindowsFact]
     public void Roots_are_the_ready_drives_sorted()
     {
         _mockFileSystemProvider.Setup(x => x.GetDrives()).Returns([@"E:\", @"C:\", @"D:\"]);
@@ -32,7 +32,7 @@ public class FileTreeServiceTests
         result.Should().OnlyContain(x => x.IsDirectory && x.HasChildren);
     }
 
-    [Fact]
+    [WindowsFact]
     public void Children_list_directories_before_files_each_sorted()
     {
         _mockFileSystemProvider.Setup(x => x.DirectoryExists(@"C:\Server")).Returns(true);
@@ -46,7 +46,7 @@ public class FileTreeServiceTests
         result.Skip(2).Should().OnlyContain(x => !x.IsDirectory && !x.HasChildren);
     }
 
-    [Fact]
+    [WindowsFact]
     public void An_empty_directory_reports_no_children()
     {
         _mockFileSystemProvider.Setup(x => x.DirectoryExists(@"C:\Server")).Returns(true);
@@ -57,7 +57,7 @@ public class FileTreeServiceTests
         result.Should().ContainSingle().Which.HasChildren.Should().BeFalse();
     }
 
-    [Fact]
+    [WindowsFact]
     public void A_directory_that_denies_access_is_listed_as_empty_rather_than_failing()
     {
         _mockFileSystemProvider.Setup(x => x.DirectoryExists(@"C:\Server")).Returns(true);
@@ -67,7 +67,7 @@ public class FileTreeServiceTests
         _subject.GetChildren(@"C:\Server").Should().BeEmpty();
     }
 
-    [Fact]
+    [WindowsFact]
     public void A_broken_junction_among_the_children_does_not_take_out_the_listing()
     {
         _mockFileSystemProvider.Setup(x => x.DirectoryExists(@"C:\Server\Arma\Environments\Release")).Returns(true);
@@ -84,7 +84,7 @@ public class FileTreeServiceTests
         result.Single(x => x.Name == "Contact").HasChildren.Should().BeFalse();
     }
 
-    [Fact]
+    [WindowsFact]
     public void An_unknown_directory_is_a_not_found()
     {
         _mockFileSystemProvider.Setup(x => x.DirectoryExists(It.IsAny<string>())).Returns(false);

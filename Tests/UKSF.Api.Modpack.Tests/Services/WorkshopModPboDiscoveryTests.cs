@@ -8,14 +8,14 @@ namespace UKSF.Api.Modpack.Tests.Services;
 
 public class WorkshopModPboDiscoveryTests
 {
-    private const string ModPath = "C:\\mod";
+    private static readonly string ModPath = Path.Combine(Path.GetTempPath(), "mod");
     private readonly Mock<IFileSystemService> _fileSystemService = new();
 
     private List<WorkshopModPboDiscovery.PboFile> Find(params string[] relativePaths)
     {
         _fileSystemService.Setup(x => x.DirectoryExists(ModPath)).Returns(true);
         _fileSystemService.Setup(x => x.EnumerateFiles(ModPath, "*.pbo", SearchOption.AllDirectories))
-                          .Returns(relativePaths.Select(x => Path.Combine(ModPath, x)).ToList());
+                          .Returns(relativePaths.Select(x => Path.Combine(ModPath, x.Replace('\\', Path.DirectorySeparatorChar))).ToList());
         return WorkshopModPboDiscovery.Find(_fileSystemService.Object, ModPath);
     }
 

@@ -47,8 +47,8 @@ public class BuildStepPatchDependenciesTests : IDisposable
                                   .Returns((string executable, string workingDir, string args) =>
                                       {
                                           _commands.Add((executable, args));
-                                          var echo = args.StartsWith("apply") ? $"echo {_applyOutput}& " : "";
-                                          return new ProcessCommand(_mockLogger.Object, "cmd.exe", workingDir, $"/c {echo}exit {_exitCode}");
+                                          var output = args.StartsWith("apply") ? _applyOutput : null;
+                                          return ExitProcess.EchoThenExit(_mockLogger.Object, workingDir, output, _exitCode);
                                       }
                                   );
     }

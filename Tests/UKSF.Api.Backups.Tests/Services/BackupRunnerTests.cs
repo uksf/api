@@ -90,7 +90,7 @@ public class BackupRunnerTests
         _harness.StateWhenAdded.Should().Be(BackupRunState.Running);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task A_successful_run_records_counts_name_and_skips()
     {
         var run = await _harness.Subject.Run();
@@ -105,7 +105,7 @@ public class BackupRunnerTests
         run.Finished.Should().Be(BackupRunnerHarness.Now);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task Mongo_dumps_are_added_to_the_archive_under_mongo()
     {
         IReadOnlyList<BackupWalkFile> extras = null;
@@ -170,7 +170,7 @@ public class BackupRunnerTests
         _harness.MockGoogleDriveClient.Verify(x => x.Upload(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task The_backup_path_can_be_moved_with_a_variable()
     {
         _harness.GivenVariable("BACKUP_PATH", @"D:\OtherBackups");
