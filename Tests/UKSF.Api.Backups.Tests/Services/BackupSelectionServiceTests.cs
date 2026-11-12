@@ -42,7 +42,7 @@ public class BackupSelectionServiceTests
         _subject = new BackupSelectionService(_mockContext.Object, _mockFileSystemProvider.Object);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task Adding_a_folder_normalises_the_path_and_defaults_to_recursive_and_enabled()
     {
         var result = await _subject.AddEntry(new DomainBackupEntry { Path = @"C:/Server/Nginx/", EntryType = BackupEntryType.Folder });
@@ -53,7 +53,7 @@ public class BackupSelectionServiceTests
         _entries.Should().ContainSingle();
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task Adding_a_folder_that_does_not_exist_is_rejected()
     {
         _mockFileSystemProvider.Setup(x => x.DirectoryExists(It.IsAny<string>())).Returns(false);
@@ -64,7 +64,7 @@ public class BackupSelectionServiceTests
         _entries.Should().BeEmpty();
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task Adding_a_file_that_does_not_exist_is_rejected()
     {
         _mockFileSystemProvider.Setup(x => x.FileExists(It.IsAny<string>())).Returns(false);
@@ -74,7 +74,7 @@ public class BackupSelectionServiceTests
         (await act.Should().ThrowAsync<UksfException>()).Which.StatusCode.Should().Be(400);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task Adding_the_same_path_twice_is_rejected()
     {
         await _subject.AddEntry(new DomainBackupEntry { Path = @"C:\Server\Nginx", EntryType = BackupEntryType.Folder });
@@ -84,7 +84,7 @@ public class BackupSelectionServiceTests
         (await act.Should().ThrowAsync<UksfException>()).Which.Message.Should().Contain("already selected");
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task Adding_a_path_inside_an_existing_recursive_folder_is_rejected()
     {
         await _subject.AddEntry(new DomainBackupEntry { Path = @"C:\Server", EntryType = BackupEntryType.Folder });
@@ -94,7 +94,7 @@ public class BackupSelectionServiceTests
         (await act.Should().ThrowAsync<UksfException>()).Which.Message.Should().Contain("overlaps");
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task Adding_a_folder_that_would_swallow_an_existing_entry_is_rejected()
     {
         await _subject.AddEntry(new DomainBackupEntry { Path = @"C:\Server\Nginx\conf", EntryType = BackupEntryType.Folder });
@@ -104,7 +104,7 @@ public class BackupSelectionServiceTests
         (await act.Should().ThrowAsync<UksfException>()).Which.Message.Should().Contain("overlaps");
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task A_non_recursive_folder_does_not_block_a_deeper_selection()
     {
         await _subject.AddEntry(
@@ -122,7 +122,7 @@ public class BackupSelectionServiceTests
         _entries.Should().HaveCount(2);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task Excludes_are_normalised_and_deduplicated()
     {
         var result = await _subject.AddEntry(
@@ -137,7 +137,7 @@ public class BackupSelectionServiceTests
         result.Excludes.Should().BeEquivalentTo([@"C:\Server\Nginx\logs", @"C:\Server\Nginx\temp"]);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task An_exclude_outside_the_selected_folder_is_rejected()
     {
         var act = () => _subject.AddEntry(
@@ -152,7 +152,7 @@ public class BackupSelectionServiceTests
         (await act.Should().ThrowAsync<UksfException>()).Which.Message.Should().Contain("not inside");
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task An_exclude_equal_to_the_selected_folder_is_rejected()
     {
         var act = () => _subject.AddEntry(
@@ -167,7 +167,7 @@ public class BackupSelectionServiceTests
         (await act.Should().ThrowAsync<UksfException>()).Which.StatusCode.Should().Be(400);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task Patterns_are_trimmed_and_deduplicated()
     {
         var result = await _subject.AddEntry(
@@ -182,7 +182,7 @@ public class BackupSelectionServiceTests
         result.IncludePatterns.Should().BeEquivalentTo(["*.Arma3Profile", "*.vars.*"]);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task A_pattern_containing_a_path_is_rejected()
     {
         var act = () => _subject.AddEntry(
@@ -197,7 +197,7 @@ public class BackupSelectionServiceTests
         (await act.Should().ThrowAsync<UksfException>()).Which.Message.Should().Contain("cannot contain a path");
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task Patterns_on_a_file_entry_are_rejected()
     {
         var act = () => _subject.AddEntry(
@@ -212,7 +212,7 @@ public class BackupSelectionServiceTests
         (await act.Should().ThrowAsync<UksfException>()).Which.Message.Should().Contain("folder entry");
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task A_name_pattern_exclude_is_kept_as_typed_and_not_treated_as_a_path()
     {
         var result = await _subject.AddEntry(
@@ -227,7 +227,7 @@ public class BackupSelectionServiceTests
         result.Excludes.Should().ContainSingle().Which.Should().Be("DevRun_*");
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task Excludes_on_a_file_entry_are_rejected()
     {
         var act = () => _subject.AddEntry(
@@ -242,7 +242,7 @@ public class BackupSelectionServiceTests
         (await act.Should().ThrowAsync<UksfException>()).Which.Message.Should().Contain("folder entry");
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task Updating_an_entry_replaces_it_without_tripping_the_overlap_check_against_itself()
     {
         var added = await _subject.AddEntry(new DomainBackupEntry { Path = @"C:\Server\Nginx", EntryType = BackupEntryType.Folder });
@@ -254,7 +254,7 @@ public class BackupSelectionServiceTests
         _entries.Should().ContainSingle();
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task Updating_an_unknown_entry_is_rejected()
     {
         var act = () => _subject.UpdateEntry(
@@ -269,7 +269,7 @@ public class BackupSelectionServiceTests
         (await act.Should().ThrowAsync<UksfException>()).Which.StatusCode.Should().Be(404);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task Deleting_an_entry_removes_it()
     {
         var added = await _subject.AddEntry(new DomainBackupEntry { Path = @"C:\Server\Nginx", EntryType = BackupEntryType.Folder });
@@ -279,7 +279,7 @@ public class BackupSelectionServiceTests
         _entries.Should().BeEmpty();
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task Deleting_an_unknown_entry_is_rejected()
     {
         var act = () => _subject.DeleteEntry("5bd9daa3b1c98150403bccf6");
@@ -287,7 +287,7 @@ public class BackupSelectionServiceTests
         (await act.Should().ThrowAsync<UksfException>()).Which.StatusCode.Should().Be(404);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task Entries_come_back_sorted_by_path()
     {
         await _subject.AddEntry(new DomainBackupEntry { Path = @"D:\Website", EntryType = BackupEntryType.Folder });

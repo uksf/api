@@ -20,11 +20,6 @@ public interface IMongoDumpService
     Task<List<MongoDumpFile>> Dump(string outputDirectory, CancellationToken cancellationToken = default);
 }
 
-/// <summary>
-///     Replaces the dump.bat scheduled task, which had been failing since 2026-03-11 while the backup that imaged its
-///     output reported success. The password is written to a short-lived config file and deleted afterwards, so it
-///     never appears in a process listing, and it is never logged.
-/// </summary>
 public class MongoDumpService(
     IVariablesService variablesService,
     IOptions<AppSettings> options,
@@ -33,7 +28,7 @@ public class MongoDumpService(
     IUksfLogger logger
 ) : IMongoDumpService
 {
-    private const string DefaultMongoDumpPath = @"D:\Tools\MongoDBTools\mongodb-database-tools-windows-x86_64-100.17.0\bin\mongodump.exe";
+    private static readonly string DefaultMongoDumpPath = OperatingSystem.IsWindows() ? "mongodump.exe" : "mongodump";
     private const string ConfigFileName = "mongodump.conf";
 
     private static readonly TimeSpan Timeout = TimeSpan.FromMinutes(30);
@@ -49,7 +44,7 @@ public class MongoDumpService(
         fileSystemProvider.CreateDirectory(outputDirectory);
 
         var configPath = Path.Combine(outputDirectory, ConfigFileName);
-        fileSystemProvider.WriteAllText(configPath, $"password: {mongoUrl.Password}{Environment.NewLine}");
+        fileSystemProvider.WriteOwnerOnlyText(configPath, $"password: {mongoUrl.Password}{Environment.NewLine}");
 
         try
         {
@@ -78,7 +73,6 @@ public class MongoDumpService(
         return MongoUrl.Create(uri);
     }
 
-    /// <summary>An empty `BACKUP_MONGO_DATABASES` dumps everything the credentials can see, as one archive.</summary>
     private List<string> ResolveDatabases()
     {
         var configured = variablesService.GetVariable("BACKUP_MONGO_DATABASES").AsStringWithDefault(string.Empty);

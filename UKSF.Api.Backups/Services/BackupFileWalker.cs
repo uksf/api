@@ -25,7 +25,7 @@ public class BackupFileWalker(IFileSystemProvider fileSystemProvider) : IBackupF
     public BackupWalkResult Walk(IReadOnlyList<DomainBackupEntry> entries)
     {
         var result = new BackupWalkResult();
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var seen = new HashSet<string>(BackupPaths.Comparer);
 
         foreach (var entry in entries.Where(x => x.Enabled))
         {
@@ -94,7 +94,6 @@ public class BackupFileWalker(IFileSystemProvider fileSystemProvider) : IBackupF
         }
     }
 
-    /// <summary>An exclude is either a path inside the selection, or a bare name pattern that applies at any depth.</summary>
     private static bool IsExcluded(DomainBackupEntry entry, string path)
     {
         return entry.Excludes.Any(x => BackupGlob.IsGlob(x) && !BackupGlob.HasSeparator(x) ? BackupGlob.MatchesName(x, path) : BackupPaths.Contains(x, path));
@@ -107,7 +106,7 @@ public class BackupFileWalker(IFileSystemProvider fileSystemProvider) : IBackupF
 
     private void Add(DomainBackupEntry entry, string path, BackupWalkResult result, HashSet<string> seen)
     {
-        var entryName = ToEntryName(path);
+        var entryName = BackupPaths.ToEntryName(path);
         if (!seen.Add(entryName))
         {
             return;
@@ -134,13 +133,5 @@ public class BackupFileWalker(IFileSystemProvider fileSystemProvider) : IBackupF
             result.Skips.Add(new BackupSkip { Path = BackupPaths.Normalise(path), Reason = exception.Message });
             return [];
         }
-    }
-
-    /// <summary>`C:\Server\Nginx\conf\nginx.conf` becomes `files/C/Server/Nginx/conf/nginx.conf`.</summary>
-    private static string ToEntryName(string path)
-    {
-        var normalised = BackupPaths.Normalise(path);
-        var withoutColon = normalised.Remove(1, 1);
-        return "files/" + withoutColon.Replace('\\', '/').TrimStart('/');
     }
 }

@@ -54,7 +54,7 @@ public class MongoDumpServiceTests
         _mockVariablesService.Setup(x => x.GetVariable(key)).Returns(new DomainVariableItem { Key = key, Item = value });
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task All_databases_are_dumped_into_one_archive_by_default()
     {
         var result = await _subject.Dump(@"C:\staging");
@@ -67,7 +67,7 @@ public class MongoDumpServiceTests
         _runArguments[0].Should().NotContain("--db ");
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task A_configured_database_list_produces_one_archive_each()
     {
         GivenVariable("BACKUP_MONGO_DATABASES", "prod, dev,devLocal");
@@ -89,17 +89,20 @@ public class MongoDumpServiceTests
         _mockLogger.Verify(x => x.LogError(It.Is<string>(y => y.Contains("hunter2"))), Times.Never);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task The_password_goes_in_a_config_file_and_never_on_the_command_line()
     {
         await _subject.Dump(@"C:\staging");
 
-        _mockFileSystemProvider.Verify(x => x.WriteAllText(@"C:\staging\mongodump.conf", It.Is<string>(y => y.Contains("password: hunter2"))), Times.Once);
+        _mockFileSystemProvider.Verify(
+            x => x.WriteOwnerOnlyText(@"C:\staging\mongodump.conf", It.Is<string>(y => y.Contains("password: hunter2"))),
+            Times.Once
+        );
         _runArguments[0].Should().NotContain("hunter2");
         _runArguments[0].Should().Contain(@"--config ""C:\staging\mongodump.conf""");
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task The_config_file_is_deleted_even_when_the_dump_fails()
     {
         _mockProcessRunner.Setup(x => x.Run(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
@@ -116,7 +119,6 @@ public class MongoDumpServiceTests
     {
         await _subject.Dump(@"C:\staging");
 
-        // the driver normalises the query string order when it rebuilds the uri
         _runArguments[0].Should().Contain("--uri \"mongodb://prod@localhost:52005/?authSource=admin&replicaSet=rs0\"");
         _runArguments[0].Should().Contain("--gzip");
     }
@@ -129,7 +131,7 @@ public class MongoDumpServiceTests
         await _subject.Dump(@"C:\staging");
 
         _runArguments[0].Should().Contain("@dedi:52005").And.NotContain("s3cret");
-        _mockFileSystemProvider.Verify(x => x.WriteAllText(It.IsAny<string>(), It.Is<string>(y => y.Contains("password: s3cret"))), Times.Once);
+        _mockFileSystemProvider.Verify(x => x.WriteOwnerOnlyText(It.IsAny<string>(), It.Is<string>(y => y.Contains("password: s3cret"))), Times.Once);
     }
 
     [Fact]

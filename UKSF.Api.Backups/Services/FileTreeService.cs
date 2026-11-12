@@ -15,7 +15,7 @@ public class FileTreeService(IFileSystemProvider fileSystemProvider) : IFileTree
     {
         return fileSystemProvider.GetDrives()
                                  .Select(BackupPaths.Normalise)
-                                 .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+                                 .OrderBy(x => x, BackupPaths.Comparer)
                                  .Select(x => new BackupTreeNode
                                      {
                                          Name = x,
@@ -41,13 +41,11 @@ public class FileTreeService(IFileSystemProvider fileSystemProvider) : IFileTree
         return directories.Concat(files).ToList();
     }
 
-    // A broken junction throws on enumeration - C:\Server\Arma\Environments\Release holds several - so an
-    // unreadable child must not take out the whole listing.
     private static IEnumerable<string> Read(string path, Func<string, IEnumerable<string>> read)
     {
         try
         {
-            return read(path).OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList();
+            return read(path).OrderBy(x => x, BackupPaths.Comparer).ToList();
         }
         catch (Exception exception) when (exception is UnauthorizedAccessException or IOException)
         {
@@ -60,7 +58,7 @@ public class FileTreeService(IFileSystemProvider fileSystemProvider) : IFileTree
         var normalised = BackupPaths.Normalise(path);
         return new BackupTreeNode
         {
-            Name = normalised.Split('\\').Last(),
+            Name = BackupPaths.LastSegment(normalised),
             Path = normalised,
             IsDirectory = isDirectory,
             HasChildren = isDirectory && HasChildren(normalised)
