@@ -41,15 +41,25 @@ public class GameServerEventsControllerTests
         _sut.ControllerContext = new ControllerContext { HttpContext = httpContext };
     }
 
+    private Task<GameServerEvent> NextHandledEvent()
+    {
+        var handled = new TaskCompletionSource<GameServerEvent>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _mockEventHandler.Setup(x => x.HandleEventAsync(It.IsAny<GameServerEvent>()))
+                         .Callback<GameServerEvent>(e => handled.TrySetResult(e))
+                         .Returns(Task.CompletedTask);
+        return handled.Task.WaitAsync(TimeSpan.FromSeconds(10));
+    }
+
     [Fact]
     public async Task ReceiveEvent_AcksImmediatelyAndDispatchesInBackground()
     {
         SetRequest(@"[""server_status"",[[""map"",""Altis""],[""players"",[""uid1""]]]]", 2303);
+        var handled = NextHandledEvent();
 
         var result = await _sut.ReceiveEvent();
 
         result.Should().BeOfType<AcceptedResult>();
-        await Task.Delay(200);
+        await handled;
         _mockEventHandler.Verify(
             x => x.HandleEventAsync(It.Is<GameServerEvent>(e => e.Type == "server_status" && e.ApiPort == 2303 && e.Data["map"].ToString() == "Altis")),
             Times.Once
@@ -71,9 +81,10 @@ public class GameServerEventsControllerTests
     public async Task ReceiveEvent_InjectsEnqueueAtFromHeader()
     {
         SetRequest(@"[""mission_stats"",[[""sessionId"",""abc""]]]", 2303, "2026-05-06T13:30:00.000Z");
+        var handled = NextHandledEvent();
 
         await _sut.ReceiveEvent();
-        await Task.Delay(200);
+        await handled;
 
         _mockEventHandler.Verify(
             x => x.HandleEventAsync(
