@@ -42,7 +42,7 @@ public class DevRunArtifactsTests : IDisposable
         Directory.CreateDirectory(Path.Combine(_missions, "FLOPS_Sumava.brf_sumava"));
         File.WriteAllText(Path.Combine(_configs, "Main.cfg"), "cfg");
 
-        DevRunArtifacts.CleanUp(_profiles, _configs, _missions);
+        DevRunArtifacts.CleanUp(_profiles, _configs, _missions).Should().BeEmpty();
 
         Directory.GetDirectories(_missions).Select(Path.GetFileName).Should().Equal("FLOPS_Sumava.brf_sumava");
         Directory.GetFiles(_configs).Select(Path.GetFileName).Should().Equal("Main.cfg");
@@ -50,6 +50,21 @@ public class DevRunArtifactsTests : IDisposable
         profiles.Should().HaveCount(DevRunArtifacts.RetainedProfileRuns * 2 + 1);
         profiles.Should().Contain(["Main", "DevRun_00000015", "DevRun_00000015hc1", "DevRun_00000002", "DevRun_00000002hc1"]);
         profiles.Should().NotContain(["DevRun_00000000", "DevRun_00000000hc1", "DevRun_00000001", "DevRun_00000001hc1"]);
+    }
+
+    [Fact]
+    public void CleanUp_reports_a_locked_config_and_still_deletes_the_rest()
+    {
+        var locked = Path.Combine(_configs, "DevRun_locked01.cfg");
+        File.WriteAllText(locked, "cfg");
+        Directory.CreateDirectory(Path.Combine(_missions, "DevRun_free0001.VR"));
+
+        using (File.Open(locked, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            DevRunArtifacts.CleanUp(_profiles, _configs, _missions).Should().ContainSingle().Which.Should().StartWith(locked);
+        }
+
+        Directory.GetDirectories(_missions).Should().BeEmpty();
     }
 
     [Fact]

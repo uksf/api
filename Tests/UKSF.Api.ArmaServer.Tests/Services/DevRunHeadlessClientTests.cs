@@ -127,6 +127,7 @@ public class DevRunHeadlessClientTests : IDisposable
     public async Task Headless_clients_launch_on_the_mission_running_line_and_die_with_the_server()
     {
         var launcher = new Mock<IDevRunLauncher>();
+        launcher.Setup(x => x.CleanUpPreviousRuns()).Returns([]);
         launcher.Setup(x => x.Launch(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IReadOnlyList<string>>(), It.IsAny<string>(), 2))
                 .Returns(new SyntheticLaunchResult(10, "p", "m", [new ProcessLaunch("exe", "hc1"), new ProcessLaunch("exe", "hc2")]));
         _processUtilities.Setup(x => x.LaunchManagedProcess("exe", "hc1", ProcessPriorityClass.Normal)).Returns(11);

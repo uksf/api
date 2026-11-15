@@ -17,27 +17,21 @@ namespace UKSF.Api.ArmaServer.Tests.Services;
 public class DevRunServiceCleanupTests
 {
     [Fact]
-    public async Task Watcher_cleans_up_artifacts_before_releasing_gate_when_server_exits()
+    public void Trigger_cleans_up_previous_runs_before_launching_and_logs_each_failed_deletion()
     {
         var calls = new List<string>();
-        var released = new TaskCompletionSource();
         var launcher = new Mock<IDevRunLauncher>();
+        launcher.Setup(x => x.CleanUpPreviousRuns()).Callback(() => calls.Add("cleanup")).Returns(["C:/configs/DevRun_old00001.cfg: locked"]);
         launcher.Setup(x => x.Launch(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IReadOnlyList<string>>(), null, 0))
+                .Callback(() => calls.Add("launch"))
                 .Returns(new SyntheticLaunchResult(4321, "profile", "mission"));
-        launcher.Setup(x => x.CleanUp()).Callback(() => calls.Add("cleanup"));
         var gate = new Mock<IArmaSyntheticLaunchGate>();
         gate.Setup(x => x.TryAcquire(It.IsAny<string>())).Returns(true);
-        gate.Setup(x => x.Release())
-            .Callback(() =>
-                {
-                    calls.Add("release");
-                    released.TrySetResult();
-                }
-            );
         var context = new Mock<IDevRunsContext>();
         context.Setup(x => x.Update(It.IsAny<string>(), It.IsAny<Expression<Func<DomainDevRun, object>>>(), It.IsAny<object>())).Returns(Task.CompletedTask);
         var processUtilities = new Mock<IProcessUtilities>();
-        processUtilities.Setup(x => x.IsProcessAlive(4321)).Returns(false);
+        processUtilities.Setup(x => x.IsProcessAlive(4321)).Returns(true);
+        var logger = new Mock<IUksfLogger>();
 
         var sut = new DevRunService(
             launcher.Object,
@@ -45,14 +39,13 @@ public class DevRunServiceCleanupTests
             processUtilities.Object,
             gate.Object,
             new Mock<IVariablesService>().Object,
-            new Mock<IUksfLogger>().Object,
+            logger.Object,
             10,
             5
         );
         sut.Trigger("diag_log 1;", ["@mod"], null);
 
-        await released.Task.WaitAsync(TimeSpan.FromSeconds(5));
-
-        calls.Should().Equal("cleanup", "release");
+        calls.Should().Equal("cleanup", "launch");
+        logger.Verify(x => x.LogWarning("Dev run cleanup could not delete C:/configs/DevRun_old00001.cfg: locked"), Times.Once);
     }
 }

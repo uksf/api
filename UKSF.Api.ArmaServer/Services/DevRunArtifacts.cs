@@ -8,17 +8,19 @@ public static class DevRunArtifacts
     private const string Prefix = "DevRun_";
     private const int RunKeyLength = 15;
 
-    public static void CleanUp(string profilesRoot, string configsRoot, string missionsRoot)
+    public static IReadOnlyList<string> CleanUp(string profilesRoot, string configsRoot, string missionsRoot)
     {
-        DeleteAll(Matching(missionsRoot, root => root.GetDirectories(Prefix + "*")));
-        DeleteAll(Matching(configsRoot, root => root.GetFiles(Prefix + "*.cfg")));
-
         var staleProfiles = Matching(profilesRoot, root => root.GetDirectories(Prefix + "*"))
                             .GroupBy(x => x.Name[..Math.Min(RunKeyLength, x.Name.Length)])
                             .OrderByDescending(run => run.Max(x => x.CreationTimeUtc))
                             .Skip(RetainedProfileRuns)
                             .SelectMany(run => run);
-        DeleteAll(staleProfiles);
+
+        return DeleteAll(
+            Matching(missionsRoot, root => root.GetDirectories(Prefix + "*"))
+                .Concat(Matching(configsRoot, root => root.GetFiles(Prefix + "*.cfg")))
+                .Concat(staleProfiles)
+        );
     }
 
     private static IEnumerable<FileSystemInfo> Matching(string root, Func<DirectoryInfo, FileSystemInfo[]> select)
@@ -26,9 +28,10 @@ public static class DevRunArtifacts
         return string.IsNullOrWhiteSpace(root) || !Directory.Exists(root) ? [] : select(new DirectoryInfo(root));
     }
 
-    private static void DeleteAll(IEnumerable<FileSystemInfo> entries)
+    private static List<string> DeleteAll(IEnumerable<FileSystemInfo> entries)
     {
-        foreach (var entry in entries)
+        var failures = new List<string>();
+        foreach (var entry in entries.ToList())
         {
             try
             {
@@ -41,7 +44,12 @@ public static class DevRunArtifacts
                     entry.Delete();
                 }
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                failures.Add($"{entry.FullName}: {ex.Message}");
+            }
         }
+
+        return failures;
     }
 }

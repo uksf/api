@@ -83,6 +83,11 @@ public class DevRunService : IDevRunService
             };
             _context.Add(record).GetAwaiter().GetResult();
 
+            foreach (var failure in _launcher.CleanUpPreviousRuns())
+            {
+                _logger.LogWarning($"Dev run cleanup could not delete {failure}");
+            }
+
             var launch = _launcher.Launch(runId, sqf, mods, worldName, headlessClients);
             _activePids[runId] = [launch.ProcessId];
             if (launch.PendingHeadlessClients is { Count: > 0 } pendingHeadlessClients)
@@ -232,7 +237,6 @@ public class DevRunService : IDevRunService
         {
             _activePids.TryRemove(record.RunId, out _);
             _pendingHeadlessClients.TryRemove(record.RunId, out _);
-            CleanUpArtifacts();
             _gate.Release();
         }
     }
@@ -244,18 +248,6 @@ public class DevRunService : IDevRunService
         if (failureDetail is not null)
         {
             await _context.Update(record.Id, x => x.FailureDetail, failureDetail);
-        }
-    }
-
-    private void CleanUpArtifacts()
-    {
-        try
-        {
-            _launcher.CleanUp();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex);
         }
     }
 

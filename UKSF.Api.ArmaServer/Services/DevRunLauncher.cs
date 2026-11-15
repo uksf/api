@@ -54,7 +54,7 @@ public class DevRunLauncher(ISyntheticServerLauncher syntheticLauncher, IVariabl
         return syntheticLauncher.Launch(spec);
     }
 
-    public void CleanUp() =>
+    public IReadOnlyList<string> CleanUpPreviousRuns() =>
         DevRunArtifacts.CleanUp(
             variablesService.GetVariable("SERVER_PATH_PROFILES").AsString(),
             variablesService.GetVariable("SERVER_PATH_CONFIGS").AsString(),
