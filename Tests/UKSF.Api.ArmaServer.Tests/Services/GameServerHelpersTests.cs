@@ -233,17 +233,22 @@ public class GameServerHelpersTests
     [Fact]
     public void FormatGameServerLaunchArguments_Contains_Required_Parameters()
     {
-        SetupVariable("SERVER_PATH_CONFIGS", "C:/configs");
-        SetupVariable("SERVER_PATH_PROFILES", "C:/profiles");
-        SetupVariable("SERVER_PATH_PERF", "C:/perf/perf.cfg");
+        SetupVariable("SERVER_PATH_CONFIGS", "/srv/arma configs");
+        SetupVariable("SERVER_PATH_PROFILES", "/srv/arma profiles");
+        SetupVariable("SERVER_PATH_PERF", "/srv/arma perf/perf.cfg");
 
         var gameServer = CreateGameServer(name: "Server1", port: 2302, apiPort: 2303);
 
         var result = _sut.FormatGameServerLaunchArguments(gameServer);
 
-        result.Should().Contain("-config=");
-        result.Should().Contain("-profiles=");
-        result.Should().Contain("-cfg=");
+        LinuxProcesses.SplitArguments(result)
+                      .Take(3)
+                      .Should()
+                      .Equal(
+                          $"-config={Path.Combine("/srv/arma configs", "TestProfile.cfg")}",
+                          $"-profiles={Path.Combine("/srv/arma profiles", "Server1")}",
+                          "-cfg=/srv/arma perf/perf.cfg"
+                      );
         result.Should().Contain("-name=Server1");
         result.Should().Contain("-port=2302");
         result.Should().Contain("-apiport=\"2303\"");
@@ -255,12 +260,14 @@ public class GameServerHelpersTests
     [Fact]
     public void FormatHeadlessClientLaunchArguments_Contains_Required_Parameters()
     {
-        SetupVariable("SERVER_PATH_PROFILES", "C:/profiles");
+        SetupVariable("SERVER_PATH_PROFILES", "/srv/arma profiles");
         SetupVariable("SERVER_HEADLESS_NAMES", "HC1,HC2,HC3");
 
         var gameServer = CreateGameServer(name: "Server1", port: 2302, apiPort: 2303, password: "secret");
 
         var result = _sut.FormatHeadlessClientLaunchArguments(gameServer, 0);
+
+        LinuxProcesses.SplitArguments(result)[0].Should().Be($"-profiles={Path.Combine("/srv/arma profiles", "Server1HC1")}");
 
         result.Should().Contain("-name=HC1");
         result.Should().Contain("-port=2302");

@@ -164,9 +164,9 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
 
     public string FormatGameServerLaunchArguments(DomainGameServer gameServer)
     {
-        return $"-config={GetGameServerConfigPath(gameServer)}" +
-               $" -profiles={GetGameServerProfilesPath(gameServer.Name)}" +
-               $" -cfg={GetGameServerPerfConfigPath()}" +
+        return $"-config=\"{GetGameServerConfigPath(gameServer)}\"" +
+               $" -profiles=\"{GetGameServerProfilesPath(gameServer.Name)}\"" +
+               $" -cfg=\"{GetGameServerPerfConfigPath()}\"" +
                $" -name={gameServer.Name}" +
                $" -port={gameServer.Port}" +
                $" -apiport=\"{gameServer.ApiPort}\"" +
@@ -178,7 +178,7 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
 
     public string FormatHeadlessClientLaunchArguments(DomainGameServer gameServer, int index)
     {
-        return $"-profiles={GetGameServerProfilesPath($"{gameServer.Name}{GetHeadlessClientName(index)}")}" +
+        return $"-profiles=\"{GetGameServerProfilesPath($"{gameServer.Name}{GetHeadlessClientName(index)}")}\"" +
                $" -name={GetHeadlessClientName(index)}" +
                $" -port={gameServer.Port}" +
                $" -apiport=\"{gameServer.ApiPort + index + 1}\"" +
