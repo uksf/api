@@ -1,7 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Mongo2Go;
+using EphemeralMongo;
+using UKSF.Api.Tests.Common;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using UKSF.Api.Core.Context.Base;
@@ -12,7 +13,7 @@ namespace UKSF.Api.Core.Tests.Context.Base;
 
 public sealed class FindAndUpdateClaimTests : IDisposable
 {
-    private readonly MongoDbRunner _runner = MongoDbRunner.Start(singleNodeReplSet: false);
+    private readonly IMongoRunner _runner = TestMongo.Start();
     private readonly ClaimContext _context;
 
     public FindAndUpdateClaimTests()

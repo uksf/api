@@ -1,7 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Mongo2Go;
+using EphemeralMongo;
+using UKSF.Api.Tests.Common;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
@@ -15,7 +16,7 @@ namespace UKSF.Api.Tests.Services;
 
 public sealed class MigrationStructuredPersistenceMarkersTests : IDisposable
 {
-    private readonly MongoDbRunner _runner = MongoDbRunner.Start(singleNodeReplSet: false);
+    private readonly IMongoRunner _runner = TestMongo.Start();
     private readonly IMongoDatabase _database;
     private readonly Mock<IMigrationContext> _migrationContext = new();
 
@@ -34,7 +35,25 @@ public sealed class MigrationStructuredPersistenceMarkersTests : IDisposable
             new BsonDocument
             {
                 { "key", "legacy" },
-                { "markers", new BsonArray { new BsonArray { "line", new BsonArray { 1.5, 2.5, 0L }, "POLYLINE", "ColorRed", 1L, new BsonArray { 1.5, 2.5 } } } }
+                {
+                    "markers", new BsonArray
+                    {
+                        new BsonArray
+                        {
+                            "line",
+                            new BsonArray
+                            {
+                                1.5,
+                                2.5,
+                                0L
+                            },
+                            "POLYLINE",
+                            "ColorRed",
+                            1L,
+                            new BsonArray { 1.5, 2.5 }
+                        }
+                    }
+                }
             }
         );
 

@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Mongo2Go;
+using EphemeralMongo;
+using UKSF.Api.Tests.Common;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
@@ -20,7 +21,7 @@ public sealed class PersistenceSaveMongoTests : IDisposable
 {
     private static readonly DateTime T0 = new(2026, 10, 9, 18, 14, 21, 108, DateTimeKind.Utc);
 
-    private readonly MongoDbRunner _runner = MongoDbRunner.Start(singleNodeReplSet: false);
+    private readonly IMongoRunner _runner = TestMongo.Start();
     private readonly IMongoDatabase _database;
     private readonly PersistenceSessionsService _subject;
 
@@ -35,7 +36,19 @@ public sealed class PersistenceSaveMongoTests : IDisposable
 
     public void Dispose() => _runner.Dispose();
 
-    private static readonly PersistenceMarker Marker = new() { Name = "marker_1", Position = [1.5, 2.5, 0], Shape = "ICON", Type = "hd_dot", Brush = "Solid", Size = [1, 1], Colour = "ColorRed", Alpha = 1, Direction = 0, Text = "" };
+    private static readonly PersistenceMarker Marker = new()
+    {
+        Name = "marker_1",
+        Position = [1.5, 2.5, 0],
+        Shape = "ICON",
+        Type = "hd_dot",
+        Brush = "Solid",
+        Size = [1, 1],
+        Colour = "ColorRed",
+        Alpha = 1,
+        Direction = 0,
+        Text = ""
+    };
 
     private static DomainPersistenceSession Save(string marker) =>
         new()
