@@ -24,6 +24,12 @@ public class BuildStepDeploy : FileBuildStep
             targetPath = Path.Join(GetBuildEnvironmentPath(), "Repo");
         }
 
+        if (!OperatingSystem.IsWindows())
+        {
+            var renamed = AddonFileCase.LowercaseAddons(sourcePath);
+            StepLogger.Log($"Lowercased {renamed.Count} addon paths for the Linux server");
+        }
+
         StepLogger.LogSurround("\nAdding new files...");
         await AddFiles(sourcePath, targetPath);
         StepLogger.LogSurround("Added new files");
