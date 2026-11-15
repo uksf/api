@@ -34,10 +34,9 @@ public class DevRunServiceTests : IDisposable
         _tempResultsDir = Path.Combine(Path.GetTempPath(), "dev-run-results-" + Guid.NewGuid());
         Directory.CreateDirectory(_tempResultsDir);
 
-        // Default: gate is free.
+        _launcher.Setup(x => x.CleanUpPreviousRuns()).Returns([]);
         _gate.Setup(x => x.TryAcquire(It.IsAny<string>())).Returns(true);
 
-        // Default: context.Add captures the record.
         _context.Setup(x => x.Add(It.IsAny<DomainDevRun>()))
                 .Callback<DomainDevRun>(r =>
                     {
@@ -47,7 +46,6 @@ public class DevRunServiceTests : IDisposable
                 )
                 .Returns(Task.CompletedTask);
 
-        // Default: context.Update is a no-op (verified per-test as needed).
         _context.Setup(x => x.Update(It.IsAny<string>(), It.IsAny<Expression<Func<DomainDevRun, object>>>(), It.IsAny<object>())).Returns(Task.CompletedTask);
 
         _variablesService.Setup(x => x.GetVariable("SERVER_PATH_DEV_RUN_RESULTS"))
@@ -70,8 +68,6 @@ public class DevRunServiceTests : IDisposable
         new(_launcher.Object, _context.Object, _processUtilities.Object, _gate.Object, _variablesService.Object, _logger.Object, pollMs, timeoutSeconds);
 
     private void SetupGetSingle(DomainDevRun record) => _context.Setup(x => x.GetSingle(It.IsAny<Func<DomainDevRun, bool>>())).Returns(record);
-
-    // ─── Trigger tests ───────────────────────────────────────────────────────
 
     [Fact]
     public void Trigger_returns_AlreadyRunning_when_gate_held()
@@ -128,8 +124,6 @@ public class DevRunServiceTests : IDisposable
 
         _launcher.Verify(x => x.Launch(result.RunId, "diag_log \"hello\";", It.Is<IReadOnlyList<string>>(m => m.Count == 1)), Times.Once);
     }
-
-    // ─── AppendLogAsync tests ─────────────────────────────────────────────────
 
     [Fact]
     public async Task AppendLogAsync_appends_log_entry()
@@ -209,8 +203,6 @@ public class DevRunServiceTests : IDisposable
         _context.Verify(x => x.Update("id1", It.IsAny<Expression<Func<DomainDevRun, List<DevRunLogEntry>>>>(), It.IsAny<List<DevRunLogEntry>>()), Times.Never);
     }
 
-    // ─── AppendResultAsync tests ──────────────────────────────────────────────
-
     [Fact]
     public async Task AppendResultAsync_inlines_when_under_1MB()
     {
@@ -227,7 +219,6 @@ public class DevRunServiceTests : IDisposable
         await sut.AppendResultAsync("run1", smallPayload);
 
         capturedResult.Should().Be(smallPayload);
-        // No file should have been created in the results dir.
         Directory.EnumerateFiles(_tempResultsDir).Should().BeEmpty();
     }
 
@@ -242,7 +233,6 @@ public class DevRunServiceTests : IDisposable
                 .Callback<string, Expression<Func<DomainDevRun, string>>, string>((_, _, v) => capturedFilePath = v)
                 .Returns(Task.CompletedTask);
 
-        // 2 MB payload — over the 1 MB inline threshold, under 14 MB disk cap.
         var payload = new string('x', 2 * 1_048_576);
         var sut = BuildService();
         await sut.AppendResultAsync("run1", payload);
@@ -269,15 +259,12 @@ public class DevRunServiceTests : IDisposable
                 .Callback<string, Expression<Func<DomainDevRun, DevRunStatus>>, DevRunStatus>((_, _, v) => capturedStatus = v)
                 .Returns(Task.CompletedTask);
 
-        // 15 MB payload — exceeds the 14 MB disk cap.
         var payload = new string('z', 15 * 1_048_576);
         var sut = BuildService();
         await sut.AppendResultAsync("run1", payload);
 
         capturedStatus.Should().Be(DevRunStatus.FailedTooLarge);
     }
-
-    // ─── FinishAsync tests ────────────────────────────────────────────────────
 
     [Fact]
     public async Task FinishAsync_sets_Success_and_CompletedAt()
@@ -313,16 +300,13 @@ public class DevRunServiceTests : IDisposable
     [Fact]
     public async Task FinishAsync_kills_tracked_process_so_watcher_releases_gate()
     {
-        // Trigger registers the pid in the active map.
         _launcher.Setup(x => x.Launch(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IReadOnlyList<string>>()))
                  .Returns(new SyntheticLaunchResult(4321, "profile", "mission"));
-        // Keep watcher alive long enough that finish is the path that kills the process.
         _processUtilities.Setup(x => x.IsProcessAlive(It.IsAny<int>())).Returns(true);
 
         var sut = BuildService(pollMs: 50, timeoutSeconds: 60);
         var trigger = sut.Trigger("diag_log 1;", ["@mod"], null);
 
-        // Record now exists and is Running.
         var record = new DomainDevRun
         {
             Id = "id1",
@@ -335,8 +319,6 @@ public class DevRunServiceTests : IDisposable
 
         _processUtilities.Verify(x => x.FindProcessById(4321), Times.Once);
     }
-
-    // ─── GetStatus tests ──────────────────────────────────────────────────────
 
     [Fact]
     public void GetStatus_returns_null_when_record_missing()

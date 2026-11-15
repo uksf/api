@@ -83,6 +83,11 @@ public class DevRunService : IDevRunService
             };
             _context.Add(record).GetAwaiter().GetResult();
 
+            foreach (var failure in _launcher.CleanUpPreviousRuns())
+            {
+                _logger.LogWarning($"Dev run cleanup could not delete {failure}");
+            }
+
             var launch = _launcher.Launch(runId, sqf, mods, worldName, headlessClients);
             _activePids[runId] = [launch.ProcessId];
             if (launch.PendingHeadlessClients is { Count: > 0 } pendingHeadlessClients)

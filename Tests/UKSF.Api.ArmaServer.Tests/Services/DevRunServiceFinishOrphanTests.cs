@@ -17,6 +17,7 @@ public class DevRunServiceFinishOrphanTests
     public async Task FinishAsync_releases_gate_when_record_missing_and_no_pid()
     {
         var launcher = new Mock<IDevRunLauncher>();
+        launcher.Setup(x => x.CleanUpPreviousRuns()).Returns([]);
         var context = new Mock<IDevRunsContext>();
         var processUtilities = new Mock<IProcessUtilities>();
         var gate = new Mock<IArmaSyntheticLaunchGate>();
