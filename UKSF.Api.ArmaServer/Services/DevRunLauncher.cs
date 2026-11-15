@@ -54,6 +54,13 @@ public class DevRunLauncher(ISyntheticServerLauncher syntheticLauncher, IVariabl
         return syntheticLauncher.Launch(spec);
     }
 
+    public void CleanUp() =>
+        DevRunArtifacts.CleanUp(
+            variablesService.GetVariable("SERVER_PATH_PROFILES").AsString(),
+            variablesService.GetVariable("SERVER_PATH_CONFIGS").AsString(),
+            variablesService.GetVariable("MISSIONS_PATH").AsString()
+        );
+
     private static string BuildConfig(string profileName, string missionName) =>
         $$"""
           hostname = "{{profileName}}";

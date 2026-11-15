@@ -232,6 +232,7 @@ public class DevRunService : IDevRunService
         {
             _activePids.TryRemove(record.RunId, out _);
             _pendingHeadlessClients.TryRemove(record.RunId, out _);
+            CleanUpArtifacts();
             _gate.Release();
         }
     }
@@ -243,6 +244,18 @@ public class DevRunService : IDevRunService
         if (failureDetail is not null)
         {
             await _context.Update(record.Id, x => x.FailureDetail, failureDetail);
+        }
+    }
+
+    private void CleanUpArtifacts()
+    {
+        try
+        {
+            _launcher.CleanUp();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex);
         }
     }
 
