@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using FluentAssertions;
-using Mongo2Go;
+using EphemeralMongo;
+using UKSF.Api.Tests.Common;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
@@ -18,7 +19,7 @@ namespace UKSF.Api.Core.Tests.Context.Base;
 public sealed class FindFirstServerSideTests : IDisposable
 {
     private const string Collection = "findFirstBuckets";
-    private readonly MongoDbRunner _runner = MongoDbRunner.Start(singleNodeReplSet: false);
+    private readonly IMongoRunner _runner = TestMongo.Start();
     private readonly IMongoDatabase _database;
     private readonly BucketContext _context;
 
@@ -28,7 +29,8 @@ public sealed class FindFirstServerSideTests : IDisposable
         MongoDB.Driver.IMongoCollection<Bucket> buckets = _database.GetCollection<Bucket>(Collection);
         buckets.Indexes.CreateOne(new CreateIndexModel<Bucket>(Builders<Bucket>.IndexKeys.Ascending(x => x.SessionId).Ascending(x => x.BucketIndex)));
         buckets.InsertMany(
-            Enumerable.Range(0, 50).SelectMany(session => Enumerable.Range(0, 4).Select(index => new Bucket { SessionId = $"session-{session}", BucketIndex = index }))
+            Enumerable.Range(0, 50)
+                      .SelectMany(session => Enumerable.Range(0, 4).Select(index => new Bucket { SessionId = $"session-{session}", BucketIndex = index }))
         );
         _context = new BucketContext(new MongoCollectionFactory(_database));
     }
@@ -41,7 +43,12 @@ public sealed class FindFirstServerSideTests : IDisposable
     private List<BsonDocument> ReadProfiles()
     {
         return _database.GetCollection<BsonDocument>("system.profile")
-                        .Find(Builders<BsonDocument>.Filter.And(Builders<BsonDocument>.Filter.Eq("ns", $"{_database.DatabaseNamespace.DatabaseName}.{Collection}"), Builders<BsonDocument>.Filter.Exists("docsExamined")))
+                        .Find(
+                            Builders<BsonDocument>.Filter.And(
+                                Builders<BsonDocument>.Filter.Eq("ns", $"{_database.DatabaseNamespace.DatabaseName}.{Collection}"),
+                                Builders<BsonDocument>.Filter.Exists("docsExamined")
+                            )
+                        )
                         .ToList();
     }
 

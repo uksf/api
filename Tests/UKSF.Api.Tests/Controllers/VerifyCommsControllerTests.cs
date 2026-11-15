@@ -1,7 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Mongo2Go;
+using EphemeralMongo;
+using UKSF.Api.Tests.Common;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
@@ -19,7 +20,7 @@ namespace UKSF.Api.Tests.Controllers;
 
 public sealed class VerifyCommsControllerTests : IDisposable
 {
-    private readonly MongoDbRunner _runner = MongoDbRunner.Start(singleNodeReplSet: false);
+    private readonly IMongoRunner _runner = TestMongo.Start();
     private readonly MongoDB.Driver.IMongoCollection<DomainAccount> _accounts;
     private readonly AccountContext _accountContext;
     private readonly string _callerId = ObjectId.GenerateNewId().ToString();

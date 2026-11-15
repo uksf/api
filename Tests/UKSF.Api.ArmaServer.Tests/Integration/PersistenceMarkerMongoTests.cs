@@ -2,7 +2,8 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Mongo2Go;
+using EphemeralMongo;
+using UKSF.Api.Tests.Common;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
@@ -17,7 +18,7 @@ namespace UKSF.Api.ArmaServer.Tests.Integration;
 
 public sealed class PersistenceMarkerMongoTests : IDisposable
 {
-    private readonly MongoDbRunner _runner = MongoDbRunner.Start(singleNodeReplSet: false);
+    private readonly IMongoRunner _runner = TestMongo.Start();
     private readonly IMongoDatabase _database;
     private readonly MongoDB.Driver.IMongoCollection<BsonDocument> _raw;
     private readonly PersistenceSessionsService _subject;
@@ -36,8 +37,44 @@ public sealed class PersistenceMarkerMongoTests : IDisposable
 
     private static BsonArray LegacyMarkers() =>
     [
-        new BsonArray { "icon", new BsonArray { 18642L, 1641.53, 0L }, "ICON", "GRG_Marker", "Solid", new BsonArray { 1L, 1L }, "ColorGreen", 1L, 0L, "X-2" },
-        new BsonArray { "line", new BsonArray { 1.5, 2.5, 0L }, "POLYLINE", "ColorRed", 1L, new BsonArray { 1.5, 2.5, 3.5, 4.5 } }
+        new BsonArray
+        {
+            "icon",
+            new BsonArray
+            {
+                18642L,
+                1641.53,
+                0L
+            },
+            "ICON",
+            "GRG_Marker",
+            "Solid",
+            new BsonArray { 1L, 1L },
+            "ColorGreen",
+            1L,
+            0L,
+            "X-2"
+        },
+        new BsonArray
+        {
+            "line",
+            new BsonArray
+            {
+                1.5,
+                2.5,
+                0L
+            },
+            "POLYLINE",
+            "ColorRed",
+            1L,
+            new BsonArray
+            {
+                1.5,
+                2.5,
+                3.5,
+                4.5
+            }
+        }
     ];
 
     private async Task InsertLegacy(string key) =>

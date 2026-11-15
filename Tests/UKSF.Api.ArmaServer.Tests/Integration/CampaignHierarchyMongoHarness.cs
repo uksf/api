@@ -1,5 +1,6 @@
 using System;
-using Mongo2Go;
+using EphemeralMongo;
+using UKSF.Api.Tests.Common;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
@@ -17,11 +18,11 @@ namespace UKSF.Api.ArmaServer.Tests.Integration;
 
 internal sealed class CampaignHierarchyMongoHarness : IDisposable
 {
-    private readonly MongoDbRunner _runner;
+    private readonly IMongoRunner _runner;
 
     public CampaignHierarchyMongoHarness()
     {
-        _runner = MongoDbRunner.Start(singleNodeReplSet: false);
+        _runner = TestMongo.Start();
         Database = new MongoClient(_runner.ConnectionString).GetDatabase($"hierarchy-{ObjectId.GenerateNewId()}");
         MongoCollectionFactory factory = new(Database);
         EventBus eventBus = new();
