@@ -60,8 +60,14 @@ public class ActionLaunchDueMissionsTests
     {
         DomainMission mission = new()
         {
-            Id = "m1", Title = "Alpha", ServerId = "s1", MissionName = "m.Altis.pbo",
-            Status = MissionStatus.Scheduled, AutoLaunch = true, LaunchedAt = null, ScheduledTime = Now.AddMinutes(-5)
+            Id = "m1",
+            Title = "Alpha",
+            ServerId = "s1",
+            MissionName = "m.Altis.pbo",
+            Status = MissionStatus.Scheduled,
+            AutoLaunch = true,
+            LaunchedAt = null,
+            ScheduledTime = Now.AddMinutes(-5)
         };
         SetupMissions(mission);
         _mockCampaignMissionsService.Setup(x => x.LaunchMissionAsync(mission, "Scheduler")).ReturnsAsync([]);
@@ -77,7 +83,12 @@ public class ActionLaunchDueMissionsTests
     {
         DomainMission mission = new()
         {
-            Id = "m1", Title = "Alpha", Status = MissionStatus.Scheduled, AutoLaunch = true, LaunchedAt = null, ScheduledTime = Now.AddMinutes(5)
+            Id = "m1",
+            Title = "Alpha",
+            Status = MissionStatus.Scheduled,
+            AutoLaunch = true,
+            LaunchedAt = null,
+            ScheduledTime = Now.AddMinutes(5)
         };
         SetupMissions(mission);
 
@@ -91,8 +102,12 @@ public class ActionLaunchDueMissionsTests
     {
         DomainMission mission = new()
         {
-            Id = "m1", Title = "Alpha", Status = MissionStatus.Scheduled, AutoLaunch = true,
-            LaunchedAt = Now.AddMinutes(-100), ScheduledTime = Now.AddMinutes(-5)
+            Id = "m1",
+            Title = "Alpha",
+            Status = MissionStatus.Scheduled,
+            AutoLaunch = true,
+            LaunchedAt = Now.AddMinutes(-100),
+            ScheduledTime = Now.AddMinutes(-5)
         };
         SetupMissions(mission);
 
@@ -106,7 +121,12 @@ public class ActionLaunchDueMissionsTests
     {
         DomainMission mission = new()
         {
-            Id = "m1", Title = "Alpha", Status = MissionStatus.Scheduled, AutoLaunch = false, LaunchedAt = null, ScheduledTime = Now.AddMinutes(-5)
+            Id = "m1",
+            Title = "Alpha",
+            Status = MissionStatus.Scheduled,
+            AutoLaunch = false,
+            LaunchedAt = null,
+            ScheduledTime = Now.AddMinutes(-5)
         };
         SetupMissions(mission);
 
@@ -120,7 +140,12 @@ public class ActionLaunchDueMissionsTests
     {
         DomainMission mission = new()
         {
-            Id = "m1", Title = "Alpha", Status = MissionStatus.Scheduled, AutoLaunch = true, LaunchedAt = null, ScheduledTime = Now.AddMinutes(-45)
+            Id = "m1",
+            Title = "Alpha",
+            Status = MissionStatus.Scheduled,
+            AutoLaunch = true,
+            LaunchedAt = null,
+            ScheduledTime = Now.AddMinutes(-45)
         };
         SetupMissions(mission);
 
@@ -130,12 +155,38 @@ public class ActionLaunchDueMissionsTests
     }
 
     [Fact]
+    public async Task Run_disables_autolaunch_on_a_missed_mission_so_it_is_reported_once()
+    {
+        DomainMission mission = new()
+        {
+            Id = "m1",
+            Title = "Alpha",
+            Status = MissionStatus.Scheduled,
+            AutoLaunch = true,
+            LaunchedAt = null,
+            ScheduledTime = Now.AddMinutes(-45)
+        };
+        SetupMissions(mission);
+
+        await _action.Run();
+
+        _mockCampaignMissionsContext.Verify(x => x.Update("m1", It.IsAny<System.Linq.Expressions.Expression<Func<DomainMission, bool>>>(), false), Times.Once);
+        _mockLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("missed its auto-launch window"))), Times.Once);
+    }
+
+    [Fact]
     public async Task Run_catches_a_launch_failure_and_continues()
     {
         DomainMission mission = new()
         {
-            Id = "m1", Title = "Alpha", ServerId = "s1", MissionName = "m.Altis.pbo",
-            Status = MissionStatus.Scheduled, AutoLaunch = true, LaunchedAt = null, ScheduledTime = Now.AddMinutes(-5)
+            Id = "m1",
+            Title = "Alpha",
+            ServerId = "s1",
+            MissionName = "m.Altis.pbo",
+            Status = MissionStatus.Scheduled,
+            AutoLaunch = true,
+            LaunchedAt = null,
+            ScheduledTime = Now.AddMinutes(-5)
         };
         SetupMissions(mission);
         _mockCampaignMissionsService.Setup(x => x.LaunchMissionAsync(mission, "Scheduler")).ThrowsAsync(new Exception("boom"));

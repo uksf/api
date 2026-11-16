@@ -30,13 +30,18 @@ public class ActionLaunchDueMissions(
     public override async Task Run(params object[] parameters)
     {
         var now = clock.UtcNow();
-        var dueMissions = campaignMissionsContext.Get(x => x.Status == MissionStatus.Scheduled && x.AutoLaunch && x.LaunchedAt == null && x.ScheduledTime <= now).ToList();
+        var dueMissions = campaignMissionsContext
+                          .Get(x => x.Status == MissionStatus.Scheduled && x.AutoLaunch && x.LaunchedAt == null && x.ScheduledTime <= now)
+                          .ToList();
 
         foreach (var mission in dueMissions)
         {
             if (now - mission.ScheduledTime > GraceWindow)
             {
-                logger.LogInfo($"Mission '{mission.Title}' missed its auto-launch window (scheduled {mission.ScheduledTime:O}), skipping - launch manually");
+                await campaignMissionsContext.Update(mission.Id, x => x.AutoLaunch, false);
+                logger.LogInfo(
+                    $"Mission '{mission.Title}' missed its auto-launch window (scheduled {mission.ScheduledTime:O}), auto-launch disabled - launch manually"
+                );
                 continue;
             }
 
