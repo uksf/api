@@ -6,6 +6,7 @@ namespace UKSF.Api.Modpack.BuildProcess.Steps.Common;
 public class BuildStepBuildRepo : BuildStep
 {
     public const string Name = "Build Repo";
+    private const string SingleThreadedSha1Workers = "-XX:ActiveProcessorCount=1";
 
     protected override async Task ProcessExecute()
     {
@@ -13,6 +14,11 @@ public class BuildStepBuildRepo : BuildStep
         StepLogger.Log($"Building {repoName} repo");
 
         var arma3SyncPath = VariablesService.GetVariable("BUILD_PATH_ARMA3SYNC").AsString();
-        await RunProcess(arma3SyncPath, "java", $"-jar ArmA3Sync.jar -BUILD {repoName}", (int)TimeSpan.FromMinutes(5).TotalMilliseconds);
+        await RunProcess(
+            arma3SyncPath,
+            "java",
+            $"{SingleThreadedSha1Workers} -jar ArmA3Sync.jar -BUILD {repoName}",
+            (int)TimeSpan.FromMinutes(5).TotalMilliseconds
+        );
     }
 }
