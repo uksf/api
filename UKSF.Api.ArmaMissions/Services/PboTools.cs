@@ -2,7 +2,7 @@ namespace UKSF.Api.ArmaMissions.Services;
 
 public class PboTools : IPboTools
 {
-    private static readonly string[] MissionExcludePatterns = ["thumbs.db", "*.txt", "*.h", "*.dep", "*.cpp", "*.bak", "*.png", "*.log", "*.pew"];
+    private static readonly string[] MissionExcludePatterns = ["thumbs.db", "*.txt", "*.dep", "*.bak", "*.png", "*.log", "*.pew"];
 
     public Task ExtractPbo(string pboPath, string parentFolder)
     {
@@ -19,12 +19,6 @@ public class PboTools : IPboTools
     public Task MakePbo(string folderPath, string pboPath, string workingDirectory)
     {
         PboWriter.Pack(folderPath, pboPath, MissionExcludePatterns);
-        return Task.CompletedTask;
-    }
-
-    public Task SimplePackPbo(string folderPath, string pboPath, string workingDirectory)
-    {
-        PboWriter.Pack(folderPath, pboPath, []);
         return Task.CompletedTask;
     }
 }

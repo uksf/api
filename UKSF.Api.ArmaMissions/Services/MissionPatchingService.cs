@@ -99,11 +99,6 @@ public class MissionPatchingService(
                 return BuildResult(context);
             }
 
-            if (context.Description.UseSimplePack)
-            {
-                logger.LogAudit($"Mission processed with simple packing enabled ({Path.GetFileName(path)})");
-            }
-
             await pboHandler.Pack(context);
         }
         catch (Exception exception)

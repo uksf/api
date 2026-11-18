@@ -55,14 +55,7 @@ public class PboHandler(IPboTools pboTools, IVariablesService variablesService) 
         }
 
         var workingDir = variablesService.GetVariable("MISSIONS_WORKING_DIR").AsString();
-        if (context.Description.UseSimplePack)
-        {
-            await pboTools.SimplePackPbo(context.FolderPath, filePath, workingDir);
-        }
-        else
-        {
-            await pboTools.MakePbo(context.FolderPath, filePath, workingDir);
-        }
+        await pboTools.MakePbo(context.FolderPath, filePath, workingDir);
     }
 
     public void Cleanup(MissionPatchContext context)
@@ -74,10 +67,7 @@ public class PboHandler(IPboTools pboTools, IVariablesService variablesService) 
                 Directory.Delete(context.FolderPath, true);
             }
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            // Temp directory cleanup is best-effort
-        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
     }
 
     public void DeleteReadme(MissionPatchContext context)

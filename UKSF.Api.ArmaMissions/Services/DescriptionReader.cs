@@ -31,8 +31,7 @@ public class DescriptionReader : IDescriptionReader
         context.Description = new DescriptionDocument
         {
             Lines = lines,
-            MissionPatchingIgnore = lines.Any(x => x.ContainsIgnoreCase("missionPatchingIgnore")),
-            UseSimplePack = lines.Any(x => x.ContainsIgnoreCase("missionUseSimplePack"))
+            MissionPatchingIgnore = lines.Any(x => x.ContainsIgnoreCase("missionPatchingIgnore"))
         };
     }
 }

@@ -98,9 +98,6 @@ public sealed class MissionPatchingFixture : IDisposable
         PboTools.Setup(x => x.MakePbo(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                 .Returns(Task.CompletedTask)
                 .Callback<string, string, string>((folder, _, _) => CaptureFolder(folder));
-        PboTools.Setup(x => x.SimplePackPbo(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Returns(Task.CompletedTask)
-                .Callback<string, string, string>((folder, _, _) => CaptureFolder(folder));
 
         return folderPath;
     }
