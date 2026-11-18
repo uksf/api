@@ -231,6 +231,23 @@ public class BuildStepPatchDependenciesTests : IDisposable
                  .BeEquivalentTo("tigr.pbo.uksf_dependencies_dev.bisign", "other.pbo.cup_vehicles-1.19.2.bisign");
     }
 
+    [Fact]
+    public void RemoveUpstreamSignaturesOfPatchedPbos_Should_MatchLowercasedPboOfAMixedCaseState()
+    {
+        var state = Path.Combine(State, "@uksf_dependencies");
+        Directory.CreateDirectory(state);
+        Directory.CreateDirectory(Addons);
+        File.WriteAllText(Path.Combine(state, "Halmatic.pbo.state.json"), "{}");
+        foreach (var file in new[] { "halmatic.pbo", "halmatic.pbo.halmatic.bisign", "halmatic.pbo.uksf_dependencies_dev.bisign" })
+        {
+            File.WriteAllBytes(Path.Combine(Addons, file), [0]);
+        }
+
+        CreateStep().RemoveUpstreamSignaturesOfPatchedPbos(Addons, state).Should().Be(1);
+
+        Directory.GetFiles(Addons, "*.bisign").Select(Path.GetFileName).Should().BeEquivalentTo("halmatic.pbo.uksf_dependencies_dev.bisign");
+    }
+
     private void WriteManifest(string mod)
     {
         Directory.CreateDirectory(Path.Combine(Patches, mod));

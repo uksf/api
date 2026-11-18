@@ -2,6 +2,25 @@ namespace UKSF.Api.Modpack.BuildProcess.Steps.Common;
 
 public static class AddonFileCase
 {
+    public static StringComparer RepoPathComparer => OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+
+    public static string ModRelativePath(string relativePath)
+    {
+        var parts = relativePath.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        if (!parts[0].Equals("addons", StringComparison.OrdinalIgnoreCase))
+        {
+            return relativePath;
+        }
+
+        parts[0] = "addons";
+        if (parts.Length == 2)
+        {
+            parts[1] = parts[1].ToLowerInvariant();
+        }
+
+        return Path.Join(parts);
+    }
+
     public static List<string> LowercaseAddons(string repoPath)
     {
         List<string> renamed = [];

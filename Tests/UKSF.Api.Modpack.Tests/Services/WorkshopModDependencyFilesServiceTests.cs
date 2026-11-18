@@ -97,6 +97,31 @@ public class WorkshopModDependencyFilesServiceTests
     }
 
     [Fact]
+    public void CopyPbosToDependencies_ShouldWriteLowercaseNamesForTheLinuxServer()
+    {
+        var sourcePbo = Path.Combine(_workshopModPath, "Addons", "Mixed_Case.pbo");
+        _fileSystemService.Setup(x => x.DirectoryExists(_workshopModPath)).Returns(true);
+        _fileSystemService.Setup(x => x.EnumerateFiles(_workshopModPath, "*.pbo", SearchOption.AllDirectories)).Returns([sourcePbo]);
+
+        _subject.CopyPbosToDependencies(CreateWorkshopMod(), ["Mixed_Case.pbo"]);
+
+        _fileSystemService.Verify(x => x.CopyFile(sourcePbo, Path.Combine(_devAddonsPath, "mixed_case.pbo"), true), Times.Once);
+        _fileSystemService.Verify(x => x.CopyFile(sourcePbo, Path.Combine(_rcAddonsPath, "mixed_case.pbo"), true), Times.Once);
+    }
+
+    [Fact]
+    public void DeletePbosFromDependencies_ShouldDeleteBothRecordedAndLowercaseNames()
+    {
+        _fileSystemService.Setup(x => x.FileExists(It.IsAny<string>())).Returns(true);
+
+        _subject.DeletePbosFromDependencies(["Mixed_Case.pbo"]);
+
+        _fileSystemService.Verify(x => x.DeleteFile(Path.Combine(_devAddonsPath, "Mixed_Case.pbo")), Times.Once);
+        _fileSystemService.Verify(x => x.DeleteFile(Path.Combine(_devAddonsPath, "mixed_case.pbo")), Times.Once);
+        _fileSystemService.Verify(x => x.DeleteFile(Path.Combine(_rcAddonsPath, "mixed_case.pbo")), Times.Once);
+    }
+
+    [Fact]
     public void DeletePbosFromDependencies_WhenFilesDoNotExist_ShouldNotDelete()
     {
         _fileSystemService.Setup(x => x.FileExists(It.IsAny<string>())).Returns(false);

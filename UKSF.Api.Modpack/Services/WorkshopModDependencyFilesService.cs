@@ -21,20 +21,19 @@ public class WorkshopModDependencyFilesService(IVariablesService variablesServic
         var pboPathsByName = WorkshopModPboDiscovery.Find(fileSystemService, workshopModPath)
                                                     .ToDictionary(x => x.Name, x => x.FullPath, StringComparer.OrdinalIgnoreCase);
 
-        CopyToRepos(pbos, name => pboPathsByName[name], WorkshopModPaths.DependenciesAddons, cancellationToken);
+        CopyToRepos(pbos, name => pboPathsByName[name], name => name.ToLowerInvariant(), WorkshopModPaths.DependenciesAddons, cancellationToken);
     }
 
     public void DeletePbosFromDependencies(List<string> pbos)
     {
-        DeleteFromRepos(pbos, WorkshopModPaths.DependenciesAddons);
+        DeleteFromRepos(pbos.Concat(pbos.Select(x => x.ToLowerInvariant())).Distinct().ToList(), WorkshopModPaths.DependenciesAddons);
     }
 
-    /// <summary>Extensions go to the root of the dependencies mod folder, the only place Arma loads them from.</summary>
     public void CopyExtensionsToDependencies(DomainWorkshopMod workshopMod, List<string> extensions, CancellationToken cancellationToken = default)
     {
         var workshopModPath = WorkshopModPaths.WorkshopMod(variablesService, workshopMod.SteamId);
 
-        CopyToRepos(extensions, name => Path.Combine(workshopModPath, name), WorkshopModPaths.Dependencies, cancellationToken);
+        CopyToRepos(extensions, name => Path.Combine(workshopModPath, name), name => name, WorkshopModPaths.Dependencies, cancellationToken);
     }
 
     public void DeleteExtensionsFromDependencies(List<string> extensions)
@@ -45,6 +44,7 @@ public class WorkshopModDependencyFilesService(IVariablesService variablesServic
     private void CopyToRepos(
         List<string> fileNames,
         Func<string, string> sourceForName,
+        Func<string, string> destinationName,
         Func<string, string> destinationFolder,
         CancellationToken cancellationToken
     )
@@ -57,7 +57,7 @@ public class WorkshopModDependencyFilesService(IVariablesService variablesServic
         var copies =
             from repoPath in WorkshopModPaths.Repos(variablesService)
             from fileName in fileNames
-            select (source: sourceForName(fileName), destination: Path.Combine(destinationFolder(repoPath), fileName));
+            select (source: sourceForName(fileName), destination: Path.Combine(destinationFolder(repoPath), destinationName(fileName)));
 
         Parallel.ForEach(
             copies,

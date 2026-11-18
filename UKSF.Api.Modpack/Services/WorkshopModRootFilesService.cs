@@ -1,4 +1,5 @@
 using UKSF.Api.Core.Services;
+using UKSF.Api.Modpack.BuildProcess.Steps.Common;
 using UKSF.Api.Modpack.Models;
 
 namespace UKSF.Api.Modpack.Services;
@@ -48,22 +49,20 @@ public class WorkshopModRootFilesService(IVariablesService variablesService, IFi
     {
         var sourceFiles = fileSystemService.EnumerateFiles(sourceDir, "*", SearchOption.AllDirectories)
                                            .Select(f => Path.GetRelativePath(sourceDir, f))
-                                           .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                                           .ToDictionary(AddonFileCase.ModRelativePath, StringComparer.OrdinalIgnoreCase);
 
-        var destFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        List<string> destFiles = [];
         if (fileSystemService.DirectoryExists(destDir))
         {
-            destFiles = fileSystemService.EnumerateFiles(destDir, "*", SearchOption.AllDirectories)
-                                         .Select(f => Path.GetRelativePath(destDir, f))
-                                         .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            destFiles = fileSystemService.EnumerateFiles(destDir, "*", SearchOption.AllDirectories).Select(f => Path.GetRelativePath(destDir, f)).ToList();
         }
 
         var filesChanged = false;
 
-        foreach (var relativePath in sourceFiles)
+        foreach (var (destRelativePath, sourceRelativePath) in sourceFiles)
         {
-            var sourcePath = Path.Combine(sourceDir, relativePath);
-            var destPath = Path.Combine(destDir, relativePath);
+            var sourcePath = Path.Combine(sourceDir, sourceRelativePath);
+            var destPath = Path.Combine(destDir, destRelativePath);
 
             var destFileExists = fileSystemService.FileExists(destPath);
             if (destFileExists && fileSystemService.AreFilesEqual(sourcePath, destPath))
@@ -78,7 +77,7 @@ public class WorkshopModRootFilesService(IVariablesService variablesService, IFi
         }
 
         var deletedRelativePaths = new List<string>();
-        var filesToDelete = destFiles.Except(sourceFiles, StringComparer.OrdinalIgnoreCase);
+        var filesToDelete = destFiles.Except(sourceFiles.Keys, AddonFileCase.RepoPathComparer);
         foreach (var relativePath in filesToDelete)
         {
             var destPath = Path.Combine(destDir, relativePath);
