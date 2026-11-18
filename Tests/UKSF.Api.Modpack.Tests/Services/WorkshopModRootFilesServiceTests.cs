@@ -81,6 +81,24 @@ public class WorkshopModRootFilesServiceTests
     }
 
     [Fact]
+    public void SyncRootModToRepos_ShouldLowercaseAddonsFolderAndFilesButKeepOtherPaths()
+    {
+        var pbo = Path.Combine(_workshopPath, "Addons", "Afghan_Houses.pbo");
+        var key = Path.Combine(_workshopPath, "Keys", "JBad.bikey");
+        var oldDevPbo = Path.Combine(_devPath, "Addons", "Afghan_Houses.pbo");
+        _fileSystemService.Setup(x => x.EnumerateFiles(_workshopPath, "*", SearchOption.AllDirectories)).Returns([pbo, key]);
+        _fileSystemService.Setup(x => x.DirectoryExists(_devPath)).Returns(true);
+        _fileSystemService.Setup(x => x.EnumerateFiles(_devPath, "*", SearchOption.AllDirectories)).Returns([oldDevPbo]);
+
+        _subject.SyncRootModToRepos(CreateWorkshopMod());
+
+        _fileSystemService.Verify(x => x.CopyFile(pbo, Path.Combine(_devPath, "addons", "afghan_houses.pbo"), true), Times.Once);
+        _fileSystemService.Verify(x => x.CopyFile(pbo, Path.Combine(_rcPath, "addons", "afghan_houses.pbo"), true), Times.Once);
+        _fileSystemService.Verify(x => x.CopyFile(key, Path.Combine(_devPath, "Keys", "JBad.bikey"), true), Times.Once);
+        _fileSystemService.Verify(x => x.DeleteFile(oldDevPbo), OperatingSystem.IsWindows() ? Times.Never() : Times.Once());
+    }
+
+    [Fact]
     public void SyncRootModToRepos_WhenFilesAreIdentical_ShouldNotCopy()
     {
         var sourceFile = Path.Combine(_workshopPath, "addons", "mod.pbo");

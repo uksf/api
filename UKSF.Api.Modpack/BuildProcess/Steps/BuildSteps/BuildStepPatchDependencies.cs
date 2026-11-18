@@ -8,6 +8,7 @@ public class BuildStepPatchDependencies : FileBuildStep
     public const string Name = "Patches";
     public const string DependenciesMod = "@uksf_dependencies";
     private readonly int _patcherTimeout = (int)TimeSpan.FromMinutes(10).TotalMilliseconds;
+    private static readonly EnumerationOptions AnyCase = new() { MatchCasing = MatchCasing.CaseInsensitive };
     private string _patcher;
 
     internal string PatchesPath => Path.Join(GetBuildSourcesPath(), "modpack", "patches");
@@ -119,7 +120,7 @@ public class BuildStepPatchDependencies : FileBuildStep
         var removed = 0;
         foreach (var pbo in ChangedPbos(addons, before))
         {
-            foreach (var bisign in Directory.GetFiles(addons, $"{Path.GetFileName(pbo)}.*.bisign"))
+            foreach (var bisign in Directory.GetFiles(addons, $"{Path.GetFileName(pbo)}.*.bisign", AnyCase))
             {
                 File.Delete(bisign);
                 StepLogger.Log($"Removed {Path.GetFileName(bisign)}");
@@ -136,7 +137,7 @@ public class BuildStepPatchDependencies : FileBuildStep
         foreach (var stateFile in Directory.GetFiles(state, "*.state.json"))
         {
             var pbo = Path.GetFileName(stateFile)[..^".state.json".Length];
-            foreach (var bisign in Directory.GetFiles(addons, $"{pbo}.*.bisign")
+            foreach (var bisign in Directory.GetFiles(addons, $"{pbo}.*.bisign", AnyCase)
                                             .Where(x => !Path.GetFileName(x).StartsWith($"{pbo}.uksf_dependencies_", StringComparison.OrdinalIgnoreCase)))
             {
                 File.Delete(bisign);

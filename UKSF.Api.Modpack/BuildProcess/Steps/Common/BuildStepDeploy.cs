@@ -26,8 +26,11 @@ public class BuildStepDeploy : FileBuildStep
 
         if (!OperatingSystem.IsWindows())
         {
-            var renamed = AddonFileCase.LowercaseAddons(sourcePath);
-            StepLogger.Log($"Lowercased {renamed.Count} addon paths for the Linux server");
+            foreach (var path in new[] { sourcePath, targetPath }.Where(Directory.Exists))
+            {
+                var renamed = AddonFileCase.LowercaseAddons(path);
+                StepLogger.Log($"Lowercased {renamed.Count} addon paths in {path} for the Linux server");
+            }
         }
 
         StepLogger.LogSurround("\nAdding new files...");

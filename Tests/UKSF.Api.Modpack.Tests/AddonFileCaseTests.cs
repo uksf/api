@@ -13,7 +13,10 @@ public class AddonFileCaseTests : IDisposable
 
     public void Dispose()
     {
-        Directory.Delete(_root, true);
+        if (Directory.Exists(_root))
+        {
+            Directory.Delete(_root, true);
+        }
     }
 
     [Fact]
@@ -43,6 +46,16 @@ public class AddonFileCaseTests : IDisposable
 
         AddonFileCase.LowercaseAddons(_root).Should().BeEmpty();
         AddonFileCase.LowercaseAddons(_root).Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("Addons/Afghan_Houses.pbo", "addons/afghan_houses.pbo")]
+    [InlineData("addons/Sub/Keep_Case.paa", "addons/Sub/Keep_Case.paa")]
+    [InlineData("Keys/JBad.bikey", "Keys/JBad.bikey")]
+    [InlineData("Mod.cpp", "Mod.cpp")]
+    public void ModRelativePath_lowercases_only_the_addons_folder_and_its_files(string relative, string expected)
+    {
+        AddonFileCase.ModRelativePath(relative).Replace('\\', '/').Should().Be(expected);
     }
 
     private string[] Names(string relative)
