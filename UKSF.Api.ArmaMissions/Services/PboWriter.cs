@@ -6,6 +6,26 @@ namespace UKSF.Api.ArmaMissions.Services;
 
 public static class PboWriter
 {
+    private const uint CompressedEntryMethod = 0x43707273;
+
+    private static readonly HashSet<string> CompressibleExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".sqf",
+        ".sqs",
+        ".ext",
+        ".hpp",
+        ".h",
+        ".cpp",
+        ".inc",
+        ".fsm",
+        ".bikb",
+        ".xml",
+        ".csv",
+        ".json",
+        ".html",
+        ".cfg"
+    };
+
     public static void Pack(string folderPath, string pboPath, IReadOnlyCollection<string> excludePatterns)
     {
         var files = Directory.EnumerateFiles(folderPath, "*", SearchOption.AllDirectories)
@@ -18,25 +38,26 @@ public static class PboWriter
             throw new PboOperationException($"{folderPath} has no files to pack");
         }
 
+        var entries = files.Select(file => (file.Name, Info: new FileInfo(file.Path), Stored: Stored(file.Path))).ToList();
         using var body = new MemoryStream();
         using (var writer = new BinaryWriter(body, Encoding.UTF8, true))
         {
-            foreach (var file in files)
+            foreach (var entry in entries)
             {
-                var info = new FileInfo(file.Path);
-                WriteAsciiz(writer, file.Name);
+                var compressed = entry.Stored.Length != entry.Info.Length;
+                WriteAsciiz(writer, entry.Name);
+                writer.Write(compressed ? CompressedEntryMethod : 0u);
+                writer.Write((uint)entry.Info.Length);
                 writer.Write(0u);
-                writer.Write((uint)info.Length);
-                writer.Write(0u);
-                writer.Write((uint)new DateTimeOffset(info.LastWriteTimeUtc).ToUnixTimeSeconds());
-                writer.Write((uint)info.Length);
+                writer.Write((uint)new DateTimeOffset(entry.Info.LastWriteTimeUtc).ToUnixTimeSeconds());
+                writer.Write((uint)entry.Stored.Length);
             }
 
             WriteAsciiz(writer, string.Empty);
             writer.Write(new byte[20]);
-            foreach (var file in files)
+            foreach (var entry in entries)
             {
-                writer.Write(File.ReadAllBytes(file.Path));
+                writer.Write(entry.Stored);
             }
         }
 
@@ -45,6 +66,18 @@ public static class PboWriter
         output.Write(bytes);
         output.WriteByte(0);
         output.Write(SHA1.HashData(bytes));
+    }
+
+    private static byte[] Stored(string path)
+    {
+        var raw = File.ReadAllBytes(path);
+        if (raw.Length == 0 || !CompressibleExtensions.Contains(Path.GetExtension(path)))
+        {
+            return raw;
+        }
+
+        var compressed = PboLzss.Encode(raw);
+        return compressed.Length < raw.Length ? compressed : raw;
     }
 
     private static bool Matches(string fileName, string pattern)

@@ -50,21 +50,32 @@ public sealed class PboToolsTests : IDisposable
                 {
                     ["mission.sqm"] = "version = 54;\n",
                     ["description.ext"] = "onLoadName = \"Op\";\n",
-                    [Path.Combine("scripts", "init.sqf")] = "hint \"x\";\n"
+                    [Path.Combine("scripts", "init.sqf")] = "hint \"x\";\n",
+                    ["defines.h"] = "#define X 1",
+                    [Path.Combine("scripts", "data.cpp")] = "x"
                 }
             );
     }
 
     [Fact]
-    public async Task SimplePackPbo_keeps_every_file()
+    public async Task MakePbo_compresses_text_files_that_shrink_and_extracts_them_unchanged()
     {
-        var source = CreateMission(new Dictionary<string, string> { ["mission.sqm"] = "a", ["README.txt"] = "b" });
+        var sqf = string.Concat(Enumerable.Range(0, 400).Select(i => $"_unit{i} setPos [{i}, 0, 0];\n"));
+        var source = CreateMission(
+            new Dictionary<string, string> { ["init.sqf"] = sqf, ["mission.sqm"] = sqf, ["tiny.sqf"] = "x", ["pic.paa"] = new string('a', 500) }
+        );
         var pboPath = Path.Combine(_tempDir, "op.VR.pbo");
 
-        await _pboTools.SimplePackPbo(source, pboPath, _tempDir);
+        await _pboTools.MakePbo(source, pboPath, _tempDir);
         await _pboTools.ExtractPbo(pboPath, Path.Combine(_tempDir, "out"));
 
-        ReadTree(Path.Combine(_tempDir, "out", "op.VR")).Keys.Should().BeEquivalentTo("mission.sqm", "README.txt");
+        var header = Encoding.ASCII.GetString(File.ReadAllBytes(pboPath));
+        header.IndexOf("init.sqf\0srpC", StringComparison.Ordinal).Should().BeGreaterThanOrEqualTo(0);
+        header.IndexOf("mission.sqm\0\0\0\0\0", StringComparison.Ordinal).Should().BeGreaterThanOrEqualTo(0);
+        header.IndexOf("tiny.sqf\0\0\0\0\0", StringComparison.Ordinal).Should().BeGreaterThanOrEqualTo(0);
+        header.IndexOf("pic.paa\0\0\0\0\0", StringComparison.Ordinal).Should().BeGreaterThanOrEqualTo(0);
+        new FileInfo(pboPath).Length.Should().BeLessThan(sqf.Length * 3 / 2);
+        ReadTree(Path.Combine(_tempDir, "out", "op.VR"))["init.sqf"].Should().Be(sqf);
     }
 
     [Fact]
