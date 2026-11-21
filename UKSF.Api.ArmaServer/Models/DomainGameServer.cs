@@ -47,7 +47,6 @@ public class DomainGameServer : MongoObject
     public List<GameServerMod> ServerMods { get; set; } = [];
     public GameServerOption ServerOption { get; set; }
 
-    [BsonRepresentation(BsonType.ObjectId)]
     public string LaunchedBy { get; set; }
 
     public GameServerStatus Status { get; set; } = new();

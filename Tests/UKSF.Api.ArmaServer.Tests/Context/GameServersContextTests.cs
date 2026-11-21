@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using FluentAssertions;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using Moq;
+using UKSF.Api.ArmaServer.ScheduledActions;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core.Context.Base;
@@ -48,5 +51,18 @@ public class GameServersContextTests
         var subject = _gameServersContext.Get();
 
         subject.Should().ContainInOrder(rank2, rank3, rank1);
+    }
+
+    [Theory]
+    [InlineData(ActionLaunchDueMissions.LaunchedByScheduler)]
+    [InlineData("5a1b2c3d4e5f60718293a4b5")]
+    public void Should_round_trip_launched_by_as_a_string(string launchedBy)
+    {
+        DomainGameServer server = new() { LaunchedBy = launchedBy };
+
+        var bson = server.ToBsonDocument();
+
+        bson["launchedBy"].Should().Be(new BsonString(launchedBy));
+        BsonSerializer.Deserialize<DomainGameServer>(bson).LaunchedBy.Should().Be(launchedBy);
     }
 }
