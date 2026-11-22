@@ -186,9 +186,13 @@ public partial class GameServerProcessManager
 
     private async Task HandleProcessGone(DomainGameServer server, IReadOnlyList<ProcessCommandLineInfo> armaProcesses = null)
     {
+        var wasTracked = server.ProcessId is not null;
         await ResetServerToDeadAsync(server, push: true, armaProcesses);
 
-        logger.LogInfo($"Process monitor detected server '{server.Name}' is offline");
+        if (wasTracked)
+        {
+            logger.LogInfo($"Process monitor detected server '{server.Name}' is offline");
+        }
     }
 
     private static TimeSpan CalculateTickInterval(List<DomainGameServer> servers)

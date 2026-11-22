@@ -42,7 +42,7 @@ public class BackupsController(
     [HttpGet("runs")]
     public IEnumerable<DomainBackupRun> GetRuns()
     {
-        return backupRunsContext.Get().OrderByDescending(x => x.Started).Take(30);
+        return backupRunsContext.Get().OrderByDescending(x => x.Started).Take(BackupRunner.RunHistory);
     }
 
     [HttpPost("run")]

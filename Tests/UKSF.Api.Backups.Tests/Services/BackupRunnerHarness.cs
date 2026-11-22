@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Moq;
@@ -45,6 +47,10 @@ public class BackupRunnerHarness
                        )
                        .Returns(Task.CompletedTask);
         MockRunsContext.Setup(x => x.Replace(It.IsAny<DomainBackupRun>())).Returns(Task.CompletedTask);
+        MockRunsContext.Setup(x => x.Get()).Returns(() => Runs.ToList());
+        MockRunsContext.Setup(x => x.DeleteMany(It.IsAny<Expression<Func<DomainBackupRun, bool>>>()))
+                       .Callback((Expression<Func<DomainBackupRun, bool>> filter) => Runs.RemoveAll(new Predicate<DomainBackupRun>(filter.Compile())))
+                       .Returns(Task.CompletedTask);
 
         MockVariablesService.Setup(x => x.GetVariable(It.IsAny<string>())).Returns((string key) => new DomainVariableItem { Key = key });
         GivenVariable("BACKUP_PUBLIC_KEY", "-----BEGIN PUBLIC KEY-----");

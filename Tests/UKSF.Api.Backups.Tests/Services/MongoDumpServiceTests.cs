@@ -21,7 +21,6 @@ public class MongoDumpServiceTests
     private const string Uri = "mongodb://prod:hunter2@localhost:52005/prod?replicaSet=rs0&authSource=admin";
 
     private readonly Mock<IFileSystemProvider> _mockFileSystemProvider = new();
-    private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly Mock<IProcessRunner> _mockProcessRunner = new();
     private readonly Mock<IVariablesService> _mockVariablesService = new();
     private readonly List<string> _runArguments = [];
@@ -40,13 +39,7 @@ public class MongoDumpServiceTests
 
         var appSettings = Options.Create(new AppSettings { ConnectionStrings = new AppSettings.ConnectionStringsConfig { Database = Uri } });
 
-        _subject = new MongoDumpService(
-            _mockVariablesService.Object,
-            appSettings,
-            _mockProcessRunner.Object,
-            _mockFileSystemProvider.Object,
-            _mockLogger.Object
-        );
+        _subject = new MongoDumpService(_mockVariablesService.Object, appSettings, _mockProcessRunner.Object, _mockFileSystemProvider.Object);
     }
 
     private void GivenVariable(string key, string value)
@@ -77,16 +70,6 @@ public class MongoDumpServiceTests
         result.Select(x => x.Database).Should().ContainInOrder("prod", "dev", "devLocal");
         _runArguments.Should().HaveCount(3);
         _runArguments[0].Should().Contain("--db \"prod\"").And.Contain(@"--archive=""C:\staging\prod.archive.gz""");
-    }
-
-    [Fact]
-    public async Task The_credentials_never_reach_the_log()
-    {
-        await _subject.Dump(@"C:\staging");
-
-        _mockLogger.Verify(x => x.LogInfo(It.Is<string>(y => y.Contains("hunter2"))), Times.Never);
-        _mockLogger.Verify(x => x.LogWarning(It.Is<string>(y => y.Contains("hunter2"))), Times.Never);
-        _mockLogger.Verify(x => x.LogError(It.Is<string>(y => y.Contains("hunter2"))), Times.Never);
     }
 
     [WindowsFact]
@@ -185,8 +168,7 @@ public class MongoDumpServiceTests
             _mockVariablesService.Object,
             Options.Create(new AppSettings()),
             _mockProcessRunner.Object,
-            _mockFileSystemProvider.Object,
-            _mockLogger.Object
+            _mockFileSystemProvider.Object
         );
 
         var act = () => subject.Dump(@"C:\staging");

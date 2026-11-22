@@ -24,8 +24,7 @@ public class MongoDumpService(
     IVariablesService variablesService,
     IOptions<AppSettings> options,
     IProcessRunner processRunner,
-    IFileSystemProvider fileSystemProvider,
-    IUksfLogger logger
+    IFileSystemProvider fileSystemProvider
 ) : IMongoDumpService
 {
     private static readonly string DefaultMongoDumpPath = OperatingSystem.IsWindows() ? "mongodump.exe" : "mongodump";
@@ -115,7 +114,6 @@ public class MongoDumpService(
             throw new UksfException($"mongodump wrote an empty archive for '{name}': {Tail(result)}", 500);
         }
 
-        logger.LogInfo($"Backup dumped mongo '{name}' - {bytes} bytes");
         return new MongoDumpFile
         {
             Database = name,
