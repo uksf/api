@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -179,5 +180,20 @@ public class BackupRunnerTests
 
         run.LocalPath.Should().StartWith(@"D:\OtherBackups\");
         _harness.MockRetentionService.Verify(x => x.PruneLocal(@"D:\OtherBackups"), Times.Once);
+    }
+
+    [Fact]
+    public async Task A_run_keeps_only_the_newest_ten_run_records()
+    {
+        for (var day = 1; day <= 12; day++)
+        {
+            _harness.Runs.Add(new DomainBackupRun { Started = BackupRunnerHarness.Now.AddDays(-day), State = BackupRunState.Success });
+        }
+
+        var run = await _harness.Subject.Run();
+
+        _harness.Runs.Should().HaveCount(10);
+        _harness.Runs.Should().Contain(run);
+        _harness.Runs.Min(x => x.Started).Should().Be(BackupRunnerHarness.Now.AddDays(-9));
     }
 }

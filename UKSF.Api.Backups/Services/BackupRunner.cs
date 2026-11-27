@@ -29,6 +29,8 @@ public class BackupRunner(
     IUksfLogger logger
 ) : IBackupRunner
 {
+    public const int RunHistory = 10;
+
     private static readonly string DefaultBackupPath = OperatingSystem.IsWindows() ? @"E:\Backups" : "/var/backups/uksf";
 
     public async Task<DomainBackupRun> Start()
@@ -61,7 +63,17 @@ public class BackupRunner(
     {
         var run = new DomainBackupRun { Started = clock.UtcNow(), State = BackupRunState.Running };
         await backupRunsContext.Add(run);
+        await PruneRunHistory();
         return run;
+    }
+
+    private async Task PruneRunHistory()
+    {
+        var staleIds = backupRunsContext.Get().OrderByDescending(x => x.Started).Skip(RunHistory).Select(x => x.Id).ToList();
+        if (staleIds.Count > 0)
+        {
+            await backupRunsContext.DeleteMany(x => staleIds.Contains(x.Id));
+        }
     }
 
     private async Task<DomainBackupRun> Execute(DomainBackupRun run, CancellationToken cancellationToken)
@@ -77,7 +89,6 @@ public class BackupRunner(
             run.Finished = clock.UtcNow();
             await backupRunsContext.Replace(run);
 
-            logger.LogInfo($"Backup {run.ArchiveName} complete - {run.FileCount} files, {run.ArchiveBytes} bytes");
             return run;
         }
         catch (Exception exception)

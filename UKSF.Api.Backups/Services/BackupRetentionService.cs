@@ -41,7 +41,6 @@ public class BackupRetentionService(
         foreach (var stale in archives.Skip(Retention))
         {
             fileSystemProvider.DeleteFile(stale);
-            logger.LogInfo($"Backup pruned local archive {stale}");
         }
     }
 
@@ -52,7 +51,6 @@ public class BackupRetentionService(
         foreach (var stale in archives.Skip(Retention))
         {
             await googleDriveClient.Delete(stale.Id, cancellationToken);
-            logger.LogInfo($"Backup pruned Drive archive {stale.Name}");
         }
     }
 
